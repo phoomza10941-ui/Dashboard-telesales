@@ -4,7 +4,6 @@ import type { AgentData } from "@/lib/db";
 
 type Period = "Today" | "7 Days" | "28 Days" | "All";
 const periods: Period[] = ["Today", "7 Days", "28 Days", "All"];
-const DAILY_TARGET = 80000;
 
 function todayStr() {
   const d = new Date();
@@ -25,7 +24,7 @@ function matchesDate(dateStr: string, from: Date) {
   return rowDate >= from;
 }
 
-export default function PerformanceClient({ data }: { data: AgentData | null }) {
+export default function PerformanceClient({ data, dailyTarget }: { data: AgentData | null; dailyTarget: number }) {
   const [period, setPeriod] = useState<Period>("28 Days");
 
   const rows = data?.rows ?? [];
@@ -44,7 +43,7 @@ export default function PerformanceClient({ data }: { data: AgentData | null }) 
   const totalCrm        = filtered.reduce((s, r) => s + r.crm, 0);
   const orders      = filtered.length;
   const aov         = orders > 0 ? Math.round(totalSales / orders) : 0;
-  const target      = period === "Today" ? DAILY_TARGET : period === "7 Days" ? DAILY_TARGET * 7 : period === "28 Days" ? DAILY_TARGET * 28 : DAILY_TARGET * 30;
+  const target      = period === "Today" ? dailyTarget : period === "7 Days" ? dailyTarget * 7 : period === "28 Days" ? dailyTarget * 28 : dailyTarget * 30;
   const pct         = target > 0 ? Math.min(Math.round((totalSales / target) * 100), 100) : 0;
 
   // 28-day trend
