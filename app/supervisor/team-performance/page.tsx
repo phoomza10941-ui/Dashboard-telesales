@@ -20,7 +20,7 @@ export default async function TeamPerformancePage() {
   const onTrack = agents.filter((a) => pct(a.todaySales, targetMap[a.agentId] ?? dailyTarget) >= 80).length;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col">
       <div className="mb-5">
         <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Team Performance by Person</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">
@@ -37,8 +37,8 @@ export default async function TeamPerformancePage() {
       </div>
 
       {/* Main table */}
-      <div className="flex-1 bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden flex flex-col">
-        <div className="overflow-auto flex-1">
+      <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden flex flex-col">
+        <div className="overflow-auto">
           <table className="w-full text-[13px]">
             <thead className="sticky top-0 bg-white z-10">
               <tr className="border-b border-[#E8E8E8]">
