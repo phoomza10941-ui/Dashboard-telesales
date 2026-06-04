@@ -177,6 +177,7 @@ export default function TalkTimeClient({
   const [labels, setLabels] = useState(initialLabels);
   const [loading, setLoading] = useState(false);
   const [pagesLoaded, setPagesLoaded] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
   const abortRef = useRef<AbortController | null>(null);
 
   const isToday = mode === "day" && dateKey === todayKey;
@@ -216,7 +217,16 @@ export default function TalkTimeClient({
     else startStream(`/api/talk-time/stream?month=${monthKey}`);
   }
 
-  const visible = tab === "overall" ? agents : agents.filter(a => a.account === tab);
+  const tabFiltered = tab === "overall" ? agents : agents.filter(a => a.account === tab);
+  const searchQ = search.trim().toLowerCase();
+  const visible = searchQ
+    ? tabFiltered.filter(a => {
+        const name = (a.nickname ?? labels[a.orekaExt] ?? a.orekaName ?? "").toLowerCase();
+        const ext = a.orekaExt.toLowerCase().replace(/\D/g, "");
+        const q = searchQ.replace(/\D/g, "") || searchQ;
+        return name.includes(searchQ) || ext.includes(q) || a.orekaExt.toLowerCase().includes(searchQ);
+      })
+    : tabFiltered;
   const teamSeconds = visible.reduce((s, a) => s + a.totalSeconds, 0);
   const teamCalls = visible.reduce((s, a) => s + a.callCount, 0);
   const teamOut = visible.reduce((s, a) => s + a.outCount, 0);
@@ -321,6 +331,27 @@ export default function TalkTimeClient({
             <KpiCard label="เฉลี่ย/สาย" value={formatTalkTime(avgPerCall)} />
             <KpiCard label="Agents มีสาย" value={`${activeAgents}/${visible.length} คน`} />
           </>
+        )}
+      </div>
+
+      {/* Search / filter */}
+      <div className="mb-3 relative w-72">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#C0C0C0]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="ค้นหาชื่อ หรือเบอร์โทร…"
+          className="w-full pl-8 pr-8 py-2 rounded-lg border border-[#E8E8E8] bg-white text-[12px] text-[#3D3D3D] placeholder:text-[#C0C0C0] focus:outline-none focus:border-[#87DE81] focus:bg-white transition-colors"
+        />
+        {search && (
+          <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#C0C0C0] hover:text-[#8B8E8F]">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         )}
       </div>
 
