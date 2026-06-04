@@ -16,15 +16,10 @@ import {
   parseNoteObjection,
   type AgentAnalysis,
 } from "@/lib/db";
+import { getTalkTimeByAgentSafe } from "@/lib/oreka";
+import { fmtCompact, fmtPct } from "@/lib/format";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmtK(val: number): string {
-  if (val === 0) return "0";
-  if (val < 1000) return val.toLocaleString();
-  if (val < 1_000_000) return `${Math.round(val / 1000)}K`;
-  return `${(val / 1_000_000).toFixed(val % 1_000_000 === 0 ? 0 : 1)}M`;
-}
 
 function getThaiHour() {
   return (new Date().getUTCHours() + 7) % 24;
@@ -91,11 +86,12 @@ function computePaceChart(
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function WarRoomPage() {
-  const [analyses, agentTargets, teamTarget, hourlyData] = await Promise.all([
+  const [analyses, agentTargets, teamTarget, hourlyData, talkTimeResult] = await Promise.all([
     getAllAgentsAnalysis(),
     getAgentsWithTargets(),
     getDailyTarget(),
     getTodayHourlySales(),
+    getTalkTimeByAgentSafe(),
   ]);
 
   const targetMap: Record<string, number> = {};
@@ -123,7 +119,7 @@ export default async function WarRoomPage() {
   const pace = computePaceChart(hourlyData, teamTotalTarget, thaiHour);
 
   // ── Hourly (display hours 9-17) ────────────────────────────────────────────
-  const displayHours = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+  const displayHours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
   // ── Team Funnel ────────────────────────────────────────────────────────────
   const todayStatusMap: Record<string, number> = {};
@@ -177,7 +173,7 @@ export default async function WarRoomPage() {
         label,
         value: String(count),
         pct: (count / followUpMax) * 100,
-        color: (["#FF6B6B", "#FFBA49", "#58CEE8", "#87DE81", "#9BA8B5"] as const)[i],
+        color: (["#BD0404", "#FFBA49", "#022EE8", "#04D600", "#9BA8B5"] as const)[i],
       })),
     },
     {
@@ -189,7 +185,7 @@ export default async function WarRoomPage() {
         label: a.name,
         value: `${a.count} เคส`,
         pct: (a.count / pendingMax) * 100,
-        color: (["#FF6B6B", "#FFBA49", "#58CEE8", "#87DE81", "#9BA8B5"] as const)[i] ?? "#9BA8B5",
+        color: (["#BD0404", "#FFBA49", "#022EE8", "#04D600", "#9BA8B5"] as const)[i] ?? "#9BA8B5",
       })),
     },
   ];
@@ -236,20 +232,20 @@ export default async function WarRoomPage() {
   // ── Podium datasets ────────────────────────────────────────────────────────
   type A = typeof analyses[number];
   const p = (a: A, display: string, sub: string): PodiumEntry =>
-    ({ name: a.agentName, display, sub, avatarConfig: a.avatarConfig ?? null });
+    ({ name: a.agentName, display, sub, avatarUrl: a.avatarUrl });
 
   const top3Sales: PodiumEntry[] = [...analyses]
-    .sort((a, b) => b.todaySales - a.todaySales).slice(0, 3)
-    .map((a) => p(a, `฿${a.todaySales.toLocaleString()}`, `${a.todayOrders} รายการ`));
+    .sort((a, b) => b.todaySales - a.todaySales).slice(0, 8)
+    .map((a) => ({ ...p(a, `฿${a.todaySales.toLocaleString()}`, `${a.todayOrders} รายการ`), rawValue: a.todaySales }));
 
   const top3Orders: PodiumEntry[] = [...analyses]
-    .sort((a, b) => b.todayOrders - a.todayOrders).slice(0, 3)
-    .map((a) => p(a, `${a.todayOrders} บิล`, `฿${a.todaySales.toLocaleString()}`));
+    .sort((a, b) => b.todayOrders - a.todayOrders).slice(0, 8)
+    .map((a) => ({ ...p(a, `${a.todayOrders} บิล`, `฿${a.todaySales.toLocaleString()}`), rawValue: a.todayOrders }));
 
   const top3Aov: PodiumEntry[] = [...analyses]
     .filter((a) => a.todayOrders > 0)
-    .sort((a, b) => (b.todaySales / b.todayOrders) - (a.todaySales / a.todayOrders)).slice(0, 3)
-    .map((a) => p(a, `฿${Math.round(a.todaySales / a.todayOrders).toLocaleString()}`, `${a.todayOrders} รายการ`));
+    .sort((a, b) => (b.todaySales / b.todayOrders) - (a.todaySales / a.todayOrders)).slice(0, 8)
+    .map((a) => ({ ...p(a, `฿${Math.round(a.todaySales / a.todayOrders).toLocaleString()}`, `${a.todayOrders} รายการ`), rawValue: Math.round(a.todaySales / a.todayOrders) }));
 
   const prodMap: Record<string, { sales: number; orders: number }> = {};
   analyses.forEach((a) => a.todayRows.forEach((r) => {
@@ -260,12 +256,27 @@ export default async function WarRoomPage() {
   }));
 
   const top3Product: PodiumEntry[] = Object.entries(prodMap)
-    .sort((a, b) => b[1].sales - a[1].sales).slice(0, 3)
-    .map(([name, d]) => ({ name, display: `฿${d.sales.toLocaleString()}`, sub: `${d.orders} บิล` }));
+    .sort((a, b) => b[1].sales - a[1].sales).slice(0, 8)
+    .map(([name, d]) => ({ name, display: `฿${d.sales.toLocaleString()}`, sub: `${d.orders} บิล`, rawValue: d.sales }));
 
   const top3FollowUp: PodiumEntry[] = [...analyses]
-    .sort((a, b) => (b.statusCounts?.closed ?? 0) - (a.statusCounts?.closed ?? 0)).slice(0, 3)
-    .map((a) => p(a, `${a.statusCounts?.closed ?? 0} ปิด`, `FU ${a.followUpRows.length} เคส`));
+    .sort((a, b) => (b.statusCounts?.closed ?? 0) - (a.statusCounts?.closed ?? 0)).slice(0, 8)
+    .map((a) => ({ ...p(a, `${a.statusCounts?.closed ?? 0} ปิด`, `FU ${a.followUpRows.length} เคส`), rawValue: a.statusCounts?.closed ?? 0 }));
+
+  function fmtTalkTime(s: number) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
+  }
+  const top3TalkTime: PodiumEntry[] = (talkTimeResult.data ?? [])
+    .filter((a) => a.totalSeconds > 0 && (a.nickname ?? ""))
+    .slice(0, 8)
+    .map((a) => ({
+      name: a.nickname ?? a.orekaName ?? a.orekaExt,
+      display: fmtTalkTime(a.totalSeconds),
+      sub: `${a.callCount} สาย`,
+      rawValue: a.totalSeconds,
+    }));
 
   // ── AI Command Summary ─────────────────────────────────────────────────────
   const paceWord = paceDiff >= 0 ? "สูงกว่า" : "ต่ำกว่า";
@@ -276,54 +287,80 @@ export default async function WarRoomPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="w-screen h-screen overflow-hidden bg-[#0F1117] flex flex-col p-2 gap-1.5">
+    <div className="w-screen h-screen overflow-hidden bg-[#E0E0E2] flex flex-col p-2 gap-1.5">
       <RealtimeRefresh tables={["sales", "team_config"]} />
 
       {/* ── Row 1: Scoreboard ──────────────────────────────────────────── */}
       <MotionSection delay={0} className="flex-none grid grid-cols-6 gap-1.5">
         {/* Title + clock */}
-        <div className="col-span-1 bg-[#1A1D27] border border-[#252836] rounded-xl px-3 flex items-center justify-between">
+        <div className="col-span-1 bg-[#FFFFFF] border border-[#7A7A7A] rounded-xl px-3 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-[#9099A8] uppercase tracking-widest">War Room</div>
-            <div className="text-[10px] text-[#60677A] leading-tight mt-0.5">{thaiDateLabel()}</div>
+            <div className="text-[11px] font-bold text-[#000000] uppercase tracking-widest">War Room</div>
+            <div className="text-[10px] text-[#858889] leading-tight mt-0.5">{thaiDateLabel()}</div>
           </div>
           {/* Live pulse */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#87DE81] animate-pulse shrink-0" />
-            <span className="text-[10px] font-bold text-[#87DE81] uppercase tracking-wider">LIVE</span>
+            <span className="w-2 h-2 rounded-full bg-[#04D600] animate-pulse shrink-0" />
+            <span className="text-[10px] font-bold text-[#04D600] uppercase tracking-wider">LIVE</span>
           </div>
         </div>
 
         {/* Clock — own card */}
-        <div className="col-span-1 bg-[#1A1D27] border border-[#252836] rounded-xl px-3 flex items-center justify-center">
+        <div className="col-span-1 bg-[#FFFFFF] border border-[#7A7A7A] rounded-xl px-3 flex items-center justify-center">
           <LiveClock />
         </div>
 
-        <ScoreCard label="% ถึงเป้า" value={`${teamPct}%`} sub={teamPct >= 100 ? "ถึงเป้าแล้ว!" : `ขาดอีก ฿${teamGap.toLocaleString()}`} accent={teamPct >= 80 ? "green" : teamPct >= 50 ? "cyan" : "red"} big />
+        <ScoreCard label="% ถึงเป้า" value={fmtPct(teamPct)} sub={teamPct >= 100 ? "ถึงเป้าแล้ว!" : `ขาดอีก ฿${teamGap.toLocaleString()}`} accent={teamPct >= 80 ? "green" : teamPct >= 50 ? "cyan" : "red"} big />
         <ScoreCard label="ออเดอร์วันนี้" value={`${teamTodayOrders}`} sub="รายการ" accent="cyan" />
-        <ScoreCard label="AOV" value={`฿${aov.toLocaleString()}`} sub="เฉลี่ยต่อบิล" accent="cyan" />
-        <ScoreCard label="Forecast สิ้นวัน" value={`฿${forecast.toLocaleString()}`} sub={forecast >= teamTotalTarget ? "คาดว่าถึงเป้า" : "คาดว่าไม่ถึงเป้า"} accent={forecast >= teamTotalTarget ? "green" : "red"} />
+        <ScoreCard label="AOV" value={`฿${fmtCompact(aov)}`} sub="เฉลี่ยต่อบิล" accent="cyan" />
+        <ScoreCard label="Forecast สิ้นวัน" value={`฿${fmtCompact(forecast)}`} sub={forecast >= teamTotalTarget ? "คาดว่าถึงเป้า" : "คาดว่าไม่ถึงเป้า"} accent={forecast >= teamTotalTarget ? "green" : "red"} />
       </MotionSection>
 
       {/* ── Daily Target Strip ─────────────────────────────────────────── */}
-      <MotionSection delay={0.08} className="flex-none bg-[#1A1D27] border border-[#252836] rounded-xl px-6 py-2">
-        <div className="flex items-center justify-center gap-3">
-          <span className="text-[11px] font-bold text-[#9099A8] uppercase tracking-widest shrink-0">Daily Target</span>
-          <div className="flex items-baseline gap-2 tabular-nums">
+      <MotionSection delay={0.08} className="flex-none bg-[#FFFFFF] border-2 border-[#7A7A7A] rounded-xl px-8 py-4 relative overflow-hidden">
+        {/* Performance glow */}
+        <div className={`absolute inset-0 opacity-[0.10] ${teamPct >= 100 ? "bg-[#04D600]" : teamPct >= 70 ? "bg-[#022EE8]" : teamPct >= 40 ? "bg-[#FFBA49]" : "bg-[#BD0404]"}`} />
+        {/* Top accent line */}
+        <div className={`absolute top-0 left-0 right-0 h-[3px] ${teamPct >= 100 ? "bg-[#04D600]" : teamPct >= 70 ? "bg-[#022EE8]" : teamPct >= 40 ? "bg-[#FFBA49]" : "bg-[#BD0404]"}`} />
+        <div className="relative flex items-center justify-center gap-6">
+          <div className="flex flex-col items-center shrink-0">
+            <span className="text-[13px] font-bold text-[#646768] uppercase tracking-widest">Daily Target</span>
+            <span className={`text-[22px] font-black tabular-nums ${teamPct >= 100 ? "text-[#04D600]" : teamPct >= 70 ? "text-[#022EE8]" : teamPct >= 40 ? "text-[#FFBA49]" : "text-[#BD0404]"}`}>
+              {teamPct}%
+            </span>
+          </div>
+          <div className="w-px h-12 bg-[#C4C4C4] shrink-0" />
+          <div className="flex items-baseline gap-3 tabular-nums">
             <CountUpValue
               value={teamTodaySales}
               prefix="฿"
               duration={1200}
-              className={`text-[36px] font-black leading-none ${teamPct >= 100 ? "text-[#87DE81]" : teamPct >= 70 ? "text-[#58CEE8]" : teamPct >= 40 ? "text-[#FFBA49]" : "text-[#FF6B6B]"}`}
+              className={`text-[52px] font-black leading-none tracking-tight ${teamPct >= 100 ? "text-[#04D600]" : teamPct >= 70 ? "text-[#022EE8]" : teamPct >= 40 ? "text-[#FFBA49]" : "text-[#BD0404]"}`}
             />
-            <span className="text-[28px] font-black text-[#404050] leading-none">/</span>
-            <span className="text-[36px] font-black text-[#F0F2F5] leading-none">
-              ฿{teamTotalTarget.toLocaleString()}
+            <span className="text-[40px] font-black text-[#535353] leading-none">/</span>
+            <span className="text-[52px] font-black text-[#000000] leading-none tracking-tight">
+              ฿{fmtCompact(teamTotalTarget)}
             </span>
           </div>
-          <span className={`text-[13px] font-bold shrink-0 ${teamPct >= 100 ? "text-[#87DE81]" : "text-[#60677A]"}`}>
-            {teamPct >= 100 ? `+฿${(teamTodaySales - teamTotalTarget).toLocaleString()}` : `ขาดอีก ฿${teamGap.toLocaleString()}`}
-          </span>
+          <div className="w-px h-12 bg-[#C4C4C4] shrink-0" />
+          {/* Gap / surplus badge */}
+          <div className={`shrink-0 px-4 py-2 rounded-xl text-[18px] font-black ${teamPct >= 100
+              ? "bg-[#04D600]/20 text-[#04D600] border-2 border-[#04D600]/40"
+              : teamGap > 0
+                ? "bg-[#BD0404]/15 text-[#BD0404] border-2 border-[#BD0404]/30"
+                : "bg-[#646768]/10 text-[#646768]"
+            }`}>
+            {teamPct >= 100
+              ? `+฿${fmtCompact(teamTodaySales - teamTotalTarget)}`
+              : `ขาดอีก ฿${fmtCompact(teamGap)}`}
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="relative mt-3 h-[8px] bg-[#C4C4C4] rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ${teamPct >= 100 ? "bg-[#04D600]" : teamPct >= 70 ? "bg-[#022EE8]" : teamPct >= 40 ? "bg-[#FFBA49]" : "bg-[#BD0404]"}`}
+            style={{ width: `${Math.min(teamPct, 100)}%` }}
+          />
         </div>
       </MotionSection>
 
@@ -337,12 +374,15 @@ export default async function WarRoomPage() {
           <div className="flex-1 grid grid-cols-12 gap-1.5 min-h-0 overflow-hidden">
 
             {/* Pace vs Target */}
-            <div className="col-span-7 bg-[#1A1D27] border border-[#252836] rounded-xl p-3 flex flex-col overflow-hidden">
+            <div className="col-span-7 bg-[#FFFFFF] border border-[#7A7A7A] rounded-xl p-3 flex flex-col overflow-hidden">
               <div className="flex items-center justify-between mb-1.5 flex-none">
-                <span className="text-[13px] font-semibold text-[#F0F2F5]">Sales Pace vs Target</span>
-                <div className="flex items-center gap-4 text-[11px] text-[#9099A8]">
-                  <span className="flex items-center gap-1.5"><span className="inline-block w-5 h-0 border-t-2 border-dashed border-[#58CEE8]" />เป้า</span>
-                  <span className="flex items-center gap-1.5"><span className="inline-block w-5 h-0.5 bg-[#87DE81]" />จริง</span>
+                <span className="text-[13px] font-semibold text-[#000000] flex items-center gap-2">
+                  <span className="w-1 h-4 rounded-full bg-[#04D600] inline-block" />
+                  Sales Pace vs Target
+                </span>
+                <div className="flex items-center gap-4 text-[11px] text-[#646768]">
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-5 h-0 border-t-2 border-dashed border-[#022EE8]" />เป้า</span>
+                  <span className="flex items-center gap-1.5"><span className="inline-block w-5 h-0.5 bg-[#04D600]" />จริง</span>
                   <span className="flex items-center gap-1.5"><span className="inline-block w-5 h-0 border-t-2 border-dotted border-[#FFBA49]" />Forecast</span>
                 </div>
               </div>
@@ -350,32 +390,41 @@ export default async function WarRoomPage() {
                 <svg viewBox={`0 0 ${pace.W} ${pace.H}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
                   {pace.yLabels.map((y, i) => (
                     <g key={i}>
-                      <line x1={pace.pL} y1={y.y.toFixed(1)} x2={pace.W - pace.pR} y2={y.y.toFixed(1)} stroke="#252836" strokeWidth="0.8" />
-                      <text x={pace.pL - 4} y={y.y + 3} textAnchor="end" fontSize="9" fill="#60677A">
-                        {fmtK(y.val)}
+                      <line x1={pace.pL} y1={y.y.toFixed(1)} x2={pace.W - pace.pR} y2={y.y.toFixed(1)} stroke="#7A7A7A" strokeWidth="0.8" />
+                      <text x={pace.pL - 4} y={y.y + 3} textAnchor="end" fontSize="9" fill="#858889">
+                        {fmtCompact(y.val)}
                       </text>
                     </g>
                   ))}
                   {pace.xLabels.map((x, i) => (
-                    <text key={i} x={x.x.toFixed(1)} y={pace.H - 6} textAnchor="middle" fontSize="9" fill="#60677A">{x.label}</text>
+                    <text key={i} x={x.x.toFixed(1)} y={pace.H - 6} textAnchor="middle" fontSize="9" fill="#858889">{x.label}</text>
                   ))}
-                  <polyline points={pace.pacePoints} fill="none" stroke="#58CEE8" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.7" />
+                  <polyline points={pace.pacePoints} fill="none" stroke="#022EE8" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.7" />
                   {pace.forecastPoints && (
                     <polyline points={pace.forecastPoints} fill="none" stroke="#FFBA49" strokeWidth="1.5" strokeDasharray="3 2" />
                   )}
                   {pace.actualPoints && (
                     <>
-                      <polyline points={pace.actualPoints} fill="none" stroke="#87DE81" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <polyline points={pace.actualPoints} fill="none" stroke="#04D600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       <polygon
                         points={`${pace.pL},${pace.pT + pace.cH} ${pace.actualPoints} ${pace.pL + ((Math.min(thaiHour, pace.WORK_END) - pace.WORK_START) / (pace.WORK_END - pace.WORK_START)) * pace.cW},${pace.pT + pace.cH}`}
-                        fill="#87DE81" opacity="0.1"
+                        fill="#04D600" opacity="0.1"
                       />
                     </>
                   )}
                   {pace.curX !== null && pace.curY !== null && (
                     <>
-                      <line x1={pace.curX.toFixed(1)} y1={pace.pT} x2={pace.curX.toFixed(1)} y2={pace.pT + pace.cH} stroke="#F0F2F5" strokeWidth="1" strokeDasharray="2 2" opacity="0.2" />
-                      <circle cx={pace.curX.toFixed(1)} cy={pace.curY.toFixed(1)} r="4" fill="#87DE81" stroke="#0F1117" strokeWidth="1.5" />
+                      <line x1={pace.curX.toFixed(1)} y1={pace.pT} x2={pace.curX.toFixed(1)} y2={pace.pT + pace.cH} stroke="#000000" strokeWidth="1" strokeDasharray="3 3" opacity="0.35" />
+                      <circle cx={pace.curX.toFixed(1)} cy={pace.curY.toFixed(1)} r="5" fill="#04D600" stroke="#FFFFFF" strokeWidth="2" />
+                      <text
+                        x={Math.min(Number(pace.curX.toFixed(1)) + 6, pace.W - pace.pR - 28)}
+                        y={(Number(pace.curY.toFixed(1)) - 8).toFixed(1)}
+                        fontSize="9.5"
+                        fill="#04D600"
+                        fontWeight="bold"
+                      >
+                        ฿{fmtCompact(pace.currentCum)}
+                      </text>
                     </>
                   )}
                 </svg>
@@ -395,17 +444,20 @@ export default async function WarRoomPage() {
           <div className="flex-none h-[28vh] grid grid-cols-2 gap-1.5">
 
             {/* Team Funnel */}
-            <div className="bg-[#1A1D27] border border-[#252836] rounded-xl p-3 flex flex-col overflow-hidden">
-              <span className="text-[12px] font-semibold text-[#F0F2F5] mb-2.5 flex-none">Team Funnel (วันนี้)</span>
+            <div className="bg-[#FFFFFF] border border-[#7A7A7A] rounded-xl p-3 flex flex-col overflow-hidden">
+              <span className="text-[12px] font-semibold text-[#000000] mb-2.5 flex-none flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-[#022EE8] inline-block" />
+                Team Funnel (วันนี้)
+              </span>
               <div className="flex-1 flex flex-col justify-center gap-1.5 overflow-hidden">
                 {funnelSteps.map((step, i) => {
                   const pct = funnelMax > 0 ? (step.count / funnelMax) * 100 : 0;
-                  const colors = ["#58CEE8", "#FFBA49", "#FF6B6B", "#87DE81", "#60677A"];
+                  const colors = ["#022EE8", "#FFBA49", "#BD0404", "#04D600", "#5C5E60"];
                   return (
                     <div key={step.key}>
                       <div className="flex justify-between mb-0.5">
-                        <span className="text-[11px] text-[#9099A8]">{step.label}</span>
-                        <span className="text-[11px] font-semibold text-[#F0F2F5]">{step.count}</span>
+                        <span className="text-[11px] text-[#646768]">{step.label}</span>
+                        <span className="text-[11px] font-semibold text-[#000000]">{step.count}</span>
                       </div>
                       <AnimatedBar pct={pct} color={colors[i]} delay={0.3 + i * 0.1} />
                     </div>
@@ -429,19 +481,20 @@ export default async function WarRoomPage() {
             topAov={top3Aov}
             topProduct={top3Product}
             topFollowUp={top3FollowUp}
+            topTalkTime={top3TalkTime}
           />
 
           {/* AI Command Summary */}
-          <div className="flex-none bg-gradient-to-br from-[#87DE81]/10 to-[#58CEE8]/10 border border-[#87DE81]/20 rounded-xl p-3">
+          <div className="flex-none bg-gradient-to-br from-[#04D600]/10 to-[#022EE8]/10 border border-[#04D600]/20 rounded-xl p-3">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#87DE81] to-[#58CEE8] flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#04D600] to-[#022EE8] flex items-center justify-center shrink-0">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
               </div>
-              <span className="text-[12px] font-semibold text-[#F0F2F5]">AI Command</span>
+              <span className="text-[12px] font-semibold text-[#000000]">AI Command</span>
             </div>
-            <p className="text-[12px] text-[#D0D4DC] leading-relaxed overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{aiSummary}</p>
+            <p className="text-[12px] text-[#5A5D5E] leading-relaxed overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{aiSummary}</p>
           </div>
 
         </div>
@@ -461,53 +514,69 @@ function ScoreCard({ label, value, rawValue, sub, accent, big, hero }: {
   big?: boolean; hero?: boolean;
 }) {
   const valColor = {
-    green: "text-[#87DE81]",
-    cyan: "text-[#58CEE8]",
-    red: "text-[#FF6B6B]",
+    green: "text-[#04D600]",
+    cyan: "text-[#022EE8]",
+    red: "text-[#BD0404]",
     yellow: "text-[#FFBA49]",
-    default: "text-[#F0F2F5]",
+    default: "text-[#000000]",
   }[accent];
   const dotColor = {
-    green: "bg-[#87DE81]",
-    cyan: "bg-[#58CEE8]",
-    red: "bg-[#FF6B6B]",
+    green: "bg-[#04D600]",
+    cyan: "bg-[#022EE8]",
+    red: "bg-[#BD0404]",
     yellow: "bg-[#FFBA49]",
-    default: "bg-[#404050]",
+    default: "bg-[#6B6D6F]",
   }[accent];
   const borderAccent = hero ? {
-    green: "border-[#87DE81]/50",
-    cyan: "border-[#58CEE8]/50",
-    red: "border-[#FF6B6B]/50",
+    green: "border-[#04D600]/50",
+    cyan: "border-[#022EE8]/50",
+    red: "border-[#BD0404]/50",
     yellow: "border-[#FFBA49]/50",
-    default: "border-[#252836]",
-  }[accent] : "border-[#252836]";
+    default: "border-[#7A7A7A]",
+  }[accent] : "border-[#7A7A7A]";
+
+  const accentBar = {
+    green: "bg-[#04D600]",
+    cyan: "bg-[#022EE8]",
+    red: "bg-[#BD0404]",
+    yellow: "bg-[#FFBA49]",
+    default: "bg-[#6B6D6F]",
+  }[accent];
+
+  const bgGlow = {
+    green: "from-[#04D600]/10",
+    cyan: "from-[#022EE8]/10",
+    red: "from-[#BD0404]/10",
+    yellow: "from-[#FFBA49]/10",
+    default: "from-transparent",
+  }[accent];
 
   if (hero) {
     return (
-      <div className={`col-span-2 bg-[#1A1D27] border-2 ${borderAccent} rounded-xl px-5 py-2 flex flex-col justify-center relative overflow-hidden`}>
-        <div className={`absolute inset-0 opacity-5 ${accent === "green" ? "bg-[#87DE81]" : accent === "cyan" ? "bg-[#58CEE8]" : "bg-transparent"}`} />
+      <div className={`col-span-2 bg-gradient-to-b ${bgGlow} to-[#FFFFFF] border-2 ${borderAccent} rounded-xl px-5 py-2 flex flex-col justify-center relative overflow-hidden`}>
         <div className="relative flex items-center gap-3">
           <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
-          <span className="text-[11px] text-[#9099A8] uppercase tracking-widest font-semibold">{label}</span>
+          <span className="text-[11px] text-[#646768] uppercase tracking-widest font-semibold">{label}</span>
         </div>
         <div className={`relative font-black leading-none text-[38px] tracking-tight mt-1 ${valColor}`}>
           {rawValue !== undefined
             ? <CountUpValue value={rawValue} prefix="฿" className={valColor} />
             : value}
         </div>
-        <div className="relative text-[11px] text-[#9099A8] mt-1">{sub}</div>
+        <div className="relative text-[11px] text-[#646768] mt-1">{sub}</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#1A1D27] border border-[#252836] rounded-xl px-3 py-2 flex flex-col justify-center">
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-        <span className="text-[10px] text-[#9099A8] uppercase tracking-wide truncate">{label}</span>
+    <div className={`relative bg-gradient-to-b ${bgGlow} to-[#FFFFFF] border border-[#7A7A7A] rounded-xl px-3 py-2 flex flex-col justify-center overflow-hidden`}>
+      {/* Colored top accent bar */}
+      <div className={`absolute top-0 left-0 right-0 h-[3px] ${accentBar} rounded-t-xl`} />
+      <div className="flex items-center gap-1.5 mb-0.5 mt-1">
+        <span className="text-[10px] text-[#646768] uppercase tracking-wide truncate">{label}</span>
       </div>
-      <div className={`font-bold leading-none ${big ? "text-[22px]" : "text-[18px]"} ${valColor}`}>{value}</div>
-      <div className="text-[10px] text-[#60677A] mt-0.5 truncate">{sub}</div>
+      <div className={`font-black leading-none ${big ? "text-[24px]" : "text-[20px]"} ${valColor}`}>{value}</div>
+      <div className="text-[10px] text-[#858889] mt-0.5 truncate">{sub}</div>
     </div>
   );
 }

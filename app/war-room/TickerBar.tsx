@@ -8,15 +8,15 @@ type TickerItem = {
 };
 
 const DOT: Record<TickerItem["level"], string> = {
-  red: "bg-[#FF6B6B]",
+  red: "bg-[#BD0404]",
   yellow: "bg-[#FFBA49]",
-  green: "bg-[#87DE81]",
+  green: "bg-[#04D600]",
 };
 
 const TEXT: Record<TickerItem["level"], string> = {
-  red: "text-[#FF6B6B]",
+  red: "text-[#BD0404]",
   yellow: "text-[#FFBA49]",
-  green: "text-[#87DE81]",
+  green: "text-[#04D600]",
 };
 
 export default function TickerBar({ items }: { items: TickerItem[] }) {
@@ -34,10 +34,10 @@ export default function TickerBar({ items }: { items: TickerItem[] }) {
   }, [items]);
 
   return (
-    <div className="flex-none bg-[#1A1D27] border-t border-[#252836] h-9 flex items-center overflow-hidden">
-      <div className="flex-none flex items-center gap-2 px-4 border-r border-[#252836] h-full shrink-0">
-        <span className="w-2 h-2 rounded-full bg-[#87DE81] animate-pulse" />
-        <span className="text-[11px] font-bold text-[#9099A8] uppercase tracking-widest whitespace-nowrap">
+    <div className="flex-none bg-[#FFFFFF] border-t border-[#7A7A7A] h-9 flex items-center overflow-hidden">
+      <div className="flex-none flex items-center gap-2 px-4 border-r border-[#7A7A7A] h-full shrink-0">
+        <span className="w-2 h-2 rounded-full bg-[#04D600] animate-pulse" />
+        <span className="text-[11px] font-bold text-[#646768] uppercase tracking-widest whitespace-nowrap">
           Live Alerts
         </span>
       </div>
@@ -52,7 +52,7 @@ export default function TickerBar({ items }: { items: TickerItem[] }) {
             <span key={i} className="inline-flex items-center gap-2 px-6">
               <span className={`w-2 h-2 rounded-full shrink-0 ${DOT[item.level]}`} />
               <span className={`text-[12px] font-semibold ${TEXT[item.level]}`}>{item.text}</span>
-              <span className="text-[#404050] mx-2">|</span>
+              <span className="text-[#5C5E60] mx-2">|</span>
             </span>
           ))}
         </div>

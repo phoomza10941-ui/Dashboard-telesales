@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState, useRef, useTransition } from "react";
+import { updateNickname, updateAvatarUrl } from "@/app/actions/profile";
 
 const navItems = [
   {
@@ -10,6 +12,15 @@ const navItems = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/supervisor/talk-time",
+    label: "Talk Time",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
       </svg>
     ),
   },
@@ -120,13 +131,58 @@ const navItems = [
   },
 ];
 
-export default function SupervisorNav() {
+interface SupervisorNavProps {
+  fullName?: string;
+  avatarUrl?: string;
+  nickname?: string;
+}
+
+export default function SupervisorNav({ fullName = "Supervisor", avatarUrl = "", nickname = "" }: SupervisorNavProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(avatarUrl);
+  const [nicknameVal, setNicknameVal] = useState(nickname);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const initials = fullName.split(" ").slice(0, 2).map((w) => w.charAt(0)).join("") || "S";
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPreviewUrl(URL.createObjectURL(file));
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/profile/avatar", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) {
+        setPreviewUrl(data.url);
+        startTransition(() => { updateAvatarUrl(data.url); });
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleSaveNickname() {
+    setSaving(true);
+    try {
+      await updateNickname(nicknameVal);
+    } finally {
+      setSaving(false);
+      setProfileOpen(false);
+      router.refresh();
+    }
+  }
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/auth/login");
+    router.push("/login");
     router.refresh();
   }
 
@@ -135,7 +191,7 @@ export default function SupervisorNav() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-[#E8E8E8]">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#58CEE8] flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-[#022EE8] flex items-center justify-center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
@@ -150,23 +206,86 @@ export default function SupervisorNav() {
         </div>
       </div>
 
-      {/* Role badge */}
-      <div className="px-5 py-3.5 border-b border-[#E8E8E8]">
+      {/* Profile — clickable to edit */}
+      <button
+        onClick={() => setProfileOpen((v) => !v)}
+        className="px-5 py-3.5 border-b border-[#E8E8E8] text-left hover:bg-[#F7F7F7] transition-colors group w-full"
+      >
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#58CEE8]/20 flex items-center justify-center shrink-0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58CEE8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
+          <div className="relative shrink-0">
+            {previewUrl ? (
+              <img src={previewUrl} alt={fullName} className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#022EE8]/20 flex items-center justify-center text-[#022EE8] text-xs font-bold">
+                {initials}
+              </div>
+            )}
+            <span className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <svg className="opacity-0 group-hover:opacity-70 transition-opacity" width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </span>
           </div>
-          <div className="min-w-0">
-            <div className="text-[12px] font-medium text-[#3D3D3D] truncate">หัวหน้าทีม</div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[12px] font-medium text-[#3D3D3D] truncate">{fullName}</div>
             <div className="text-[10px] text-[#8B8E8F] truncate">Supervisor View</div>
           </div>
+          <svg
+            className={`shrink-0 text-[#8B8E8F] transition-transform ${profileOpen ? "rotate-180" : ""}`}
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
-      </div>
+      </button>
+
+      {/* Profile panel */}
+      {profileOpen && (
+        <div className="border-b border-[#E8E8E8] bg-[#F7F7F7] px-5 py-4 space-y-3">
+          <div className="flex flex-col items-center gap-2">
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="relative group">
+              {previewUrl ? (
+                <img src={previewUrl} alt={fullName} className="w-14 h-14 rounded-full object-cover ring-2 ring-[#E8E8E8]" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-[#022EE8]/20 flex items-center justify-center text-[#022EE8] text-lg font-bold ring-2 ring-[#E8E8E8]">
+                  {initials}
+                </div>
+              )}
+              <span className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                {uploading ? (
+                  <svg className="animate-spin text-white" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeOpacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" />
+                  </svg>
+                ) : (
+                  <svg className="opacity-0 group-hover:opacity-100 transition-opacity text-white" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
+                  </svg>
+                )}
+              </span>
+            </button>
+            <span className="text-[10px] text-[#8B8E8F]">คลิกเพื่อเปลี่ยนรูป</span>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-[#8B8E8F] font-medium uppercase tracking-wide">ชื่อที่แสดง</label>
+            <input
+              type="text"
+              value={nicknameVal}
+              onChange={(e) => setNicknameVal(e.target.value)}
+              className="w-full bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-[12px] text-[#3D3D3D] placeholder:text-[#C0C0C0] focus:outline-none focus:border-[#022EE8] transition-colors"
+              placeholder="ชื่อเล่น"
+            />
+          </div>
+          <button
+            onClick={handleSaveNickname}
+            disabled={saving || !nicknameVal.trim()}
+            className="w-full bg-[#022EE8] hover:bg-[#0124c7] disabled:opacity-50 text-white text-[12px] font-medium py-2 rounded-lg transition-colors"
+          >
+            {saving ? "กำลังบันทึก…" : "บันทึก"}
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto">
@@ -178,14 +297,14 @@ export default function SupervisorNav() {
               href={item.href}
               className={`relative flex items-center gap-3 px-5 py-2.5 text-[12px] transition-colors group ${
                 isActive
-                  ? "text-[#3D3D3D] bg-[#58CEE8]/8 font-medium"
+                  ? "text-[#3D3D3D] bg-[#022EE8]/8 font-medium"
                   : "text-[#8B8E8F] hover:text-[#3D3D3D] hover:bg-[#F7F7F7]"
               }`}
             >
               {isActive && (
-                <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full bg-[#58CEE8]" />
+                <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full bg-[#022EE8]" />
               )}
-              <span className={isActive ? "text-[#58CEE8]" : "text-[#8B8E8F] group-hover:text-[#3D3D3D] transition-colors"}>
+              <span className={isActive ? "text-[#022EE8]" : "text-[#8B8E8F] group-hover:text-[#3D3D3D] transition-colors"}>
                 {item.icon}
               </span>
               <span className="leading-tight">{item.label}</span>

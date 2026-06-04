@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { AgentData } from "@/lib/db";
+import { fmtBahtCompact, fmtBaht } from "@/lib/format";
 
 type Period = "Today" | "7 Days" | "28 Days" | "All";
 const periods: Period[] = ["Today", "7 Days", "28 Days", "All"];
@@ -24,7 +25,20 @@ function matchesDate(dateStr: string, from: Date) {
   return rowDate >= from;
 }
 
-export default function PerformanceClient({ data, dailyTarget }: { data: AgentData | null; dailyTarget: number }) {
+function fmtDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+export default function PerformanceClient({
+  data, dailyTarget, talkSeconds = 0, talkCalls = 0, hasOrekaExt = false,
+}: {
+  data: AgentData | null; dailyTarget: number;
+  talkSeconds?: number; talkCalls?: number; hasOrekaExt?: boolean;
+}) {
   const [period, setPeriod] = useState<Period>("28 Days");
 
   const rows = data?.rows ?? [];
@@ -37,7 +51,7 @@ export default function PerformanceClient({ data, dailyTarget }: { data: AgentDa
     return true;
   });
 
-  const totalSales      = filtered.reduce((s, r) => s + r.phoneClose + r.upsell + r.crm, 0);
+  const totalSales      = filtered.reduce((s, r) => s + r.phoneClose + r.upsell + r.crm + r.hopefulPhoneClose + r.hopefulCrm + r.hopefulUpsell, 0);
   const totalPhoneClose = filtered.reduce((s, r) => s + r.phoneClose, 0);
   const totalUpsell     = filtered.reduce((s, r) => s + r.upsell, 0);
   const totalCrm        = filtered.reduce((s, r) => s + r.crm, 0);
@@ -50,7 +64,7 @@ export default function PerformanceClient({ data, dailyTarget }: { data: AgentDa
   const trendMap = new Map<string, number>();
   rows.forEach((r) => {
     const key = r.date;
-    trendMap.set(key, (trendMap.get(key) ?? 0) + r.phoneClose + r.upsell + r.crm);
+    trendMap.set(key, (trendMap.get(key) ?? 0) + r.phoneClose + r.upsell + r.crm + r.hopefulPhoneClose + r.hopefulCrm + r.hopefulUpsell);
   });
 
   const trend: number[] = [];
@@ -93,12 +107,55 @@ export default function PerformanceClient({ data, dailyTarget }: { data: AgentDa
 
       {/* KPI cards */}
       <div className="grid grid-cols-5 gap-4">
-        <MetricCard label="ยอดขาย"    value={`฿${(totalSales/1000).toFixed(1)}K`} />
+        <MetricCard label="ยอดขาย"    value={fmtBahtCompact(totalSales)} />
         <MetricCard label="Orders"     value={`${orders}`} />
         <MetricCard label="% ถึงเป้า"  value={`${pct}%`} accent={pct>=100?"green":pct>=70?"neutral":"red"} />
-        <MetricCard label="ปิดจากเบอร์" value={`฿${(totalPhoneClose/1000).toFixed(1)}K`} />
-        <MetricCard label="Upsell"     value={`฿${(totalUpsell/1000).toFixed(1)}K`} />
-        <MetricCard label="CRM"        value={`฿${(totalCrm/1000).toFixed(1)}K`} />
+        <MetricCard label="ปิดจากเบอร์" value={fmtBahtCompact(totalPhoneClose)} />
+        <MetricCard label="Upsell"     value={fmtBahtCompact(totalUpsell)} />
+        <MetricCard label="CRM"        value={fmtBahtCompact(totalCrm)} />
+      </div>
+
+      {/* Talk Time card (today only) */}
+      <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58CEE8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.72a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+          </svg>
+          <h3 className="text-[13px] font-semibold text-[#3D3D3D]">Talk Time วันนี้</h3>
+          <span className="text-[10px] text-[#8B8E8F] ml-auto">dtac OneCall</span>
+        </div>
+        {!hasOrekaExt ? (
+          <div className="flex items-center gap-3 bg-[#F7F7F7] rounded-lg px-4 py-3">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C0C0C0" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p className="text-[12px] text-[#8B8E8F]">ยังไม่ได้เลือกเบอร์ dtac — คลิกชื่อของคุณด้านซ้ายเพื่อตั้งค่า</p>
+          </div>
+        ) : talkSeconds === 0 ? (
+          <div className="flex items-center gap-3 bg-[#F7F7F7] rounded-lg px-4 py-3">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C0C0C0" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+            </svg>
+            <p className="text-[12px] text-[#8B8E8F]">ยังไม่มีสายวันนี้ หรือระบบยังไม่อัปเดต</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-[28px] font-black text-[#58CEE8] leading-none">{fmtDuration(talkSeconds)}</div>
+              <div className="text-[10px] text-[#8B8E8F] mt-1">เวลาคุยรวม</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[28px] font-black text-[#3D3D3D] leading-none">{talkCalls}</div>
+              <div className="text-[10px] text-[#8B8E8F] mt-1">สายทั้งหมด</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[28px] font-black text-[#3D3D3D] leading-none">
+                {talkCalls > 0 ? fmtDuration(Math.round(talkSeconds / talkCalls)) : "—"}
+              </div>
+              <div className="text-[10px] text-[#8B8E8F] mt-1">เฉลี่ยต่อสาย</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}
@@ -110,12 +167,12 @@ export default function PerformanceClient({ data, dailyTarget }: { data: AgentDa
         <div className="w-full h-3 bg-[#E8E8E8] rounded-full overflow-hidden">
           <div className="h-full rounded-full transition-all duration-700" style={{
             width: `${Math.min(pct,100)}%`,
-            background: pct>=100?"#87DE81":pct>=70?"#58CEE8":"#F59E0B"
+            background: pct>=100?"#87DE81":pct>=70?"#022EE8":"#F59E0B"
           }} />
         </div>
         <div className="flex justify-between mt-1.5">
           <span className="text-[10px] text-[#8B8E8F]">฿0</span>
-          <span className="text-[10px] text-[#8B8E8F]">฿{(target/1000).toFixed(0)}K</span>
+          <span className="text-[10px] text-[#8B8E8F]">{fmtBahtCompact(target)}</span>
         </div>
       </div>
 
@@ -123,7 +180,7 @@ export default function PerformanceClient({ data, dailyTarget }: { data: AgentDa
       <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[13px] font-semibold text-[#3D3D3D]">Trend ยอดขาย 28 วันล่าสุด</h3>
-          <span className="text-[11px] text-[#8B8E8F]">สูงสุด ฿{maxVal.toLocaleString()}</span>
+          <span className="text-[11px] text-[#8B8E8F]">สูงสุด {fmtBaht(maxVal)}</span>
         </div>
         {maxVal <= 1 ? (
           <p className="text-[12px] text-[#8B8E8F] text-center py-4">ยังไม่มีข้อมูลเพียงพอ</p>
