@@ -1,6 +1,6 @@
 "use server";
 
-import { setDailyTarget, setAgentTarget, setAgentMonthlyTarget, setAgentOrekaExt, setOrekaLabel, setOrekaClosed, renameAgentNickname, getCurrentUser } from "@/lib/db";
+import { setDailyTarget, setAgentTarget, setAgentMonthlyTarget, setAgentOrekaExt, setOrekaLabel, setOrekaClosed, setOrekaTeamOverride, renameAgentNickname, getCurrentUser } from "@/lib/db";
 import { adminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
@@ -102,6 +102,15 @@ export async function toggleOrekaClosed(account: string, ext: string, closed: bo
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
   await setOrekaClosed(account, ext, closed, user.id);
+  revalidatePath("/supervisor/talk-time");
+}
+
+// Change a number's team in the talk-time dashboard (Gosell ↔ Hopeful).
+// account = null clears the override (back to the natural recording account).
+export async function setAgentTeam(ext: string, account: "gosell" | "hopeful" | null) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  await setOrekaTeamOverride(ext, account, user.id);
   revalidatePath("/supervisor/talk-time");
 }
 

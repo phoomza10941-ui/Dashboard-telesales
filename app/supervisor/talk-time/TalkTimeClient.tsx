@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { saveOrekaLabel, toggleOrekaClosed, renameAgent } from "@/app/actions/config";
+import { saveOrekaLabel, toggleOrekaClosed, renameAgent, setAgentTeam } from "@/app/actions/config";
 import type { AgentTalkTime, AccountId } from "@/lib/oreka";
 import { formatTalkTime } from "@/lib/oreka-format";
 import jsPDF from "jspdf";
@@ -188,6 +188,7 @@ export default function TalkTimeClient({
   currentMonthKey,
   initialLabels,
   initialClosed,
+  initialTeamOverrides,
 }: {
   agents: AgentTalkTime[];
   error: string | null;
@@ -195,6 +196,7 @@ export default function TalkTimeClient({
   currentMonthKey: string;
   initialLabels: Record<string, string>;
   initialClosed: string[];
+  initialTeamOverrides: Record<string, string>;
 }) {
   const [mode, setMode] = useState<ViewMode>("day");
   const [tab, setTab] = useState<Tab>("overall");
@@ -205,6 +207,7 @@ export default function TalkTimeClient({
   const [labels, setLabels] = useState(initialLabels);
   const [closed, setClosed] = useState<Set<string>>(() => new Set(initialClosed));
   const [showClosed, setShowClosed] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, string>>(initialTeamOverrides);
   const [loading, setLoading] = useState(false);
   const [pagesLoaded, setPagesLoaded] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -273,7 +276,31 @@ export default function TalkTimeClient({
       .catch(() => { setAgents(snapshot); alert("เปลี่ยนชื่อไม่สำเร็จ"); });
   }
 
-  const tabFiltered = tab === "overall" ? agents : agents.filter(a => a.account === tab);
+  // Effective account = team override (if any) else the natural recording account.
+  const eacc = (a: AgentTalkTime): AccountId => (overrides[a.orekaExt] as AccountId) ?? a.account;
+
+  // Toggle a number's team (Gosell ↔ Hopeful). Switching back to the natural
+  // account clears the override. Optimistic; reverts on failure.
+  function switchTeam(a: AgentTalkTime) {
+    const target: AccountId = eacc(a) === "gosell" ? "hopeful" : "gosell";
+    const next = target === a.account ? null : target; // back to natural → clear
+    const prevOverride = overrides[a.orekaExt];
+    setOverrides(prev => {
+      const n = { ...prev };
+      if (next) n[a.orekaExt] = next; else delete n[a.orekaExt];
+      return n;
+    });
+    setAgentTeam(a.orekaExt, next).catch(() => {
+      setOverrides(prev => {
+        const n = { ...prev };
+        if (prevOverride) n[a.orekaExt] = prevOverride; else delete n[a.orekaExt];
+        return n;
+      });
+      alert("เปลี่ยนทีมไม่สำเร็จ");
+    });
+  }
+
+  const tabFiltered = tab === "overall" ? agents : agents.filter(a => eacc(a) === tab);
   const activeTabFiltered = tabFiltered.filter(a => !closed.has(ckey(a)));
   const closedRows = tabFiltered.filter(a => closed.has(ckey(a))); // current tab, ignores search
   const searchQ = search.trim().toLowerCase();
@@ -292,7 +319,7 @@ export default function TalkTimeClient({
   const activeAgents = visible.filter(a => a.callCount > 0).length;
   const avgPerCall = teamCalls > 0 ? Math.round(teamSeconds / teamCalls) : 0;
   const maxSeconds = Math.max(...visible.map(a => a.totalSeconds), 1);
-  const countFor = (t: Tab) => (t === "overall" ? agents : agents.filter(a => a.account === t)).filter(a => !closed.has(ckey(a))).length;
+  const countFor = (t: Tab) => (t === "overall" ? agents : agents.filter(a => eacc(a) === t)).filter(a => !closed.has(ckey(a))).length;
   const periodLabel = mode === "day" ? (isToday ? "วันนี้" : displayDate(dateKey)) : (isCurrentMonth ? "เดือนนี้" : displayMonth(monthKey));
 
   function exportPDF() {
@@ -321,7 +348,7 @@ export default function TalkTimeClient({
       return [
         i + 1,
         displayName,
-        a.accountLabel,
+        eacc(a) === "gosell" ? "Gosell" : "Hopeful",
         a.orekaExt,
         formatTalkTime(a.totalSeconds),
         a.callCount,
@@ -512,7 +539,10 @@ export default function TalkTimeClient({
                   const displayName = a.nickname ?? (customLabel || a.orekaName || a.orekaExt);
                   const avg = a.callCount > 0 ? Math.round(a.totalSeconds / a.callCount) : 0;
                   const barPct = Math.round((a.totalSeconds / maxSeconds) * 100);
-                  const theme = a.account === "gosell"
+                  const acc = eacc(a);
+                  const moved = !!overrides[a.orekaExt];
+                  const accLabel = acc === "gosell" ? "Gosell" : "Hopeful";
+                  const theme = acc === "gosell"
                     ? { row: "hover:bg-amber-50/40", avatar: "bg-amber-100 text-amber-700", bar: "bg-[#58CEE8]", badge: "bg-amber-50 text-amber-600 border border-amber-200" }
                     : { row: "hover:bg-purple-50/40", avatar: "bg-purple-100 text-purple-700", bar: "bg-purple-400", badge: "bg-purple-50 text-purple-600 border border-purple-200" };
 
@@ -533,7 +563,17 @@ export default function TalkTimeClient({
                         </div>
                       </td>
                       <td className="py-4 px-5">
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${theme.badge}`}>{a.accountLabel}</span>
+                        <button
+                          onClick={() => switchTeam(a)}
+                          title={`กดเพื่อสลับทีม (ตอนนี้ ${accLabel}${moved ? " · ย้ายแล้ว" : ""})`}
+                          className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium transition-shadow ${theme.badge} ${moved ? "ring-1 ring-[#58CEE8] ring-offset-1" : ""}`}
+                        >
+                          {accLabel}
+                          <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                          </svg>
+                        </button>
+                        {moved && <span className="ml-1 text-[9px] text-[#58CEE8] font-medium">ย้าย</span>}
                       </td>
                       <td className="py-4 px-5 text-[#8B8E8F] font-mono text-[12px]">{a.orekaExt}</td>
                       <td className="py-4 px-5">

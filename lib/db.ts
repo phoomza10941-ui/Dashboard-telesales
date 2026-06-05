@@ -330,6 +330,31 @@ export async function setOrekaClosed(account: string, ext: string, closed: boole
   }
 }
 
+// Team (account) overrides for talk-time: force a localParty's calls to count
+// under a chosen account regardless of which Oreka system recorded them.
+// Stored as team_config rows key = "oreka_team_<ext>", value = "gosell" | "hopeful".
+export async function getOrekaTeamOverrides(): Promise<Record<string, string>> {
+  const { data } = await adminClient
+    .from("team_config")
+    .select("key, value")
+    .like("key", "oreka_team_%");
+  const out: Record<string, string> = {};
+  for (const row of data ?? []) {
+    const ext = String(row.key).replace("oreka_team_", "");
+    if (ext && row.value) out[ext] = row.value;
+  }
+  return out;
+}
+
+export async function setOrekaTeamOverride(ext: string, account: string | null, userId: string): Promise<void> {
+  const key = `oreka_team_${ext}`;
+  if (account) {
+    await adminClient.from("team_config").upsert({ key, value: account, updated_by: userId });
+  } else {
+    await adminClient.from("team_config").delete().eq("key", key);
+  }
+}
+
 // Rename an agent by their current (unique) nickname. Updates profiles.nickname —
 // the name shown everywhere in the app. Fails if the new name is already taken.
 export async function renameAgentNickname(oldNickname: string, newName: string): Promise<{ ok: boolean; error?: string }> {

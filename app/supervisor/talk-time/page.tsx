@@ -1,6 +1,6 @@
 import { getTalkTimeByAgentSafe } from "@/lib/oreka";
 import { thaiTodayKey, thaiMonthKey } from "@/lib/oreka-format";
-import { getOrekaLabels, getClosedOrekaExts } from "@/lib/db";
+import { getOrekaLabels, getClosedOrekaExts, getOrekaTeamOverrides } from "@/lib/db";
 import TalkTimeClient from "./TalkTimeClient";
 
 export const dynamic = "force-dynamic";
@@ -8,10 +8,11 @@ export const dynamic = "force-dynamic";
 export default async function TalkTimePage() {
   const dateKey = thaiTodayKey();
   const monthKey = thaiMonthKey();
-  const [{ data: agents, error }, labels, closed] = await Promise.all([
+  const [{ data: agents, error }, labels, closed, teamOverrides] = await Promise.all([
     getTalkTimeByAgentSafe(),
     getOrekaLabels(),
     getClosedOrekaExts(),
+    getOrekaTeamOverrides(),
   ]);
   return (
     <TalkTimeClient
@@ -21,6 +22,7 @@ export default async function TalkTimePage() {
       currentMonthKey={monthKey}
       initialLabels={labels}
       initialClosed={closed}
+      initialTeamOverrides={teamOverrides}
     />
   );
 }
