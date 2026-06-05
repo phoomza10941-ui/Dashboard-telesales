@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { saveOrekaLabel } from "@/app/actions/config";
 import type { AgentTalkTime, AccountId } from "@/lib/oreka";
+import { formatTalkTime } from "@/lib/oreka-format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -16,13 +17,6 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 const THAI_MONTHS = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-
-function formatTalkTime(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
-}
 
 function displayDate(k: string) {
   const [y, m, d] = k.split("-").map(Number);

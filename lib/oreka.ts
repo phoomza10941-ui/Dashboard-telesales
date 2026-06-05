@@ -2,6 +2,16 @@
 // Server-side talk-time fetch for the /supervisor page.
 // See docs/plans/2026-06-02-oreka-talktime-supervisor-design.md
 import { adminClient } from "./supabase/admin";
+import {
+  thaiTodayKey,
+  thaiMonthKey,
+  thaiDateRangeUtc,
+  thaiMonthRangeUtc,
+  formatTalkTime,
+} from "./oreka-format";
+
+// Re-export pure helpers so existing `@/lib/oreka` import sites keep working.
+export { formatTalkTime, thaiDateRangeUtc, thaiMonthRangeUtc };
 
 const BASE = process.env.OREKA_BASE_URL ?? "";
 
@@ -74,27 +84,8 @@ async function getToken(acct: Account): Promise<string> {
   return tokenByAccount.get(acct.id) ?? (await login(acct));
 }
 
-// --- date helpers (Thai UTC+7 -> Oreka UTC startdate) ---
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function toOrekaStamp(d: Date): string {
-  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`;
-}
-
-// Thai-today key (YYYY-MM-DD) for cache bucketing
-function thaiTodayKey(now = new Date()): string {
-  const thai = new Date(now.getTime() + 7 * 3600_000);
-  return `${thai.getUTCFullYear()}-${pad(thai.getUTCMonth() + 1)}-${pad(thai.getUTCDate())}`;
-}
-
-// Start of Thai today expressed as an Oreka UTC startdate string
-function thaiTodayStartUtc(now = new Date()): string {
-  const key = thaiTodayKey(now); // "YYYY-MM-DD"
-  const thaiMidnightUtcMs = new Date(`${key}T00:00:00Z`).getTime() - 7 * 3600_000;
-  return toOrekaStamp(new Date(thaiMidnightUtcMs));
-}
+// Date/format helpers (Thai UTC+7 -> Oreka UTC startdate) live in ./oreka-format
+// so they can be shared with client components without pulling in the admin client.
 
 // --- fetch recordings for a date range for one account (paginated) ---
 async function fetchRecordingsRange(startUtc: string, endUtc: string, acct: Account): Promise<OrekaRecording[]> {
@@ -203,10 +194,7 @@ export async function streamTalkTimeForRange(
   let pagesLoaded = 0;
 
   function snapshot(): AgentTalkTime[] {
-    return [...aggByAccount.values()]
-      .flatMap((m) => [...m.values()])
-      .map((e) => ({ ...e, nickname: resolveNickname(e, extMaps) }))
-      .sort((a, b) => b.totalSeconds - a.totalSeconds);
+    return buildResult(aggByAccount.values(), extMaps);
   }
 
   for (const acct of ACCOUNTS) {
@@ -245,62 +233,44 @@ function resolveNickname(
 }
 
 // --- aggregate talk time per agent for one account, matched to profiles.oreka_ext ---
+// Thin wrapper over aggregateInto for the non-streaming (batch) callers.
 function aggregate(recs: OrekaRecording[], acct: Account): Map<string, Omit<AgentTalkTime, "nickname">> {
   const map = new Map<string, Omit<AgentTalkTime, "nickname">>();
-  const seenIds = new Set<number>();
-  for (const r of recs) {
-    const ext = r.localParty;
-    if (!ext) continue;
-    if (seenIds.has(r.id)) continue;
-    seenIds.add(r.id);
-    const e =
-      map.get(ext) ??
-      {
-        account: acct.id,
-        accountLabel: acct.label,
-        orekaExt: ext,
-        orekaName: [r.userDto?.firstname, r.userDto?.lastname].filter(Boolean).join(" ").trim(),
-        totalSeconds: 0,
-        callCount: 0,
-        outCount: 0,
-        inCount: 0,
-      };
-    e.totalSeconds += Number(r.duration) || 0;
-    e.callCount += 1;
-    if (r.direction === "OUT") e.outCount += 1;
-    else if (r.direction === "IN") e.inCount += 1;
-    map.set(ext, e);
-  }
+  aggregateInto(recs, acct, map, new Set<number>());
   return map;
 }
 
-// Build startdate/enddate UTC stamps for a Thai-calendar date key ("YYYY-MM-DD")
-function thaiDateRangeUtc(dateKey: string): { startUtc: string; endUtc: string } {
-  const thaiMidnightUtcMs = new Date(`${dateKey}T00:00:00Z`).getTime() - 7 * 3600_000;
-  const thaiEndUtcMs = thaiMidnightUtcMs + 24 * 3600_000;
-  return {
-    startUtc: toOrekaStamp(new Date(thaiMidnightUtcMs)),
-    endUtc: toOrekaStamp(new Date(thaiEndUtcMs)),
-  };
+// Flatten per-account aggregation maps into the sorted, nickname-resolved result list.
+function buildResult(
+  maps: Iterable<Map<string, Omit<AgentTalkTime, "nickname">>>,
+  extMaps: { gosell: Map<string, string>; hopeful: Map<string, string> },
+): AgentTalkTime[] {
+  return [...maps]
+    .flatMap((m) => [...m.values()])
+    .map((e) => ({ ...e, nickname: resolveNickname(e, extMaps) }))
+    .sort((a, b) => b.totalSeconds - a.totalSeconds);
 }
 
-// Build startdate/enddate UTC stamps for a Thai-calendar month key ("YYYY-MM")
-function thaiMonthRangeUtc(monthKey: string): { startUtc: string; endUtc: string } {
-  const [y, m] = monthKey.split("-").map(Number);
-  // Thai midnight of first day of month
-  const startMs = new Date(`${monthKey}-01T00:00:00Z`).getTime() - 7 * 3600_000;
-  // Thai midnight of first day of next month
-  const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-  const endMs = new Date(`${nextMonth}-01T00:00:00Z`).getTime() - 7 * 3600_000;
-  return {
-    startUtc: toOrekaStamp(new Date(startMs)),
-    endUtc: toOrekaStamp(new Date(endMs)),
-  };
-}
+// Fetch + aggregate every account for a UTC range, then resolve nicknames.
+// Throws only if ALL accounts fail; a single account failure is logged and skipped.
+async function fetchAndAggregate(startUtc: string, endUtc: string): Promise<AgentTalkTime[]> {
+  if (ACCOUNTS.length === 0) throw new Error("No Oreka accounts configured");
 
-function thaiMonthKey(now = new Date()): string {
-  const thai = new Date(now.getTime() + 7 * 3600_000);
-  return `${thai.getUTCFullYear()}-${pad(thai.getUTCMonth() + 1)}`;
+  let failures = 0;
+  const perAccount = await Promise.all(
+    ACCOUNTS.map(async (acct) => {
+      try {
+        return aggregate(await fetchRecordingsRange(startUtc, endUtc, acct), acct);
+      } catch (e) {
+        failures++;
+        console.error(`[oreka] account "${acct.id}" fetch failed:`, e);
+        return new Map<string, Omit<AgentTalkTime, "nickname">>();
+      }
+    }),
+  );
+  if (failures === ACCOUNTS.length) throw new Error("All Oreka accounts failed to fetch");
+
+  return buildResult(perAccount, await fetchExtMaps());
 }
 
 // --- public API with TTL cache (keyed by date) ---
@@ -317,30 +287,8 @@ async function fetchTalkTimeForDate(dateKey: string): Promise<AgentTalkTime[]> {
   const ttl = isToday ? TALK_TIME_TTL_MS : 5 * 60_000; // past days: 5 min cache
   if (cached && Date.now() - cached.at < ttl) return cached.data;
 
-  if (ACCOUNTS.length === 0) throw new Error("No Oreka accounts configured (OREKA_USER / OREKA_HOPEFUL_USER)");
-
   const { startUtc, endUtc } = thaiDateRangeUtc(dateKey);
-
-  let failures = 0;
-  const perAccount = await Promise.all(
-    ACCOUNTS.map(async (acct) => {
-      try {
-        return aggregate(await fetchRecordingsRange(startUtc, endUtc, acct), acct);
-      } catch (e) {
-        failures++;
-        console.error(`[oreka] account "${acct.id}" fetch failed:`, e);
-        return new Map<string, Omit<AgentTalkTime, "nickname">>();
-      }
-    }),
-  );
-  if (failures === ACCOUNTS.length) throw new Error("All Oreka accounts failed to fetch");
-
-  const extMaps = await fetchExtMaps();
-
-  const result: AgentTalkTime[] = perAccount
-    .flatMap((agg) => [...agg.values()])
-    .map((e) => ({ ...e, nickname: resolveNickname(e, extMaps) }))
-    .sort((a, b) => b.totalSeconds - a.totalSeconds);
+  const result = await fetchAndAggregate(startUtc, endUtc);
 
   cacheByDate.set(dateKey, { at: Date.now(), data: result });
   return result;
@@ -378,30 +326,8 @@ export async function getTalkTimeByMonthSafe(monthKey: string): Promise<{ data: 
     const ttl = isCurrentMonth ? TALK_TIME_TTL_MS : 10 * 60_000; // current month: 90s, past months: 10 min
     if (cached && Date.now() - cached.at < ttl) return { data: cached.data, error: null };
 
-    if (ACCOUNTS.length === 0) throw new Error("No Oreka accounts configured");
-
     const { startUtc, endUtc } = thaiMonthRangeUtc(monthKey);
-
-    let failures = 0;
-    const perAccount = await Promise.all(
-      ACCOUNTS.map(async (acct) => {
-        try {
-          return aggregate(await fetchRecordingsRange(startUtc, endUtc, acct), acct);
-        } catch (e) {
-          failures++;
-          console.error(`[oreka] account "${acct.id}" month fetch failed:`, e);
-          return new Map<string, Omit<AgentTalkTime, "nickname">>();
-        }
-      }),
-    );
-    if (failures === ACCOUNTS.length) throw new Error("All Oreka accounts failed to fetch");
-
-    const extMaps = await fetchExtMaps();
-
-    const result: AgentTalkTime[] = perAccount
-      .flatMap((agg) => [...agg.values()])
-      .map((e) => ({ ...e, nickname: resolveNickname(e, extMaps) }))
-      .sort((a, b) => b.totalSeconds - a.totalSeconds);
+    const result = await fetchAndAggregate(startUtc, endUtc);
 
     cacheByDate.set(`month:${monthKey}`, { at: Date.now(), data: result });
     return { data: result, error: null };
@@ -409,14 +335,4 @@ export async function getTalkTimeByMonthSafe(monthKey: string): Promise<{ data: 
     console.error("[oreka] getTalkTimeByMonthSafe failed:", e);
     return { data: [], error: e instanceof Error ? e.message : "unknown error" };
   }
-}
-
-// Format seconds -> "H:MM:SS" or "M:SS"
-export function formatTalkTime(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) return `${h}:${pad(m)}:${pad(sec)}`;
-  return `${m}:${pad(sec)}`;
 }

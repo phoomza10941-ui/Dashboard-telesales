@@ -1,28 +1,10 @@
 import { NextRequest } from "next/server";
 import { streamTalkTimeForRange } from "@/lib/oreka";
+import { thaiDateRangeUtc, thaiMonthRangeUtc } from "@/lib/oreka-format";
 import { getOrekaLabels } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-
-function thaiDateRangeUtc(dateKey: string) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const toStamp = (d: Date) =>
-    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`;
-  const startMs = new Date(`${dateKey}T00:00:00Z`).getTime() - 7 * 3600_000;
-  return { startUtc: toStamp(new Date(startMs)), endUtc: toStamp(new Date(startMs + 24 * 3600_000)) };
-}
-
-function thaiMonthRangeUtc(monthKey: string) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const toStamp = (d: Date) =>
-    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`;
-  const [y, m] = monthKey.split("-").map(Number);
-  const startMs = new Date(`${monthKey}-01T00:00:00Z`).getTime() - 7 * 3600_000;
-  const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${pad(m + 1)}`;
-  const endMs = new Date(`${nextMonth}-01T00:00:00Z`).getTime() - 7 * 3600_000;
-  return { startUtc: toStamp(new Date(startMs)), endUtc: toStamp(new Date(endMs)) };
-}
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
