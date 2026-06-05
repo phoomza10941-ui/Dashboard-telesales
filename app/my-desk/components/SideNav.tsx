@@ -400,6 +400,17 @@ export default function SideNav({
               </div>
             )}
           </div>
+          {/* Link to full profile page */}
+          <Link
+            href="/my-desk/profile"
+            className="w-full flex items-center justify-center gap-1.5 border border-[#E8E8E8] bg-white hover:bg-[#F7F7F7] text-[11px] text-[#8B8E8F] hover:text-[#3D3D3D] py-2 rounded-lg transition-colors"
+            onClick={() => setProfileOpen(false)}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            เปลี่ยน Password
+          </Link>
         </div>
       )}
 
