@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { saveOrekaLabel, toggleOrekaClosed } from "@/app/actions/config";
+import { saveOrekaLabel, toggleOrekaClosed, renameAgent } from "@/app/actions/config";
 import type { AgentTalkTime, AccountId } from "@/lib/oreka";
 import { formatTalkTime } from "@/lib/oreka-format";
 import jsPDF from "jspdf";
@@ -123,6 +123,33 @@ function InlineLabel({ ext, initial, onSaved }: { ext: string; initial: string; 
   );
 }
 
+// ── Editable agent name — writes to the real account (profiles.nickname) ───────
+function EditableAgentName({ nickname, onRename }: { nickname: string; onRename: (newName: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(nickname);
+  const ref = useRef<HTMLInputElement>(null);
+
+  function startEdit() { setValue(nickname); setEditing(true); setTimeout(() => ref.current?.focus(), 0); }
+  function commit() { if (!editing) return; setEditing(false); onRename(value); }
+  function onKey(e: React.KeyboardEvent) {
+    if (e.key === "Enter") commit();
+    if (e.key === "Escape") { setValue(nickname); setEditing(false); }
+  }
+
+  if (editing)
+    return <input ref={ref} value={value} onChange={e => setValue(e.target.value)} onBlur={commit} onKeyDown={onKey}
+      className="w-32 bg-white border border-[#87DE81] rounded-lg px-2 py-1 text-[13px] text-[#3D3D3D] focus:outline-none" />;
+
+  return (
+    <button onClick={startEdit} title="แก้ชื่อ (เปลี่ยนทั้งระบบ)" className="flex items-center gap-1">
+      <span className="font-medium text-[#3D3D3D]">{nickname}</span>
+      <svg className="w-3 h-3 text-[#C0C0C0] opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+    </button>
+  );
+}
+
 // ── Skeleton rows ─────────────────────────────────────────────────────────────
 function SkeletonRows({ count = 8 }: { count?: number }) {
   return (
@@ -232,6 +259,18 @@ export default function TalkTimeClient({
     setClosed(prev => { const n = new Set(prev); n.delete(k); return n; });
     toggleOrekaClosed(a.account, a.orekaExt, false).catch(() =>
       setClosed(prev => new Set(prev).add(k)));
+  }
+
+  // Rename a matched agent → writes to the real account (profiles.nickname).
+  // Optimistically renames every row of that agent; reverts on failure.
+  function handleRename(oldNickname: string, newName: string) {
+    const next = newName.trim();
+    if (!next || next === oldNickname) return;
+    const snapshot = agents;
+    setAgents(list => list.map(a => a.nickname === oldNickname ? { ...a, nickname: next } : a));
+    renameAgent(oldNickname, next)
+      .then(res => { if (!res.ok) { setAgents(snapshot); alert(res.error ?? "เปลี่ยนชื่อไม่สำเร็จ"); } })
+      .catch(() => { setAgents(snapshot); alert("เปลี่ยนชื่อไม่สำเร็จ"); });
   }
 
   const tabFiltered = tab === "overall" ? agents : agents.filter(a => a.account === tab);
@@ -485,7 +524,9 @@ export default function TalkTimeClient({
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${isMatched || customLabel ? theme.avatar : "bg-[#F7F7F7] text-[#C0C0C0]"}`}>
                             {displayName.charAt(0).toUpperCase()}
                           </div>
-                          {isMatched ? <span className="font-medium text-[#3D3D3D]">{a.nickname}</span> : (
+                          {isMatched ? (
+                            <EditableAgentName nickname={a.nickname!} onRename={nn => handleRename(a.nickname!, nn)} />
+                          ) : (
                             <InlineLabel ext={a.orekaExt} initial={customLabel}
                               onSaved={label => setLabels(prev => ({ ...prev, [a.orekaExt]: label }))} />
                           )}

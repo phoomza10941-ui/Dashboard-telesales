@@ -330,6 +330,21 @@ export async function setOrekaClosed(account: string, ext: string, closed: boole
   }
 }
 
+// Rename an agent by their current (unique) nickname. Updates profiles.nickname —
+// the name shown everywhere in the app. Fails if the new name is already taken.
+export async function renameAgentNickname(oldNickname: string, newName: string): Promise<{ ok: boolean; error?: string }> {
+  const next = newName.trim();
+  if (!next) return { ok: false, error: "กรุณากรอกชื่อ" };
+  if (next === oldNickname) return { ok: true };
+
+  const { data: clash } = await adminClient.from("profiles").select("id").eq("nickname", next).maybeSingle();
+  if (clash) return { ok: false, error: "ชื่อนี้ถูกใช้แล้ว" };
+
+  const { error } = await adminClient.from("profiles").update({ nickname: next }).eq("nickname", oldNickname);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export interface AgentWithTarget {
   agentId: string;
   agentName: string;

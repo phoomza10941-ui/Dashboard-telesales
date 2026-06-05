@@ -1,6 +1,6 @@
 "use server";
 
-import { setDailyTarget, setAgentTarget, setAgentMonthlyTarget, setAgentOrekaExt, setOrekaLabel, setOrekaClosed, getCurrentUser } from "@/lib/db";
+import { setDailyTarget, setAgentTarget, setAgentMonthlyTarget, setAgentOrekaExt, setOrekaLabel, setOrekaClosed, renameAgentNickname, getCurrentUser } from "@/lib/db";
 import { adminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
@@ -103,6 +103,20 @@ export async function toggleOrekaClosed(account: string, ext: string, closed: bo
   if (!user) throw new Error("Not authenticated");
   await setOrekaClosed(account, ext, closed, user.id);
   revalidatePath("/supervisor/talk-time");
+}
+
+// Rename an agent from the talk-time page — writes to the real account (profiles.nickname).
+export async function renameAgent(oldNickname: string, newName: string): Promise<{ ok: boolean; error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+  const res = await renameAgentNickname(oldNickname, newName);
+  if (res.ok) {
+    revalidatePath("/supervisor/talk-time");
+    revalidatePath("/supervisor", "layout");
+    revalidatePath("/my-desk", "layout");
+    revalidatePath("/war-room");
+  }
+  return res;
 }
 
 export async function updateAgentTarget(formData: FormData) {
