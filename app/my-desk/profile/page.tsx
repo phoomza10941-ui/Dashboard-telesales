@@ -18,8 +18,6 @@ export default async function ProfilePage() {
         nickname={user.nickname}
         agentCode={user.agentCode}
         team={user.team}
-        orekaExtGosell={user.orekaExtGosell}
-        orekaExtHopeful={user.orekaExtHopeful}
       />
       <div className="max-w-lg mt-6">
         <ChangePasswordForm username={user.username} />
