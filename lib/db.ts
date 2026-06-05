@@ -302,6 +302,34 @@ export async function setOrekaLabel(ext: string, label: string, userId: string):
   }
 }
 
+// Closed (excluded) talk-time numbers, per account.
+// Stored as team_config rows with key = "oreka_closed_<account>_<ext>".
+// Returns keys in "<account>:<ext>" form for the client.
+export async function getClosedOrekaExts(): Promise<string[]> {
+  const { data } = await adminClient
+    .from("team_config")
+    .select("key")
+    .like("key", "oreka_closed_%");
+  const out: string[] = [];
+  for (const row of data ?? []) {
+    const rest = String(row.key).replace("oreka_closed_", "");
+    const i = rest.indexOf("_"); // account has no "_"; ext is "+66…"
+    if (i < 0) continue;
+    const account = rest.slice(0, i), ext = rest.slice(i + 1);
+    if (account && ext) out.push(`${account}:${ext}`);
+  }
+  return out;
+}
+
+export async function setOrekaClosed(account: string, ext: string, closed: boolean, userId: string): Promise<void> {
+  const key = `oreka_closed_${account}_${ext}`;
+  if (closed) {
+    await adminClient.from("team_config").upsert({ key, value: "1", updated_by: userId });
+  } else {
+    await adminClient.from("team_config").delete().eq("key", key);
+  }
+}
+
 export interface AgentWithTarget {
   agentId: string;
   agentName: string;

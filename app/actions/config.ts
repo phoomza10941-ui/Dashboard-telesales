@@ -1,6 +1,6 @@
 "use server";
 
-import { setDailyTarget, setAgentTarget, setAgentMonthlyTarget, setAgentOrekaExt, setOrekaLabel, getCurrentUser } from "@/lib/db";
+import { setDailyTarget, setAgentTarget, setAgentMonthlyTarget, setAgentOrekaExt, setOrekaLabel, setOrekaClosed, getCurrentUser } from "@/lib/db";
 import { adminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
@@ -95,6 +95,13 @@ export async function saveOrekaLabel(ext: string, label: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
   await setOrekaLabel(ext, label, user.id);
+  revalidatePath("/supervisor/talk-time");
+}
+
+export async function toggleOrekaClosed(account: string, ext: string, closed: boolean) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  await setOrekaClosed(account, ext, closed, user.id);
   revalidatePath("/supervisor/talk-time");
 }
 

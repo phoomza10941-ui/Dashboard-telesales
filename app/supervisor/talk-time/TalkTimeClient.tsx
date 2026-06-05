@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { saveOrekaLabel } from "@/app/actions/config";
+import { saveOrekaLabel, toggleOrekaClosed } from "@/app/actions/config";
 import type { AgentTalkTime, AccountId } from "@/lib/oreka";
 import { formatTalkTime } from "@/lib/oreka-format";
 import jsPDF from "jspdf";
@@ -9,6 +9,9 @@ import autoTable from "jspdf-autotable";
 
 type Tab = "overall" | AccountId;
 type ViewMode = "day" | "month";
+
+// unique key for a closed (account, ext) pair
+const ckey = (a: AgentTalkTime) => `${a.account}:${a.orekaExt}`;
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overall", label: "Overall" },
@@ -157,12 +160,14 @@ export default function TalkTimeClient({
   todayKey,
   currentMonthKey,
   initialLabels,
+  initialClosed,
 }: {
   agents: AgentTalkTime[];
   error: string | null;
   todayKey: string;
   currentMonthKey: string;
   initialLabels: Record<string, string>;
+  initialClosed: string[];
 }) {
   const [mode, setMode] = useState<ViewMode>("day");
   const [tab, setTab] = useState<Tab>("overall");
@@ -171,6 +176,8 @@ export default function TalkTimeClient({
   const [agents, setAgents] = useState(initialAgents);
   const [error, setError] = useState(initialError);
   const [labels, setLabels] = useState(initialLabels);
+  const [closed, setClosed] = useState<Set<string>>(() => new Set(initialClosed));
+  const [showClosed, setShowClosed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pagesLoaded, setPagesLoaded] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -213,16 +220,32 @@ export default function TalkTimeClient({
     else startStream(`/api/talk-time/stream?month=${monthKey}`);
   }
 
+  // Optimistic close/reopen of a (account, ext) row; persists via server action.
+  function closeRow(a: AgentTalkTime) {
+    const k = ckey(a);
+    setClosed(prev => new Set(prev).add(k));
+    toggleOrekaClosed(a.account, a.orekaExt, true).catch(() =>
+      setClosed(prev => { const n = new Set(prev); n.delete(k); return n; }));
+  }
+  function reopenRow(a: AgentTalkTime) {
+    const k = ckey(a);
+    setClosed(prev => { const n = new Set(prev); n.delete(k); return n; });
+    toggleOrekaClosed(a.account, a.orekaExt, false).catch(() =>
+      setClosed(prev => new Set(prev).add(k)));
+  }
+
   const tabFiltered = tab === "overall" ? agents : agents.filter(a => a.account === tab);
+  const activeTabFiltered = tabFiltered.filter(a => !closed.has(ckey(a)));
+  const closedRows = tabFiltered.filter(a => closed.has(ckey(a))); // current tab, ignores search
   const searchQ = search.trim().toLowerCase();
   const visible = searchQ
-    ? tabFiltered.filter(a => {
+    ? activeTabFiltered.filter(a => {
         const name = (a.nickname ?? labels[a.orekaExt] ?? a.orekaName ?? "").toLowerCase();
         const ext = a.orekaExt.toLowerCase().replace(/\D/g, "");
         const q = searchQ.replace(/\D/g, "") || searchQ;
         return name.includes(searchQ) || ext.includes(q) || a.orekaExt.toLowerCase().includes(searchQ);
       })
-    : tabFiltered;
+    : activeTabFiltered;
   const teamSeconds = visible.reduce((s, a) => s + a.totalSeconds, 0);
   const teamCalls = visible.reduce((s, a) => s + a.callCount, 0);
   const teamOut = visible.reduce((s, a) => s + a.outCount, 0);
@@ -230,7 +253,7 @@ export default function TalkTimeClient({
   const activeAgents = visible.filter(a => a.callCount > 0).length;
   const avgPerCall = teamCalls > 0 ? Math.round(teamSeconds / teamCalls) : 0;
   const maxSeconds = Math.max(...visible.map(a => a.totalSeconds), 1);
-  const countFor = (t: Tab) => t === "overall" ? agents.length : agents.filter(a => a.account === t).length;
+  const countFor = (t: Tab) => (t === "overall" ? agents : agents.filter(a => a.account === t)).filter(a => !closed.has(ckey(a))).length;
   const periodLabel = mode === "day" ? (isToday ? "วันนี้" : displayDate(dateKey)) : (isCurrentMonth ? "เดือนนี้" : displayMonth(monthKey));
 
   function exportPDF() {
@@ -433,13 +456,14 @@ export default function TalkTimeClient({
                 {["#", "Agent", "ทีม", "เบอร์ (Local Party)", "Talk Time", "สาย", "เข้า", "ออก", "เฉลี่ย/สาย"].map(h => (
                   <th key={h} className="text-left text-[11px] text-[#8B8E8F] font-medium py-3.5 px-5 whitespace-nowrap">{h}</th>
                 ))}
+                <th className="py-3.5 px-5" />
               </tr>
             </thead>
             <tbody>
               {loading && agents.length === 0 ? (
                 <SkeletonRows count={8} />
               ) : visible.length === 0 ? (
-                <tr><td colSpan={9} className="py-12 text-center text-[12px] text-[#8B8E8F]">
+                <tr><td colSpan={10} className="py-12 text-center text-[12px] text-[#8B8E8F]">
                   {error ? "ไม่สามารถโหลดข้อมูลได้" : `ไม่มีข้อมูล${mode === "day" ? `วัน${isToday ? "นี้" : `ที่ ${displayDate(dateKey)}`}` : `เดือน${periodLabel}`}`}
                 </td></tr>
               ) : (
@@ -454,7 +478,7 @@ export default function TalkTimeClient({
                     : { row: "hover:bg-purple-50/40", avatar: "bg-purple-100 text-purple-700", bar: "bg-purple-400", badge: "bg-purple-50 text-purple-600 border border-purple-200" };
 
                   return (
-                    <tr key={`${a.account}:${a.orekaExt}`} className={`border-b border-[#F7F7F7] transition-colors ${theme.row}`}>
+                    <tr key={`${a.account}:${a.orekaExt}`} className={`group border-b border-[#F7F7F7] transition-colors ${theme.row}`}>
                       <td className="py-4 px-5 text-[#8B8E8F] font-medium">{i + 1}</td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-2.5">
@@ -483,6 +507,18 @@ export default function TalkTimeClient({
                       <td className="py-4 px-5 text-[#8B8E8F]">{a.inCount}</td>
                       <td className="py-4 px-5 text-[#8B8E8F]">{a.outCount}</td>
                       <td className="py-4 px-5 text-[#3D3D3D]">{avg > 0 ? formatTalkTime(avg) : "—"}</td>
+                      <td className="py-4 px-3 text-right">
+                        <button
+                          onClick={() => closeRow(a)}
+                          title="ปิดเบอร์นี้ (ไม่นับรวมใน KPI)"
+                          className="inline-flex items-center gap-1 text-[11px] text-[#C0C0C0] opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                          </svg>
+                          ปิด
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -503,6 +539,51 @@ export default function TalkTimeClient({
           </p>
         </div>
       </div>
+
+      {/* Closed numbers (excluded from KPIs) — hidden by default, reopenable */}
+      {closedRows.length > 0 && (
+        <div className="mt-3">
+          <button
+            onClick={() => setShowClosed(v => !v)}
+            className="inline-flex items-center gap-1.5 text-[11px] text-[#8B8E8F] hover:text-[#3D3D3D] transition-colors"
+          >
+            <svg className={`w-3 h-3 transition-transform ${showClosed ? "rotate-90" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+            {showClosed ? "ซ่อนเบอร์ที่ปิด" : `แสดงเบอร์ที่ปิด (${closedRows.length})`}
+          </button>
+
+          {showClosed && (
+            <div className="mt-2 bg-[#F7F7F7] rounded-xl border border-[#E8E8E8] divide-y divide-[#E8E8E8] overflow-hidden">
+              {closedRows.map(a => {
+                const name = a.nickname ?? labels[a.orekaExt] ?? a.orekaName ?? a.orekaExt;
+                const badge = a.account === "gosell"
+                  ? "bg-amber-50 text-amber-600 border border-amber-200"
+                  : "bg-purple-50 text-purple-600 border border-purple-200";
+                return (
+                  <div key={ckey(a)} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${badge}`}>{a.accountLabel}</span>
+                      <span className="text-[12px] font-medium text-[#8B8E8F] line-through">{name}</span>
+                      <span className="font-mono text-[11px] text-[#C0C0C0]">{a.orekaExt}</span>
+                      <span className="text-[11px] text-[#C0C0C0]">· {formatTalkTime(a.totalSeconds)} · {a.callCount} สาย</span>
+                    </div>
+                    <button
+                      onClick={() => reopenRow(a)}
+                      className="shrink-0 inline-flex items-center gap-1 text-[11px] text-[#3D9B3A] hover:bg-[#87DE81]/10 rounded-lg px-2 py-1 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
+                      </svg>
+                      เปิดกลับ
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
