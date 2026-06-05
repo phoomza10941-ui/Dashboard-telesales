@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback } from "react";
 import { saveOrekaLabel } from "@/app/actions/config";
 import type { AgentTalkTime, AccountId } from "@/lib/oreka";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 type Tab = "overall" | AccountId;
 type ViewMode = "day" | "month";
@@ -237,6 +239,64 @@ export default function TalkTimeClient({
   const countFor = (t: Tab) => t === "overall" ? agents.length : agents.filter(a => a.account === t).length;
   const periodLabel = mode === "day" ? (isToday ? "วันนี้" : displayDate(dateKey)) : (isCurrentMonth ? "เดือนนี้" : displayMonth(monthKey));
 
+  function exportPDF() {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+    // English-only period label (Thai chars break the default jsPDF font)
+    const periodEn = mode === "day"
+      ? (isToday ? "Today" : dateKey)
+      : (isCurrentMonth ? "This Month" : monthKey);
+    const tabEn = tab === "overall" ? "" : ` (${tab})`;
+
+    doc.setFontSize(14);
+    doc.setTextColor(61, 61, 61);
+    doc.text(`Talk Time Report - ${periodEn}${tabEn}`, 14, 16);
+
+    doc.setFontSize(9);
+    doc.setTextColor(139, 142, 143);
+    doc.text(
+      `Total: ${formatTalkTime(teamSeconds)}  |  Calls: ${teamCalls.toLocaleString()}  |  Agents: ${activeAgents}/${visible.length}  |  Avg/Call: ${formatTalkTime(avgPerCall)}`,
+      14, 23
+    );
+
+    const rows = visible.map((a, i) => {
+      const displayName = a.nickname ?? labels[a.orekaExt] ?? a.orekaName ?? a.orekaExt;
+      const avg = a.callCount > 0 ? Math.round(a.totalSeconds / a.callCount) : 0;
+      return [
+        i + 1,
+        displayName,
+        a.accountLabel,
+        a.orekaExt,
+        formatTalkTime(a.totalSeconds),
+        a.callCount,
+        a.inCount,
+        a.outCount,
+        avg > 0 ? formatTalkTime(avg) : "-",
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 28,
+      head: [["#", "Agent", "Team", "Extension (Local Party)", "Talk Time", "Calls", "In", "Out", "Avg/Call"]],
+      body: rows,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [135, 222, 129], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [247, 247, 247] },
+      columnStyles: {
+        0: { halign: "center", cellWidth: 10 },
+        4: { halign: "right" },
+        5: { halign: "center" },
+        6: { halign: "center" },
+        7: { halign: "center" },
+        8: { halign: "right" },
+      },
+    });
+
+    const tabLabel = tab === "overall" ? "overall" : tab;
+    const dateLabel = mode === "day" ? dateKey : monthKey;
+    doc.save(`talktime_${dateLabel}_${tabLabel}.pdf`);
+  }
+
   return (
     <div className="flex flex-col">
       {/* Header */}
@@ -280,6 +340,21 @@ export default function TalkTimeClient({
             {!isCurrentMonth && <button onClick={() => loadMonth(currentMonthKey)} disabled={loading}
               className="h-8 px-3 rounded-lg border border-[#87DE81] bg-[#87DE81]/10 text-[11px] text-[#3D9B3A] font-medium hover:bg-[#87DE81]/20 disabled:opacity-40">เดือนนี้</button>}
           </>}
+
+          {/* Export PDF */}
+          <button
+            onClick={exportPDF}
+            disabled={loading || visible.length === 0}
+            className="h-8 px-3 flex items-center gap-1.5 rounded-lg border border-[#E8E8E8] bg-white text-[12px] text-[#3D3D3D] hover:bg-[#F7F7F7] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <svg className="w-3.5 h-3.5 text-[#8B8E8F]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="11" x2="12" y2="17" />
+              <polyline points="9 14 12 17 15 14" />
+            </svg>
+            Export PDF
+          </button>
 
           {/* Loading indicator */}
           {loading && (
