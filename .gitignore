@@ -4,6 +4,7 @@
 .env.local
 *.json.key
 dashboard-telesales-*.json
+docs/account-credentials-th.md
 
 # dependencies
 /node_modules
