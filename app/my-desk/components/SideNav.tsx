@@ -7,7 +7,7 @@ import { updateNickname, updateAvatarUrl, saveMyOrekaExt } from "@/app/actions/p
 const navItems = [
   {
     href: "/my-desk/today-command",
-    label: "Today Command",
+    label: "สรุปวันนี้",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -16,7 +16,7 @@ const navItems = [
   },
   {
     href: "/my-desk/customers-list",
-    label: "Customers List",
+    label: "รายชื่อลูกค้า",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -26,8 +26,18 @@ const navItems = [
     ),
   },
   {
+    href: "/my-desk/add-customer",
+    label: "เพิ่มลูกค้า",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+    ),
+  },
+  {
     href: "/my-desk/priority-queue",
-    label: "Priority Queue",
+    label: "คิวสำคัญ",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
@@ -37,7 +47,7 @@ const navItems = [
   },
   {
     href: "/my-desk/pending-payment",
-    label: "Pending Payment",
+    label: "รอโอนเงิน",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -56,7 +66,7 @@ const navItems = [
   },
   {
     href: "/my-desk/canceled",
-    label: "Canceled",
+    label: "ยกเลิก",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
@@ -65,7 +75,7 @@ const navItems = [
   },
   {
     href: "/my-desk/lead-inbox",
-    label: "Lead Inbox",
+    label: "Lead ที่รับมา",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
@@ -74,18 +84,8 @@ const navItems = [
     ),
   },
   {
-    href: "/my-desk/add-customer",
-    label: "Add Customer",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-      </svg>
-    ),
-  },
-  {
     href: "/my-desk/script-helper",
-    label: "Script Helper",
+    label: "Script ช่วยขาย",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
@@ -94,7 +94,7 @@ const navItems = [
   },
   {
     href: "/my-desk/my-performance",
-    label: "My Performance",
+    label: "ผลงานของฉัน",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
@@ -232,7 +232,7 @@ export default function SideNav({
           </div>
           <div>
             <div className="text-[11px] font-semibold text-[#3D3D3D] leading-none">My Desk</div>
-            <div className="text-[10px] text-[#8B8E8F] mt-0.5">Telesales Dashboard</div>
+            <div className="text-[10px] text-[#8B8E8F] mt-0.5">แดชบอร์ดเซลส์</div>
           </div>
         </div>
       </div>
@@ -432,7 +432,7 @@ export default function SideNav({
       <div className="px-5 py-4 border-t border-[#E8E8E8] space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#87DE81] animate-pulse" />
-          <span className="text-[11px] text-[#8B8E8F]">Online</span>
+          <span className="text-[11px] text-[#8B8E8F]">ออนไลน์</span>
         </div>
         <button
           onClick={handleLogout}
