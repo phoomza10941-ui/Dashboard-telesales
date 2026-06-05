@@ -1,0 +1,14 @@
+# Local artifacts & scratch files — keep them out of Vercel uploads.
+# Leading slash = repo root only, so app assets in public/ are unaffected.
+/*.zip
+/*.log
+/*.jpg
+/image*.png
+/lineup.png
+/pixil-frame-0.png
+/2026 Sele Report Telesales/
+/docs/
+/Design.md
+/Telesales_dashboard.md
+/priority_queue_my_desk.md
+/war_room_dashboard_important_graphs.md
