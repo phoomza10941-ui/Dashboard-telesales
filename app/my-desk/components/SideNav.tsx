@@ -134,7 +134,7 @@ export default function SideNav({
   const [nicknameVal, setNicknameVal] = useState(nickname);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Phone number (Oreka) state
@@ -182,7 +182,6 @@ export default function SideNav({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Local preview immediately
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
     setUploading(true);
@@ -244,7 +243,6 @@ export default function SideNav({
         className="px-5 py-3.5 border-b border-[#E8E8E8] text-left hover:bg-[#F7F7F7] transition-colors group w-full"
       >
         <div className="flex items-center gap-2.5">
-          {/* Avatar */}
           <div className="relative shrink-0">
             {previewUrl ? (
               <img
@@ -334,7 +332,6 @@ export default function SideNav({
             />
           </div>
 
-          {/* Save nickname button */}
           <button
             onClick={handleSaveNickname}
             disabled={saving || !nicknameVal.trim()}
@@ -343,7 +340,7 @@ export default function SideNav({
             {saving ? "กำลังบันทึก…" : "บันทึกชื่อ"}
           </button>
 
-          {/* Divider */}
+          {/* Oreka ext */}
           <div className="border-t border-[#E8E8E8] pt-3">
             <div className="flex items-center gap-1.5 mb-2">
               <svg className="w-3 h-3 text-[#8B8E8F]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -356,7 +353,6 @@ export default function SideNav({
               <p className="text-[10px] text-[#C0C0C0] text-center py-2 animate-pulse">กำลังดึงเบอร์จาก Oreka…</p>
             ) : (
               <div className="space-y-2">
-                {/* Gosell */}
                 <div>
                   <label className="text-[9px] text-amber-600 font-semibold uppercase tracking-wide mb-0.5 block">Gosell</label>
                   <select
@@ -374,7 +370,6 @@ export default function SideNav({
                   </select>
                 </div>
 
-                {/* Hopeful */}
                 <div>
                   <label className="text-[9px] text-purple-600 font-semibold uppercase tracking-wide mb-0.5 block">Hopeful</label>
                   <select
