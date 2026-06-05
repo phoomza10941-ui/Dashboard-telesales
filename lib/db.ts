@@ -35,7 +35,7 @@ export interface AgentData {
 
 // Get current user's ID and nickname from session
 export async function getCurrentUser(): Promise<{
-  id: string; nickname: string; fullName: string; agentCode: string;
+  id: string; nickname: string; username: string; fullName: string; agentCode: string;
   team: string; role: "agent" | "supervisor"; avatarUrl: string;
   orekaExtGosell: string; orekaExtHopeful: string;
 } | null> {
@@ -67,6 +67,7 @@ export async function getCurrentUser(): Promise<{
   return {
     id: user.id,
     nickname: user.user_metadata.nickname ?? "",
+    username: user.email?.replace("@telesales.internal", "") ?? "",
     fullName: user.user_metadata.full_name ?? "",
     agentCode: user.user_metadata.agent_code ?? "",
     team: user.user_metadata.team ?? "",

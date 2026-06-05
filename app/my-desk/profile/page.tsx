@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/db";
 import { redirect } from "next/navigation";
 import ProfileForm from "./ProfileForm";
+import ChangePasswordForm from "@/components/ChangePasswordForm";
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -20,6 +21,9 @@ export default async function ProfilePage() {
         orekaExtGosell={user.orekaExtGosell}
         orekaExtHopeful={user.orekaExtHopeful}
       />
+      <div className="max-w-lg mt-6">
+        <ChangePasswordForm username={user.username} />
+      </div>
     </div>
   );
 }

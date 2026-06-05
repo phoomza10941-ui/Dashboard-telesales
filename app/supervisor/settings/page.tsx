@@ -1,5 +1,7 @@
-import { getDailyTarget, getAgentsWithTargets, getProducts, getAgentsWithMonthlyTargets, getAgentsWithOrekaExt } from "@/lib/db";
+import { getDailyTarget, getAgentsWithTargets, getProducts, getAgentsWithMonthlyTargets, getAgentsWithOrekaExt, getCurrentUser } from "@/lib/db";
+import { redirect } from "next/navigation";
 import TargetConfigForm from "./TargetConfigForm";
+import ChangePasswordForm from "@/components/ChangePasswordForm";
 import AgentTargetForm from "./AgentTargetForm";
 import AgentMonthlyTargetForm from "./AgentMonthlyTargetForm";
 import AgentOrekaExtForm from "./AgentOrekaExtForm";
@@ -20,13 +22,15 @@ export default async function SettingsPage({
   const currentMonthKey = currentThaiMonthKey();
   const selectedMonth = month ?? currentMonthKey;
 
-  const [currentTarget, agents, products, monthlyAgents, orekaAgents] = await Promise.all([
+  const [currentUser, currentTarget, agents, products, monthlyAgents, orekaAgents] = await Promise.all([
+    getCurrentUser(),
     getDailyTarget(),
     getAgentsWithTargets(),
     getProducts(),
     getAgentsWithMonthlyTargets(selectedMonth),
     getAgentsWithOrekaExt(),
   ]);
+  if (!currentUser) redirect("/login");
 
   return (
     <div className="h-full overflow-auto">
@@ -36,6 +40,11 @@ export default async function SettingsPage({
           <p className="text-[12px] text-[#8B8E8F] mt-0.5">
             ตั้งค่าที่ Supervisor กำหนดได้ — จะมีผลกับทุก Dashboard ทันที
           </p>
+        </div>
+
+        {/* Change password card */}
+        <div className="mb-5">
+          <ChangePasswordForm username={currentUser.username} />
         </div>
 
         {/* Team target card */}
