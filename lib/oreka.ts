@@ -156,15 +156,19 @@ async function* yieldRecordingPages(startUtc: string, endUtc: string, acct: Acco
   }
 }
 
-// Mutates an existing per-account aggregation map with new recordings
+// Mutates an existing per-account aggregation map with new recordings.
+// seenIds guards against the same recording appearing on multiple pages (offset pagination race).
 function aggregateInto(
   recs: OrekaRecording[],
   acct: Account,
-  map: Map<string, Omit<AgentTalkTime, "nickname">>
+  map: Map<string, Omit<AgentTalkTime, "nickname">>,
+  seenIds: Set<number>
 ): void {
   for (const r of recs) {
     const ext = r.localParty;
     if (!ext) continue;
+    if (seenIds.has(r.id)) continue;
+    seenIds.add(r.id);
     const e = map.get(ext) ?? {
       account: acct.id, accountLabel: acct.label, orekaExt: ext,
       orekaName: [r.userDto?.firstname, r.userDto?.lastname].filter(Boolean).join(" ").trim(),
@@ -190,7 +194,11 @@ export async function streamTalkTimeForRange(
   const extMaps = await fetchExtMaps();
 
   const aggByAccount = new Map<AccountId, Map<string, Omit<AgentTalkTime, "nickname">>>();
-  for (const acct of ACCOUNTS) aggByAccount.set(acct.id, new Map());
+  const seenIdsByAccount = new Map<AccountId, Set<number>>();
+  for (const acct of ACCOUNTS) {
+    aggByAccount.set(acct.id, new Map());
+    seenIdsByAccount.set(acct.id, new Set());
+  }
 
   let pagesLoaded = 0;
 
@@ -204,7 +212,7 @@ export async function streamTalkTimeForRange(
   for (const acct of ACCOUNTS) {
     try {
       for await (const recs of yieldRecordingPages(startUtc, endUtc, acct)) {
-        aggregateInto(recs, acct, aggByAccount.get(acct.id)!);
+        aggregateInto(recs, acct, aggByAccount.get(acct.id)!, seenIdsByAccount.get(acct.id)!);
         pagesLoaded++;
         await onProgress(snapshot(), pagesLoaded);
       }
@@ -239,9 +247,12 @@ function resolveNickname(
 // --- aggregate talk time per agent for one account, matched to profiles.oreka_ext ---
 function aggregate(recs: OrekaRecording[], acct: Account): Map<string, Omit<AgentTalkTime, "nickname">> {
   const map = new Map<string, Omit<AgentTalkTime, "nickname">>();
+  const seenIds = new Set<number>();
   for (const r of recs) {
     const ext = r.localParty;
     if (!ext) continue;
+    if (seenIds.has(r.id)) continue;
+    seenIds.add(r.id);
     const e =
       map.get(ext) ??
       {
