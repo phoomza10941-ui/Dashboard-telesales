@@ -7,6 +7,7 @@ const inputCls =
 interface User {
   id: string;
   nickname: string;
+  username: string;
   full_name: string;
   role: "agent" | "supervisor";
   team: string;
@@ -129,6 +130,73 @@ function ResetPasswordModal({ user, onClose, onDone }: { user: User; onClose: ()
   );
 }
 
+function BulkResetCard({ userCount }: { userCount: number }) {
+  const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus(null);
+    if (pw.length < 6) { setStatus({ ok: false, msg: "Password ต้องมีอย่างน้อย 6 ตัวอักษร" }); return; }
+    if (pw !== confirm) { setStatus({ ok: false, msg: "Password ไม่ตรงกัน" }); return; }
+    if (!window.confirm(`รีเซ็ต password ทุกคน (${userCount} บัญชี) เป็น password นี้ใช่หรือไม่?`)) return;
+    setLoading(true);
+    const res = await fetch("/api/admin/users/bulk-reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pw }),
+    });
+    setLoading(false);
+    const d = await res.json();
+    if (res.ok) {
+      setStatus({ ok: true, msg: `รีเซ็ตสำเร็จ ${d.count} บัญชี` });
+      setPw(""); setConfirm("");
+    } else {
+      setStatus({ ok: false, msg: d.error ?? "เกิดข้อผิดพลาด" });
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#E8E8E8] p-5">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div>
+          <div className="text-[14px] font-semibold text-[#3D3D3D]">Bulk Reset Password</div>
+          <p className="text-[12px] text-[#8B8E8F] mt-0.5">ตั้ง password เดียวกันให้ทุกคน ({userCount} บัญชี) พร้อมกัน</p>
+        </div>
+      </div>
+      {status && (
+        <p className={`text-[12px] mb-3 rounded-lg px-3 py-2 ${status.ok ? "bg-[#87DE81]/15 text-[#3D9B3A]" : "bg-red-50 text-red-600"}`}>
+          {status.msg}
+        </p>
+      )}
+      <form onSubmit={submit} className="space-y-3">
+        <div>
+          <label className="block text-[11px] font-medium text-[#8B8E8F] mb-1 uppercase tracking-wide">Password ใหม่ *</label>
+          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="อย่างน้อย 6 ตัวอักษร" className={inputCls} />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-[#8B8E8F] mb-1 uppercase tracking-wide">ยืนยัน Password *</label>
+          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="พิมพ์ซ้ำอีกครั้ง" className={inputCls} />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !pw || !confirm}
+          className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[13px] font-semibold py-2 rounded-lg transition-colors"
+        >
+          {loading ? "กำลังรีเซ็ต..." : `รีเซ็ต Password ทั้งหมด (${userCount} คน)`}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function UserRow({ user, onRefresh }: { user: User; onRefresh: () => void }) {
   const [showReset, setShowReset] = useState(false);
   const [acting, setActing] = useState(false);
@@ -176,7 +244,10 @@ function UserRow({ user, onRefresh }: { user: User; onRefresh: () => void }) {
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${roleBadge}`}>{user.role}</span>
             {user.banned && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-500">banned</span>}
           </div>
-          <div className="text-[11px] text-[#8B8E8F] truncate">{user.full_name}{user.team ? ` · ${user.team}` : ""}</div>
+          <div className="text-[11px] text-[#8B8E8F] truncate">
+            {user.username && <span className="font-mono text-[#58CEE8] mr-1.5">{user.username}</span>}
+            {user.full_name}{user.team ? ` · ${user.team}` : ""}
+          </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button onClick={() => setShowReset(true)} disabled={acting} className="text-[11px] px-2.5 py-1.5 rounded-lg bg-[#F7F7F7] hover:bg-[#E8E8E8] text-[#3D3D3D] transition-colors disabled:opacity-50">
@@ -249,6 +320,7 @@ export default function AdminClient({ initialUsers }: { initialUsers: User[] }) 
         </div>
 
         {tab === "users" && (
+          <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E8]">
               <div>
@@ -288,6 +360,8 @@ export default function AdminClient({ initialUsers }: { initialUsers: User[] }) 
                 users.map((u) => <UserRow key={u.id} user={u} onRefresh={refresh} />)
               )}
             </div>
+          </div>
+          <BulkResetCard userCount={users.filter((u) => !u.banned).length} />
           </div>
         )}
 
