@@ -991,6 +991,108 @@ export async function deleteProduct(name: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ── Appointments ──────────────────────────────────────────────────────────────
+
+export interface AppointmentRow {
+  id: string;
+  agentId: string;
+  customerName: string;
+  customerPhone: string;
+  appointmentDate: string; // "YYYY-MM-DD" ISO date
+  preSuggestion: string;
+  status: "pending" | "completed" | "cancelled";
+  createdAt: string;
+}
+
+function mapAppointment(row: Record<string, string>): AppointmentRow {
+  return {
+    id: row.id,
+    agentId: row.agent_id,
+    customerName: row.customer_name,
+    customerPhone: row.customer_phone ?? "",
+    appointmentDate: row.appointment_date,
+    preSuggestion: row.pre_suggestion ?? "",
+    status: (row.status ?? "pending") as AppointmentRow["status"],
+    createdAt: row.created_at,
+  };
+}
+
+export async function getAppointments(
+  agentId: string,
+  opts?: { date?: string; month?: string }
+): Promise<AppointmentRow[]> {
+  noStore();
+  let query = adminClient
+    .from("appointments")
+    .select("*")
+    .eq("agent_id", agentId);
+
+  if (opts?.date) {
+    query = query.eq("appointment_date", opts.date);
+  } else if (opts?.month) {
+    const [y, m] = opts.month.split("-").map(Number);
+    const firstDay = `${opts.month}-01`;
+    const lastDay = new Date(y, m, 0).toISOString().slice(0, 10);
+    query = query.gte("appointment_date", firstDay).lte("appointment_date", lastDay);
+  }
+
+  const { data, error } = await query.order("appointment_date", { ascending: true }).order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((r: any) => mapAppointment(r));
+}
+
+export async function getTodayAppointments(agentId: string): Promise<AppointmentRow[]> {
+  noStore();
+  const now = new Date(Date.now() + 7 * 3600000);
+  const todayISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+  const all = await getAppointments(agentId, { date: todayISO });
+  return all.filter((a) => a.status === "pending");
+}
+
+export async function createAppointment(
+  agentId: string,
+  data: { customerName: string; customerPhone?: string; appointmentDate: string; preSuggestion?: string }
+): Promise<AppointmentRow> {
+  const { data: row, error } = await adminClient
+    .from("appointments")
+    .insert({
+      agent_id: agentId,
+      customer_name: data.customerName,
+      customer_phone: data.customerPhone ?? "",
+      appointment_date: data.appointmentDate,
+      pre_suggestion: data.preSuggestion ?? "",
+      status: "pending",
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return mapAppointment(row as any);
+}
+
+export async function updateAppointmentStatus(
+  id: string,
+  agentId: string,
+  status: "completed" | "cancelled"
+): Promise<void> {
+  const { error } = await adminClient
+    .from("appointments")
+    .update({ status })
+    .eq("id", id)
+    .eq("agent_id", agentId);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteAppointment(id: string, agentId: string): Promise<void> {
+  const { error } = await adminClient
+    .from("appointments")
+    .delete()
+    .eq("id", id)
+    .eq("agent_id", agentId);
+  if (error) throw new Error(error.message);
+}
+
 // ── สร้าง trend ยอดขายรายวัน (28 วันล่าสุด)
 export function buildTrend(rows: SaleRow[]): { day: string; sales: number }[] {
   const map = new Map<string, number>();

@@ -1,11 +1,12 @@
-import { getMyData, filterToday, filterPending, filterFollowUp, getCurrentUser, getAgentTarget } from "@/lib/db";
+import { getMyData, filterToday, filterPending, filterFollowUp, getCurrentUser, getAgentTarget, getTodayAppointments } from "@/lib/db";
 import Link from "next/link";
 
 export default async function TodayCommandPage() {
   const user = await getCurrentUser();
-  const [data, DAILY_TARGET] = await Promise.all([
+  const [data, DAILY_TARGET, todayAppointments] = await Promise.all([
     user ? getMyData(user.id) : Promise.resolve(null),
     user ? getAgentTarget(user.id) : Promise.resolve(80000),
+    user ? getTodayAppointments(user.id) : Promise.resolve([]),
   ]);
   const allRows = data?.rows ?? [];
   const todayRows = filterToday(allRows);
@@ -115,6 +116,31 @@ export default async function TodayCommandPage() {
         </Card>
       </div>
 
+      {/* Today's Appointments */}
+      <Card
+        title="นัดหมายวันนี้"
+        badge={todayAppointments.length > 0 ? `${todayAppointments.length} นัด` : "ว่าง"}
+        badgeColor={todayAppointments.length > 0 ? "cyan" : "grey"}
+        href="/my-desk/appointments"
+      >
+        {todayAppointments.length === 0 ? (
+          <EmptyState text="ไม่มีนัดหมายวันนี้" />
+        ) : (
+          <div className="space-y-2">
+            {todayAppointments.slice(0, 4).map((a) => (
+              <div key={a.id} className="flex items-start gap-3 py-2 border-b border-[#E8E8E8] last:border-0">
+                <span className="w-2 h-2 rounded-full bg-[#58CEE8] shrink-0 mt-1.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-medium text-[#3D3D3D] truncate">{a.customerName}</div>
+                  {a.customerPhone && <div className="text-[11px] text-[#8B8E8F]">{a.customerPhone}</div>}
+                  {a.preSuggestion && <div className="text-[11px] text-[#8B8E8F] truncate">{a.preSuggestion}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       {/* AI Next Best Action */}
       <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
         <div className="flex items-start gap-4">
@@ -137,6 +163,9 @@ export default async function TodayCommandPage() {
                 )}
                 {followUpRows.length > 0 && (
                   <> และ Follow-up อีก <span className="text-[#022EE8] font-medium">{followUpRows.length} เคส</span></>
+                )}
+                {todayAppointments.length > 0 && (
+                  <> — มีนัดหมายวันนี้ <span className="text-[#0E8FA8] font-medium">{todayAppointments.length} นัด</span></>
                 )}
               </p>
             ) : (
