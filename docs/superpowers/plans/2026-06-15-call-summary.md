@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Auto-detect completed Oreka calls, transcribe with Whisper, summarize with GPT-4o, notify agent via toast, store summaries per customer phone, and show unknown Oreka contacts as a separate "ติดต่อใหม่" tab in customers-list.
+**Goal:** Agent manually triggers a call summary from a customer profile; system fetches the Oreka recording, transcribes with Whisper, summarizes with GPT-4o, stores and displays result. Also adds "ติดต่อใหม่" tab in customers-list showing unknown Oreka contacts.
 
-**Architecture:** A 60-second client-side poller in `CustomersListClient` calls `POST /api/call-summary/check`. That route fetches the agent's last 2 hours of Oreka recordings, skips already-processed IDs (dedup via `call_summaries` table), downloads new audio, pipes through Whisper → GPT-4o, and saves the result. A separate `GET /api/oreka/contacts` route returns the agent's full Oreka call history grouped by customer phone for the "ติดต่อใหม่" tab.
+**Architecture:** Agent clicks "สรุปการโทรล่าสุด" in the customer profile modal → `POST /api/call-summary/generate` with `{ phone }` → server fetches last 7 days of agent's Oreka recordings filtered by that phone → downloads audio → Whisper transcription → GPT-4o summary → saved to `call_summaries` table → returned to client. Cached on `recording_id` so re-clicking is free. Separate `GET /api/oreka/contacts` powers the "ติดต่อใหม่" tab.
 
-**Tech Stack:** Next.js 16 App Router, Supabase (postgres + auth), `openai` v6 (Whisper + GPT-4o), existing `lib/oreka.ts` helpers, Tailwind CSS v4.
+**Tech Stack:** Next.js 16 App Router, Supabase (postgres + auth), `openai` v6 (Whisper + GPT-4o), existing `lib/oreka.ts` helpers (`getOrekaToken`, `refreshOrekaToken`), `lib/oreka-format.ts` (`toOrekaStamp`), Tailwind CSS v4.
 
 ---
 
@@ -16,12 +16,12 @@
 |------|--------|---------|
 | `scripts/add-call-summaries-table.sql` | Create | DB migration for `call_summaries` table + RLS |
 | `package.json` | Modify | Move `openai` from devDependencies → dependencies |
-| `lib/call-summary.ts` | Create | Core: download audio, Whisper, GPT-4o, save to DB |
-| `app/api/call-summary/check/route.ts` | Create | POST — poller endpoint; runs pipeline for agent |
-| `app/api/call-summary/route.ts` | Create | GET `?phone=xxx` — summaries for customer profile |
+| `lib/call-summary.ts` | Create | Core: download audio, Whisper, GPT-4o, save/fetch from DB |
+| `app/api/call-summary/generate/route.ts` | Create | POST `{ phone }` — on-demand summary for one customer |
+| `app/api/call-summary/route.ts` | Create | GET `?phone=xxx` — fetch saved summaries for customer profile |
 | `app/api/oreka/contacts/route.ts` | Create | GET — agent's Oreka call history grouped by remoteParty |
 | `app/my-desk/customers-list/page.tsx` | Modify | Pass `hasOrekaExt` prop to client |
-| `app/my-desk/customers-list/CustomersListClient.tsx` | Modify | Add tabs, poller, toast, unknown contacts tab, summary section in profile modal |
+| `app/my-desk/customers-list/CustomersListClient.tsx` | Modify | Add tabs, unknown contacts tab, summary section with manual button |
 
 ---
 
@@ -62,7 +62,7 @@ CREATE INDEX IF NOT EXISTS call_summaries_recording_id_idx
 
 - [ ] **Step 2: Run the migration in Supabase**
 
-Go to the Supabase Dashboard → SQL Editor → paste and run the contents of `scripts/add-call-summaries-table.sql`. Verify the table appears in Table Editor.
+Go to Supabase Dashboard → SQL Editor → paste and run the file contents. Verify the `call_summaries` table appears in Table Editor with all columns.
 
 - [ ] **Step 3: Move openai to dependencies in package.json**
 
@@ -70,9 +70,21 @@ In `package.json`, remove `"openai": "^6.42.0"` from `devDependencies` and add i
 
 ```json
 "dependencies": {
-  ...existing deps...,
-  "openai": "^6.42.0"
-},
+  "@dicebear/collection": "^9.4.2",
+  "@dicebear/core": "^9.4.2",
+  "@supabase/ssr": "^0.10.3",
+  "@supabase/supabase-js": "^2.106.2",
+  "bcryptjs": "^3.0.3",
+  "framer-motion": "^12.40.0",
+  "googleapis": "^173.0.0",
+  "iron-session": "^8.0.4",
+  "jspdf": "^4.2.1",
+  "jspdf-autotable": "^5.0.8",
+  "next": "16.2.6",
+  "openai": "^6.42.0",
+  "react": "19.2.4",
+  "react-dom": "19.2.4"
+}
 ```
 
 - [ ] **Step 4: Add OPENAI_API_KEY to .env.local**
@@ -87,7 +99,7 @@ OPENAI_API_KEY=sk-...your-key-here...
 ```bash
 npm install
 ```
-Expected: lockfile updated, `openai` now under `dependencies`.
+Expected: exits 0, lockfile updated.
 
 - [ ] **Step 6: Commit**
 
@@ -103,13 +115,18 @@ git commit -m "feat(call-summary): add call_summaries table migration, move open
 **Files:**
 - Create: `lib/call-summary.ts`
 
-This file contains the full pipeline: detect new recordings → download audio → Whisper → GPT-4o → save.
+Core pipeline: find latest Oreka recording for a phone, download audio, transcribe, summarize, save. Also fetches saved summaries.
+
+**Key imports from existing code:**
+- `getOrekaToken(accountId)` and `refreshOrekaToken(accountId)` from `@/lib/oreka`
+- `type AccountId` from `@/lib/oreka`
+- `toOrekaStamp(date)` from `@/lib/oreka-format` — converts Date to `"YYYYMMDD_HHMMSS"` UTC string
+- `adminClient` from `@/lib/supabase/admin` — Supabase service role client
 
 - [ ] **Step 1: Create `lib/call-summary.ts`**
 
 ```ts
 // lib/call-summary.ts
-// Pipeline: new Oreka recordings → Whisper transcription → GPT-4o summary → call_summaries table
 import OpenAI from "openai";
 import { adminClient } from "./supabase/admin";
 import { getOrekaToken, refreshOrekaToken } from "./oreka";
@@ -140,6 +157,15 @@ export interface CallSummaryResult {
   coachingTips: string[];
   duration: number;
   calledAt: string;
+}
+
+export interface SavedCallSummary {
+  id: string;
+  summary: string;
+  coachingTips: string[];
+  duration: number | null;
+  calledAt: string | null;
+  createdAt: string;
 }
 
 // Download audio buffer from Oreka mediastream
@@ -173,7 +199,7 @@ async function transcribe(audioBuffer: Buffer, recordingId: string): Promise<str
   return result.text;
 }
 
-// Summarize transcript with GPT-4o, returns { summary, coaching_tips }
+// Summarize transcript with GPT-4o
 async function summarize(transcript: string): Promise<{ summary: string; coaching_tips: string[] }> {
   if (!transcript.trim()) {
     return { summary: "ไม่พบเนื้อหาการสนทนา", coaching_tips: [] };
@@ -199,132 +225,113 @@ async function summarize(transcript: string): Promise<{ summary: string; coachin
   }
 }
 
-// Fetch the agent's Oreka recordings for the last 2 hours (any account)
-async function fetchRecentRecordings(
+// Find the most recent Oreka recording between this agent and the given customer phone (last 7 days)
+async function findLatestRecording(
   orekaExtGosell: string,
   orekaExtHopeful: string,
-) {
+  customerPhone: string,
+): Promise<{ id: number; duration: number; calledAt: string; accountId: AccountId } | null> {
+  if (!BASE) return null;
+
   const now = new Date();
-  const twoHoursAgo = new Date(now.getTime() - 2 * 3600_000);
-  const startUtc = toOrekaStamp(twoHoursAgo);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600_000);
+  const startUtc = toOrekaStamp(sevenDaysAgo);
   const endUtc = toOrekaStamp(now);
-
-  const OREKA_BASE = process.env.OREKA_BASE_URL ?? "";
-  if (!OREKA_BASE) return [];
-
-  const results: Array<{
-    id: number; phone: string; duration: number;
-    calledAt: string; accountId: AccountId;
-  }> = [];
 
   const pairs: Array<{ ext: string; accountId: AccountId }> = [];
   if (orekaExtGosell)  pairs.push({ ext: orekaExtGosell,  accountId: "gosell" });
   if (orekaExtHopeful) pairs.push({ ext: orekaExtHopeful, accountId: "hopeful" });
 
+  let best: { id: number; duration: number; calledAt: string; accountId: AccountId } | null = null;
+
   for (const { ext, accountId } of pairs) {
     try {
-      const token = await getOrekaToken(accountId);
-      const url = `${OREKA_BASE}/orktrack/rest/recordings?range=custom&startdate=${startUtc}&enddate=${endUtc}&page=1&pagesize=200&maxresults=0&includetags=false&includemetadata=false&includeprograms=false`;
+      const url =
+        `${BASE}/orktrack/rest/recordings?range=custom&startdate=${startUtc}&enddate=${endUtc}` +
+        `&page=1&pagesize=1000&maxresults=0&includetags=false&includemetadata=false&includeprograms=false`;
+
+      let token = await getOrekaToken(accountId);
       let res = await fetch(url, { headers: { Authorization: token, Accept: "application/json" } });
       if (res.status === 401 || res.status === 403) {
-        const newToken = await refreshOrekaToken(accountId);
-        res = await fetch(url, { headers: { Authorization: newToken, Accept: "application/json" } });
+        token = await refreshOrekaToken(accountId);
+        res = await fetch(url, { headers: { Authorization: token, Accept: "application/json" } });
       }
       if (!res.ok) continue;
+
       const data = await res.json();
       for (const r of data?.objects ?? []) {
-        if (r.localParty !== ext) continue;
-        results.push({
-          id: r.id,
-          phone: r.remoteParty ?? "",
-          duration: Number(r.duration) || 0,
-          calledAt: r.timestamp, // "YYYY-MM-DD HH:MM:SS" UTC
-          accountId,
-        });
+        if (r.localParty !== ext || r.remoteParty !== customerPhone) continue;
+        if (!best || r.timestamp > best.calledAt) {
+          best = { id: r.id, duration: Number(r.duration) || 0, calledAt: r.timestamp, accountId };
+        }
       }
     } catch (e) {
-      console.error(`[call-summary] fetchRecentRecordings (${accountId}) failed:`, e);
+      console.error(`[call-summary] findLatestRecording (${accountId}) failed:`, e);
     }
   }
 
-  return results;
+  return best;
 }
 
-// Main entry: find new recordings for agent, process them, return first new summary (if any)
-export async function processNewCallsForAgent(
+// Main entry: generate summary for a customer phone number (manual trigger)
+export async function generateSummaryForPhone(
   agentId: string,
   orekaExtGosell: string,
   orekaExtHopeful: string,
+  customerPhone: string,
 ): Promise<CallSummaryResult | null> {
-  if (!orekaExtGosell && !orekaExtHopeful) return null;
+  const recording = await findLatestRecording(orekaExtGosell, orekaExtHopeful, customerPhone);
+  if (!recording) return null;
 
-  const recordings = await fetchRecentRecordings(orekaExtGosell, orekaExtHopeful);
-  if (recordings.length === 0) return null;
-
-  // Check which recording IDs we've already processed
-  const ids = recordings.map((r) => String(r.id));
+  // Return cached result if already processed
   const { data: existing } = await adminClient
     .from("call_summaries")
-    .select("recording_id")
-    .in("recording_id", ids);
-  const processedIds = new Set((existing ?? []).map((r) => r.recording_id));
+    .select("*")
+    .eq("recording_id", String(recording.id))
+    .single();
 
-  // Process only new recordings, most recent first
-  const newRecs = recordings
-    .filter((r) => !processedIds.has(String(r.id)))
-    .sort((a, b) => b.calledAt.localeCompare(a.calledAt));
-
-  if (newRecs.length === 0) return null;
-
-  // Process the most recent new recording only (others will be caught next poll)
-  const rec = newRecs[0];
-
-  try {
-    const audioBuffer = await downloadAudio(rec.id, rec.accountId);
-    const transcript = await transcribe(audioBuffer, String(rec.id));
-    const { summary, coaching_tips } = await summarize(transcript);
-
-    await adminClient.from("call_summaries").insert({
-      agent_id: agentId,
-      recording_id: String(rec.id),
-      phone: rec.phone,
-      duration: rec.duration,
-      called_at: rec.calledAt,
-      transcript,
-      summary,
-      coaching_tips,
-    });
-
+  if (existing) {
     return {
-      recordingId: String(rec.id),
-      phone: rec.phone,
-      summary,
-      coachingTips: coaching_tips,
-      duration: rec.duration,
-      calledAt: rec.calledAt,
+      recordingId: existing.recording_id,
+      phone: existing.phone,
+      summary: existing.summary,
+      coachingTips: Array.isArray(existing.coaching_tips) ? existing.coaching_tips : [],
+      duration: existing.duration ?? 0,
+      calledAt: existing.called_at ?? "",
     };
-  } catch (e) {
-    console.error(`[call-summary] processing recording ${rec.id} failed:`, e);
-    // Insert a placeholder row so we don't retry this recording endlessly
-    await adminClient.from("call_summaries").upsert({
-      agent_id: agentId,
-      recording_id: String(rec.id),
-      phone: rec.phone,
-      duration: rec.duration,
-      called_at: rec.calledAt,
-      transcript: null,
-      summary: "ไม่สามารถสรุปได้ (เกิดข้อผิดพลาด)",
-      coaching_tips: [],
-    }, { onConflict: "recording_id" });
-    return null;
   }
+
+  // Process new recording
+  const audioBuffer = await downloadAudio(recording.id, recording.accountId);
+  const transcript = await transcribe(audioBuffer, String(recording.id));
+  const { summary, coaching_tips } = await summarize(transcript);
+
+  await adminClient.from("call_summaries").insert({
+    agent_id: agentId,
+    recording_id: String(recording.id),
+    phone: customerPhone,
+    duration: recording.duration,
+    called_at: recording.calledAt,
+    transcript,
+    summary,
+    coaching_tips,
+  });
+
+  return {
+    recordingId: String(recording.id),
+    phone: customerPhone,
+    summary,
+    coachingTips: coaching_tips,
+    duration: recording.duration,
+    calledAt: recording.calledAt,
+  };
 }
 
-// Fetch all summaries for a given phone number, for this agent — used by customer profile
+// Fetch saved summaries for a customer phone (for customer profile display)
 export async function getSummariesForPhone(
   agentId: string,
   phone: string,
-): Promise<Array<{ id: string; summary: string; coachingTips: string[]; duration: number | null; calledAt: string | null; createdAt: string }>> {
+): Promise<SavedCallSummary[]> {
   const { data } = await adminClient
     .from("call_summaries")
     .select("id, summary, coaching_tips, duration, called_at, created_at")
@@ -350,7 +357,7 @@ export async function getSummariesForPhone(
 ```bash
 npx tsc --noEmit
 ```
-Expected: No errors related to `lib/call-summary.ts`.
+Expected: No errors from `lib/call-summary.ts`.
 
 - [ ] **Step 3: Commit**
 
@@ -361,52 +368,55 @@ git commit -m "feat(call-summary): add core pipeline lib (Oreka → Whisper → 
 
 ---
 
-## Task 3: API Route — `POST /api/call-summary/check`
+## Task 3: API Route — `POST /api/call-summary/generate`
 
 **Files:**
-- Create: `app/api/call-summary/check/route.ts`
+- Create: `app/api/call-summary/generate/route.ts`
 
-Called by the 60-second poller. Returns `{ newSummary: true, phone, summary, coachingTips, duration }` or `{ newSummary: false }`.
+On-demand summary for one customer phone. Called when agent clicks "สรุปการโทรล่าสุด".
 
 - [ ] **Step 1: Create the route**
 
 ```ts
-// app/api/call-summary/check/route.ts
-import { NextResponse } from "next/server";
+// app/api/call-summary/generate/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/db";
-import { processNewCallsForAgent } from "@/lib/call-summary";
+import { generateSummaryForPhone } from "@/lib/call-summary";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // Whisper + GPT-4o can take ~10-20s
+export const maxDuration = 60; // Whisper + GPT-4o can take ~15-25s
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json().catch(() => ({}));
+  const { phone } = body as { phone?: string };
+  if (!phone) return NextResponse.json({ error: "phone required" }, { status: 400 });
 
   const currentUser = await getCurrentUser();
   if (!currentUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { orekaExtGosell, orekaExtHopeful } = currentUser;
   if (!orekaExtGosell && !orekaExtHopeful) {
-    return NextResponse.json({ newSummary: false });
+    return NextResponse.json({ error: "no_oreka_ext" }, { status: 400 });
   }
 
   try {
-    const result = await processNewCallsForAgent(user.id, orekaExtGosell, orekaExtHopeful);
-    if (!result) return NextResponse.json({ newSummary: false });
+    const result = await generateSummaryForPhone(user.id, orekaExtGosell, orekaExtHopeful, phone);
+    if (!result) return NextResponse.json({ error: "no_recording" }, { status: 404 });
 
     return NextResponse.json({
-      newSummary: true,
-      phone: result.phone,
       summary: result.summary,
       coachingTips: result.coachingTips,
       duration: result.duration,
+      calledAt: result.calledAt,
     });
   } catch (e) {
-    console.error("[call-summary/check]", e);
-    return NextResponse.json({ newSummary: false });
+    console.error("[call-summary/generate]", e);
+    return NextResponse.json({ error: "pipeline_failed" }, { status: 500 });
   }
 }
 ```
@@ -416,24 +426,12 @@ export async function POST() {
 ```bash
 npx tsc --noEmit
 ```
-Expected: No errors.
 
-- [ ] **Step 3: Test with curl (requires dev server running)**
-
-```bash
-npm run dev
-# In another terminal, log in via the browser first so session cookie exists, then:
-curl -X POST http://localhost:3000/api/call-summary/check \
-  -H "Cookie: <your-sb-auth-cookie>" \
-  -v
-```
-Expected: `{ "newSummary": false }` if no new recordings, or a result object if there are new calls.
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add app/api/call-summary/check/route.ts
-git commit -m "feat(call-summary): add POST /api/call-summary/check poller endpoint"
+git add app/api/call-summary/generate/route.ts
+git commit -m "feat(call-summary): add POST /api/call-summary/generate on-demand endpoint"
 ```
 
 ---
@@ -443,7 +441,7 @@ git commit -m "feat(call-summary): add POST /api/call-summary/check poller endpo
 **Files:**
 - Create: `app/api/call-summary/route.ts`
 
-Returns all summaries for a given phone number for the authenticated agent.
+Returns saved summaries for a phone. Called when customer profile modal opens.
 
 - [ ] **Step 1: Create the route**
 
@@ -488,7 +486,7 @@ git commit -m "feat(call-summary): add GET /api/call-summary?phone=xxx endpoint"
 **Files:**
 - Create: `app/api/oreka/contacts/route.ts`
 
-Returns the agent's Oreka call history grouped by `remoteParty` for the last 30 days. Used by the "ติดต่อใหม่" tab.
+Returns agent's Oreka call history grouped by `remoteParty` for last 30 days. Powers "ติดต่อใหม่" tab.
 
 - [ ] **Step 1: Create the route**
 
@@ -506,8 +504,8 @@ export const dynamic = "force-dynamic";
 export interface OrekaContact {
   phone: string;
   callCount: number;
-  totalDuration: number; // seconds
-  lastCalledAt: string;  // ISO UTC string
+  totalDuration: number;
+  lastCalledAt: string;
 }
 
 export async function GET() {
@@ -526,7 +524,6 @@ export async function GET() {
   const BASE = process.env.OREKA_BASE_URL ?? "";
   if (!BASE) return NextResponse.json({ contacts: [] });
 
-  // Last 30 days
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 3600_000);
   const startUtc = toOrekaStamp(thirtyDaysAgo);
@@ -544,7 +541,10 @@ export async function GET() {
       let hasMore = true;
 
       while (hasMore) {
-        const url = `${BASE}/orktrack/rest/recordings?range=custom&startdate=${startUtc}&enddate=${endUtc}&page=${page}&pagesize=1000&maxresults=0&includetags=false&includemetadata=false&includeprograms=false`;
+        const url =
+          `${BASE}/orktrack/rest/recordings?range=custom&startdate=${startUtc}&enddate=${endUtc}` +
+          `&page=${page}&pagesize=1000&maxresults=0&includetags=false&includemetadata=false&includeprograms=false`;
+
         let token = await getOrekaToken(accountId);
         let res = await fetch(url, { headers: { Authorization: token, Accept: "application/json" } });
         if (res.status === 401 || res.status === 403) {
@@ -554,7 +554,10 @@ export async function GET() {
         if (!res.ok) break;
 
         const data = await res.json();
-        const recs: Array<{ localParty: string; remoteParty: string; duration: number; timestamp: string; nextPageUri?: string }> = data?.objects ?? [];
+        const recs = (data?.objects ?? []) as Array<{
+          localParty: string; remoteParty: string;
+          duration: number; timestamp: string;
+        }>;
 
         for (const r of recs) {
           if (r.localParty !== ext || !r.remoteParty) continue;
@@ -604,16 +607,14 @@ git commit -m "feat(call-summary): add GET /api/oreka/contacts endpoint"
 
 ---
 
-## Task 6: Update `customers-list/page.tsx` — Pass `hasOrekaExt`
+## Task 6: Update `customers-list/page.tsx`
 
 **Files:**
 - Modify: `app/my-desk/customers-list/page.tsx`
 
-The server component needs to tell the client whether the agent has Oreka configured, to decide whether to show the "ติดต่อใหม่" tab and run the poller.
+Pass `hasOrekaExt` so the client knows whether to show tabs and the summarize button.
 
-- [ ] **Step 1: Update `page.tsx`**
-
-Replace the full file content:
+- [ ] **Step 1: Replace file content**
 
 ```tsx
 // app/my-desk/customers-list/page.tsx
@@ -642,30 +643,31 @@ export default async function CustomersListPage() {
 ```bash
 npx tsc --noEmit
 ```
-Expected: Error about unknown prop `hasOrekaExt` — this is fine, will be resolved in Task 7 when we update the client.
+Expected: Error about unknown `hasOrekaExt` prop on `CustomersListClient` — this resolves in Task 7.
 
-- [ ] **Step 3: Commit after Task 7 completes (batched)**
+- [ ] **Step 3: Commit after Task 7 (batched)**
 
 ---
 
-## Task 7: Update `CustomersListClient.tsx` — Tabs, Poller, Toast, Unknown Contacts
+## Task 7: Update `CustomersListClient.tsx`
 
 **Files:**
 - Modify: `app/my-desk/customers-list/CustomersListClient.tsx`
 
-This is the biggest change. We add:
-1. A top-level tab: "ลูกค้า" vs "ติดต่อใหม่"
-2. 60s poller that calls `/api/call-summary/check`
-3. Toast notification component
-4. "ติดต่อใหม่" tab content (fetches `/api/oreka/contacts`, subtracts known phones)
-5. Call summary section inside the `CustomerProfile` modal
+Full replacement. Adds:
+1. Tab bar: "ลูกค้า" vs "ติดต่อใหม่" (only when `hasOrekaExt`)
+2. "ติดต่อใหม่" tab: fetches `/api/oreka/contacts`, subtracts known phones
+3. `CallSummarySection` component: shows existing summaries + "สรุปการโทรล่าสุด" button
+4. Customer profile modal gains the `CallSummarySection` below purchase history
 
-- [ ] **Step 1: Replace `CustomersListClient.tsx` with the full updated file**
+**Important:** `formatTalkTime` is importable from `@/lib/oreka-format` (pure client-safe helper, no server imports).
+
+- [ ] **Step 1: Replace full file content**
 
 ```tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { SaleRow } from "@/lib/db";
 import EditSaleModal from "@/app/my-desk/components/EditSaleModal";
@@ -718,7 +720,7 @@ interface OrekaContact {
   lastCalledAt: string;
 }
 
-interface CallSummary {
+interface SavedSummary {
   id: string;
   summary: string;
   coachingTips: string[];
@@ -727,53 +729,12 @@ interface CallSummary {
   createdAt: string;
 }
 
-interface ToastData {
-  phone: string;
-  summary: string;
-  coachingTips: string[];
-}
-
-// ── Toast ──────────────────────────────────────────────────────────────────────
-function SummaryToast({ data, onDismiss, onView }: {
-  data: ToastData; onDismiss: () => void; onView: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 8000);
-    return () => clearTimeout(t);
-  }, [onDismiss]);
-
-  return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[340px] bg-[#3D3D3D] text-white rounded-2xl px-5 py-4 shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-[#87DE81]/20 flex items-center justify-center shrink-0 mt-0.5">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#87DE81" strokeWidth="2.5" strokeLinecap="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[12px] font-semibold text-[#87DE81] mb-0.5">สรุปการโทรพร้อมแล้ว</div>
-          <div className="text-[11px] text-white/70 truncate">{data.phone}</div>
-          <div className="text-[11px] text-white/60 mt-1 line-clamp-2">{data.summary}</div>
-        </div>
-        <button onClick={onDismiss} className="text-white/40 hover:text-white shrink-0 mt-0.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-      <button
-        onClick={onView}
-        className="mt-3 w-full text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white rounded-lg py-2 transition-colors"
-      >
-        ดูเลย →
-      </button>
-    </div>
-  );
-}
-
 // ── Call Summary Section ───────────────────────────────────────────────────────
-function CallSummarySection({ phone }: { phone: string }) {
-  const [summaries, setSummaries] = useState<CallSummary[] | null>(null);
+function CallSummarySection({ phone, hasOrekaExt }: { phone: string; hasOrekaExt: boolean }) {
+  const [summaries, setSummaries] = useState<SavedSummary[] | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [genResult, setGenResult] = useState<{ summary: string; coachingTips: string[]; duration: number; calledAt: string } | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!phone) return;
@@ -783,52 +744,116 @@ function CallSummarySection({ phone }: { phone: string }) {
       .catch(() => setSummaries([]));
   }, [phone]);
 
-  if (summaries === null) {
-    return (
-      <div className="px-5 py-3 border-t border-[#E8E8E8]">
-        <div className="text-[10px] text-[#8B8E8F] animate-pulse">กำลังโหลดสรุปการโทร...</div>
-      </div>
-    );
+  async function handleGenerate() {
+    setGenerating(true);
+    setGenError(null);
+    try {
+      const res = await fetch("/api/call-summary/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === "no_recording") setGenError("ไม่พบการโทรล่าสุดในระบบ Oreka (7 วันที่ผ่านมา)");
+        else setGenError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        return;
+      }
+      setGenResult(data);
+      // Refresh the saved list
+      const refreshed = await fetch(`/api/call-summary?phone=${encodeURIComponent(phone)}`).then((r) => r.json());
+      setSummaries(refreshed.summaries ?? []);
+    } catch {
+      setGenError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setGenerating(false);
+    }
   }
-  if (summaries.length === 0) return null;
 
-  const latest = summaries[0];
-  const durationStr = latest.duration ? formatTalkTime(latest.duration) : null;
-  const dateStr = latest.calledAt
-    ? new Date(latest.calledAt + " UTC").toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
-    : null;
+  const displaySummary = genResult ?? (summaries && summaries.length > 0 ? summaries[0] : null);
 
   return (
     <div className="px-5 py-4 border-t border-[#E8E8E8] space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold text-[#8B8E8F] uppercase tracking-wide">สรุปการโทรล่าสุด</span>
-        {dateStr && <span className="text-[10px] text-[#C0C0C0]">{dateStr}</span>}
-        {durationStr && <span className="text-[10px] text-[#C0C0C0]">({durationStr} นาที)</span>}
-      </div>
-      <p className="text-[12px] text-[#3D3D3D] leading-relaxed">{latest.summary}</p>
-      {latest.coachingTips.length > 0 && (
-        <div className="bg-[#87DE81]/8 border border-[#87DE81]/20 rounded-xl p-3 space-y-1.5">
-          <div className="text-[10px] font-semibold text-[#3D9B3A] flex items-center gap-1.5">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            คำแนะนำ
-          </div>
-          {latest.coachingTips.map((tip, i) => (
-            <div key={i} className="flex items-start gap-2 text-[11px] text-[#3D3D3D]">
-              <span className="text-[#87DE81] font-bold shrink-0 mt-px">•</span>
-              <span>{tip}</span>
+      {/* Summarize button */}
+      {hasOrekaExt && !genResult && (
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          className="w-full flex items-center justify-center gap-2 text-[12px] font-semibold text-[#0E8FA8] border border-[#58CEE8]/40 bg-[#58CEE8]/5 hover:bg-[#58CEE8]/10 rounded-xl py-2.5 transition-colors disabled:opacity-60"
+        >
+          {generating ? (
+            <>
+              <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              กำลังสรุป...
+            </>
+          ) : (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              สรุปการโทรล่าสุด
+            </>
+          )}
+        </button>
+      )}
+
+      {genError && (
+        <p className="text-[11px] text-[#CC3333] text-center">{genError}</p>
+      )}
+
+      {displaySummary && (() => {
+        const s = displaySummary;
+        const durationStr = s.duration ? formatTalkTime(s.duration) : null;
+        const rawCalledAt = "calledAt" in s ? s.calledAt : (s as SavedSummary).calledAt;
+        const dateStr = rawCalledAt
+          ? new Date(rawCalledAt + (rawCalledAt.includes("T") ? "" : " UTC")).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
+          : null;
+        const tips: string[] = "coachingTips" in s ? s.coachingTips : [];
+
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-[#8B8E8F] uppercase tracking-wide">สรุปการโทรล่าสุด</span>
+              {dateStr && <span className="text-[10px] text-[#C0C0C0]">{dateStr}</span>}
+              {durationStr && <span className="text-[10px] text-[#C0C0C0]">({durationStr})</span>}
             </div>
-          ))}
-        </div>
+            <p className="text-[12px] text-[#3D3D3D] leading-relaxed">{s.summary}</p>
+            {tips.length > 0 && (
+              <div className="bg-[#87DE81]/8 border border-[#87DE81]/20 rounded-xl p-3 space-y-1.5">
+                <div className="text-[10px] font-semibold text-[#3D9B3A] flex items-center gap-1.5">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  คำแนะนำ
+                </div>
+                {tips.map((tip, i) => (
+                  <div key={i} className="flex items-start gap-2 text-[11px] text-[#3D3D3D]">
+                    <span className="text-[#87DE81] font-bold shrink-0 mt-px">•</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {summaries !== null && summaries.length === 0 && !genResult && !hasOrekaExt && (
+        <p className="text-[11px] text-[#C0C0C0] text-center">ยังไม่มีสรุปการโทร</p>
       )}
     </div>
   );
 }
 
 // ── Profile Modal ──────────────────────────────────────────────────────────────
-function CustomerProfile({ group, onClose, onAddNew, onEdit }: {
-  group: CustomerGroup; onClose: () => void; onAddNew: () => void; onEdit: (r: SaleRow) => void;
+function CustomerProfile({ group, hasOrekaExt, onClose, onAddNew, onEdit }: {
+  group: CustomerGroup;
+  hasOrekaExt: boolean;
+  onClose: () => void;
+  onAddNew: () => void;
+  onEdit: (r: SaleRow) => void;
 }) {
   const history = [...group.purchases].sort((a, b) => b.date.localeCompare(a.date));
   const products = [...new Set(history.map((r) => r.product).filter(Boolean))];
@@ -860,7 +885,7 @@ function CustomerProfile({ group, onClose, onAddNew, onEdit }: {
           </button>
         </div>
 
-        {/* Summary */}
+        {/* Stats */}
         <div className="grid grid-cols-3 divide-x divide-[#E8E8E8] border-b border-[#E8E8E8]">
           <div className="px-4 py-3 text-center">
             <div className="text-[10px] text-[#8B8E8F] mb-0.5">ซื้อทั้งหมด</div>
@@ -887,36 +912,39 @@ function CustomerProfile({ group, onClose, onAddNew, onEdit }: {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto divide-y divide-[#F7F7F7]">
-          {history.map((r, i) => {
-            const st = parseStatus(r.note);
-            const stInfo = STATUS_LABEL[st] ?? { label: st, color: "#8B8E8F" };
-            const total = rowTotal(r);
-            return (
-              <div key={r.id ?? i} className="flex items-center gap-3 px-5 py-3">
-                <div className="text-[11px] text-[#C0C0C0] w-20 shrink-0">{r.date}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium text-[#3D3D3D] truncate">{r.product || "—"}</div>
-                  {r.note && <div className="text-[10px] text-[#8B8E8F] truncate">{r.note}</div>}
+        <div className="flex-1 overflow-y-auto">
+          <div className="divide-y divide-[#F7F7F7]">
+            {history.map((r, i) => {
+              const st = parseStatus(r.note);
+              const stInfo = STATUS_LABEL[st] ?? { label: st, color: "#8B8E8F" };
+              const total = rowTotal(r);
+              return (
+                <div key={r.id ?? i} className="flex items-center gap-3 px-5 py-3">
+                  <div className="text-[11px] text-[#C0C0C0] w-20 shrink-0">{r.date}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-medium text-[#3D3D3D] truncate">{r.product || "—"}</div>
+                    {r.note && <div className="text-[10px] text-[#8B8E8F] truncate">{r.note}</div>}
+                  </div>
+                  <span className="text-[10px] font-medium shrink-0" style={{ color: stInfo.color }}>{stInfo.label}</span>
+                  {total > 0 && <span className="text-[12px] font-semibold text-[#3D3D3D] shrink-0">฿{total.toLocaleString()}</span>}
+                  {r.id && (
+                    <button
+                      onClick={() => onEdit(r)}
+                      className="p-1 rounded-lg text-[#C0C0C0] hover:text-[#8B8E8F] hover:bg-[#F7F7F7] transition-colors shrink-0"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
-                <span className="text-[10px] font-medium shrink-0" style={{ color: stInfo.color }}>{stInfo.label}</span>
-                {total > 0 && <span className="text-[12px] font-semibold text-[#3D3D3D] shrink-0">฿{total.toLocaleString()}</span>}
-                {r.id && (
-                  <button
-                    onClick={() => onEdit(r)}
-                    className="p-1 rounded-lg text-[#C0C0C0] hover:text-[#8B8E8F] hover:bg-[#F7F7F7] transition-colors shrink-0"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
-          {/* Call summary section */}
-          {group.phone && <CallSummarySection phone={group.phone} />}
+          {group.phone && (
+            <CallSummarySection phone={group.phone} hasOrekaExt={hasOrekaExt} />
+          )}
         </div>
       </div>
     </div>
@@ -925,7 +953,8 @@ function CustomerProfile({ group, onClose, onAddNew, onEdit }: {
 
 // ── New Contact Card ───────────────────────────────────────────────────────────
 function NewContactCard({ contact, onRegister }: {
-  contact: OrekaContact; onRegister: (phone: string) => void;
+  contact: OrekaContact;
+  onRegister: (phone: string) => void;
 }) {
   const lastCalled = contact.lastCalledAt
     ? new Date(contact.lastCalledAt + " UTC").toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })
@@ -958,7 +987,9 @@ function NewContactCard({ contact, onRegister }: {
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function CustomersListClient({
-  rows, allRows, hasOrekaExt,
+  rows,
+  allRows,
+  hasOrekaExt,
 }: {
   rows: SaleRow[];
   allRows: SaleRow[];
@@ -970,17 +1001,14 @@ export default function CustomersListClient({
   const [search, setSearch] = useState("");
   const [activeGroup, setActiveGroup] = useState<CustomerGroup | null>(null);
   const [editRow, setEditRow] = useState<SaleRow | null>(null);
-  const [toast, setToast] = useState<ToastData | null>(null);
   const [newContacts, setNewContacts] = useState<OrekaContact[] | null>(null);
   const [contactsLoading, setContactsLoading] = useState(false);
 
-  // Known phones from sales (for subtraction)
   const knownPhones = new Set(allRows.map((r) => r.phone?.trim()).filter(Boolean));
 
-  // Fetch unknown Oreka contacts when switching to "ติดต่อใหม่" tab
   useEffect(() => {
     if (mainTab !== "new_contacts" || !hasOrekaExt) return;
-    if (newContacts !== null) return; // already loaded
+    if (newContacts !== null) return;
     setContactsLoading(true);
     fetch("/api/oreka/contacts")
       .then((r) => r.json())
@@ -993,32 +1021,8 @@ export default function CustomersListClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainTab, hasOrekaExt]);
 
-  // 60-second poller for call summaries
-  const runPoller = useCallback(async () => {
-    if (!hasOrekaExt) return;
-    try {
-      const res = await fetch("/api/call-summary/check", { method: "POST" });
-      const data = await res.json();
-      if (data.newSummary) {
-        setToast({ phone: data.phone, summary: data.summary, coachingTips: data.coachingTips ?? [] });
-        // Refresh new contacts list so the registered one might move
-        setNewContacts(null);
-      }
-    } catch {
-      // silently ignore — network errors shouldn't break the page
-    }
-  }, [hasOrekaExt]);
-
-  useEffect(() => {
-    if (!hasOrekaExt) return;
-    runPoller();
-    const id = setInterval(runPoller, 60_000);
-    return () => clearInterval(id);
-  }, [hasOrekaExt, runPoller]);
-
   const q = search.trim().toLowerCase();
 
-  // Group closed rows by phone (or name if no phone)
   const grouped = (() => {
     const map = new Map<string, CustomerGroup>();
     for (const r of rows) {
@@ -1067,6 +1071,7 @@ export default function CustomersListClient({
       {activeGroup && (
         <CustomerProfile
           group={activeGroup}
+          hasOrekaExt={hasOrekaExt}
           onClose={() => setActiveGroup(null)}
           onEdit={(r) => setEditRow(r)}
           onAddNew={() => {
@@ -1076,18 +1081,6 @@ export default function CustomersListClient({
               ...(activeGroup.address ? { address: activeGroup.address } : {}),
             });
             router.push(`/my-desk/add-customer?${params.toString()}`);
-          }}
-        />
-      )}
-      {toast && (
-        <SummaryToast
-          data={toast}
-          onDismiss={() => setToast(null)}
-          onView={() => {
-            setToast(null);
-            // Find the group with this phone and open its profile
-            const group = grouped.find((g) => g.phone === toast.phone);
-            if (group) setActiveGroup(group);
           }}
         />
       )}
@@ -1113,7 +1106,7 @@ export default function CustomersListClient({
           )}
         </div>
 
-        {/* Main tabs — only shown when Oreka is configured */}
+        {/* Main tabs */}
         {hasOrekaExt && (
           <div className="flex gap-1 bg-[#F7F7F7] border border-[#E8E8E8] rounded-xl p-1">
             <button
@@ -1128,7 +1121,7 @@ export default function CustomersListClient({
             >
               ติดต่อใหม่
               {newContacts && newContacts.length > 0 && (
-                <span className="text-[10px] bg-[#58CEE8] text-white px-1.5 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] bg-[#58CEE8] text-white px-1.5 py-0.5 rounded-full font-bold min-w-[18px] text-center">
                   {newContacts.length}
                 </span>
               )}
@@ -1278,51 +1271,54 @@ npx tsc --noEmit
 ```
 Expected: No errors.
 
-- [ ] **Step 3: Start dev server and verify the page loads**
+- [ ] **Step 3: Start dev server and spot-check visually**
 
 ```bash
 npm run dev
 ```
-Open `http://localhost:3000/my-desk/customers-list` while logged in as an agent. Verify:
-- "ลูกค้า" tab shows existing customers (unchanged)
-- If agent has `oreka_ext` configured: "ติดต่อใหม่" tab appears
-- If agent has no `oreka_ext`: only the single customers list shows (no tabs)
+Open `http://localhost:3000/my-desk/customers-list`. Verify:
+- Page loads without errors
+- If agent has no `oreka_ext`: no tabs, page looks identical to before
+- If agent has `oreka_ext`: "ลูกค้า" / "ติดต่อใหม่" tabs appear
+- Click a customer → profile modal opens → "สรุปการโทรล่าสุด" button appears at the bottom
+- "ติดต่อใหม่" tab shows loading skeletons then contact cards
 
-- [ ] **Step 4: Commit everything**
+- [ ] **Step 4: Commit both page.tsx and client**
 
 ```bash
 git add app/my-desk/customers-list/page.tsx app/my-desk/customers-list/CustomersListClient.tsx
-git commit -m "feat(call-summary): add tabs, poller, toast, unknown contacts, summary in profile"
+git commit -m "feat(call-summary): add tabs, manual summarize button, unknown contacts tab"
 ```
 
 ---
 
-## Task 8: Verify End-to-End
+## Task 8: End-to-End Verification
 
-Manual verification steps after all tasks are complete.
+Manual verification steps after all tasks complete.
 
-- [ ] **Step 1: Verify poller fires**
+- [ ] **Step 1: Verify "สรุปการโทรล่าสุด" button works**
 
-Open browser DevTools → Network tab. Go to `/my-desk/customers-list`. Wait 60 seconds. Confirm `POST /api/call-summary/check` appears in network requests every ~60s.
+As an agent with `oreka_ext` configured:
+1. Go to `/my-desk/customers-list`
+2. Open a customer who has a phone number matching an Oreka recording in the last 7 days
+3. Click "สรุปการโทรล่าสุด"
+4. Verify spinner appears, then summary + coaching tips render
+5. Close and reopen the same customer — verify the summary loads immediately (cached, no spinner)
 
-- [ ] **Step 2: Verify summary after a real call**
+- [ ] **Step 2: Verify "no recording" case**
 
-Have an agent make a call via dtac OneCall. Wait up to 60 seconds after the call ends. Verify:
-- Toast appears at bottom of screen with the phone number
-- Clicking "ดูเลย" opens the customer's profile (or the new contacts tab)
-- The summary section appears below purchase history
+Open a customer whose phone has NO Oreka recordings in the last 7 days. Click button. Verify "ไม่พบการโทรล่าสุดในระบบ Oreka (7 วันที่ผ่านมา)" message appears.
 
 - [ ] **Step 3: Verify "ติดต่อใหม่" tab**
 
-Click "ติดต่อใหม่" tab. Verify Oreka contacts load as cards. Confirm phones that are already in `sales` are NOT shown. Click "กรอกข้อมูล →" and verify it navigates to Add Customer with the phone pre-filled.
+Click "ติดต่อใหม่" tab. Verify:
+- Contacts load with phone, call count, total duration, last called date
+- Phones already in `sales` table are NOT shown
+- Clicking "กรอกข้อมูล →" navigates to Add Customer with phone pre-filled
 
-- [ ] **Step 4: Verify no Oreka = no tabs**
+- [ ] **Step 4: Verify agent without oreka_ext**
 
-Log in as an agent with no `oreka_ext` set. Go to customers-list. Confirm tab bar is hidden and page looks identical to before.
-
-- [ ] **Step 5: Final commit**
-
-```bash
-git add .
-git commit -m "feat(call-summary): complete implementation"
-```
+Log in as agent with no `oreka_ext`. Go to customers-list. Verify:
+- No tab bar visible
+- No "สรุปการโทรล่าสุด" button in profile modal
+- Page looks identical to before this feature was added
