@@ -14,11 +14,11 @@ CREATE TABLE IF NOT EXISTS call_summaries (
 
 ALTER TABLE call_summaries ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "agent_own_summaries" ON call_summaries;
 CREATE POLICY "agent_own_summaries" ON call_summaries
-  FOR ALL USING (agent_id = auth.uid());
+  FOR ALL
+  USING (agent_id = auth.uid())
+  WITH CHECK (agent_id = auth.uid());
 
 CREATE INDEX IF NOT EXISTS call_summaries_agent_phone_idx
   ON call_summaries(agent_id, phone);
-
-CREATE INDEX IF NOT EXISTS call_summaries_recording_id_idx
-  ON call_summaries(recording_id);
