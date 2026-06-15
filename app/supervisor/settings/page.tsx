@@ -36,7 +36,7 @@ export default async function SettingsPage({
     <div className="h-full overflow-auto">
       <div className="max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Settings</h1>
+          <h1 className="text-[16px] font-semibold text-[#3D3D3D]">ตั้งค่า</h1>
           <p className="text-[12px] text-[#8B8E8F] mt-0.5">
             ตั้งค่าที่ Supervisor กำหนดได้ — จะมีผลกับทุก Dashboard ทันที
           </p>
@@ -58,7 +58,7 @@ export default async function SettingsPage({
               </svg>
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#3D3D3D]">Daily Team Target</div>
+              <div className="text-[14px] font-semibold text-[#3D3D3D]">เป้ารายวันทีม</div>
               <div className="text-[12px] text-[#8B8E8F] mt-0.5">
                 เป้าทีมรวม — ใช้เป็น default สำหรับ agent ที่ยังไม่มีเป้าเฉพาะคน
               </div>
@@ -83,7 +83,7 @@ export default async function SettingsPage({
               </svg>
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#3D3D3D]">Individual Agent Target (Daily)</div>
+              <div className="text-[14px] font-semibold text-[#3D3D3D]">เป้ารายวันเฉพาะคน</div>
               <div className="text-[12px] text-[#8B8E8F] mt-0.5">
                 กำหนดเป้ารายวันเฉพาะคน — จะแสดงในหน้า My Desk ของ agent นั้น
               </div>
@@ -131,7 +131,7 @@ export default async function SettingsPage({
               </svg>
             </div>
             <div>
-              <div className="text-[14px] font-semibold text-[#3D3D3D]">Individual Agent Target (Monthly)</div>
+              <div className="text-[14px] font-semibold text-[#3D3D3D]">เป้ารายเดือนเฉพาะคน</div>
               <div className="text-[12px] text-[#8B8E8F] mt-0.5">
                 กำหนดเป้ารายเดือนเฉพาะคน — จะแสดงใน My Desk KPI Bar ของ agent นั้น
               </div>
@@ -193,9 +193,9 @@ export default async function SettingsPage({
           <div className="text-[12px] font-semibold text-[#3D3D3D] mb-3">วิธีการทำงาน</div>
           <div className="space-y-2.5">
             {[
-              { icon: "⚙️", label: "Team Target (Daily)", desc: "เป้าทีมรวม — ใช้เป็น default ถ้า agent ไม่มีเป้าเฉพาะคน" },
-              { icon: "🎯", label: "Individual Target (Daily)", desc: "เป้าเฉพาะคนรายวัน — override เป้าทีมใน My Desk KPI Bar" },
-              { icon: "📅", label: "Individual Target (Monthly)", desc: "เป้าเฉพาะคนรายเดือน — แสดงความคืบหน้าเดือนนี้ใน My Desk" },
+              { icon: "⚙️", label: "เป้าทีม (รายวัน)", desc: "เป้าทีมรวม — ใช้เป็น default ถ้า agent ไม่มีเป้าเฉพาะคน" },
+              { icon: "🎯", label: "เป้าเฉพาะคน (รายวัน)", desc: "เป้าเฉพาะคนรายวัน — override เป้าทีมใน My Desk KPI Bar" },
+              { icon: "📅", label: "เป้าเฉพาะคน (รายเดือน)", desc: "เป้าเฉพาะคนรายเดือน — แสดงความคืบหน้าเดือนนี้ใน My Desk" },
               { icon: "📊", label: "My Desk KPI Bar", desc: "แสดงทั้งเป้ารายวันและ % ความคืบหน้าเดือนนี้" },
             ].map((item) => (
               <div key={item.label} className="flex items-start gap-3">

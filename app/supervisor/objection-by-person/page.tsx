@@ -15,7 +15,7 @@ export default async function ObjectionByPersonPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Objection by Person</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">ข้อโต้แย้งรายคน</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">วิเคราะห์จาก note field จริง — keyword ที่ตรวจ: แพง, คิดก่อน, ถามญาติ, ถามหมอ, กลัว</p>
       </div>
 

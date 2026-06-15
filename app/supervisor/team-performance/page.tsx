@@ -46,7 +46,7 @@ export default async function TeamPerformancePage() {
   return (
     <div className="flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Team Performance by Person</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">ผลงานทีมรายคน</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">
           ยอดขายวันนี้ & เดือนนี้ รายคน — เทียบเป้ารายวัน / รายเดือน
         </p>
@@ -56,12 +56,12 @@ export default async function TeamPerformancePage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <KpiCard label="ยอดรวมทีมวันนี้" value={`฿${teamTotal.toLocaleString()}`} accent="green" />
         <KpiCard
-          label="Daily Target (ทีม)"
+          label="เป้ารายวัน (ทีม)"
           value={`฿${dailyTarget.toLocaleString()}`}
           sub={`${pct(teamTotal, dailyTarget)}% วันนี้`}
         />
         <KpiCard
-          label="Monthly Target (ทีม)"
+          label="เป้ารายเดือน (ทีม)"
           value={`฿${(dailyTarget * 25).toLocaleString()}`}
           sub={`฿${teamMonthTotal.toLocaleString()} / ${pct(teamMonthTotal, dailyTarget * 25)}% เดือนนี้`}
           accent={pct(teamMonthTotal, dailyTarget * 25) >= 80 ? "green" : undefined}
@@ -85,7 +85,7 @@ export default async function TeamPerformancePage() {
           <table className="w-full text-[13px]">
             <thead className="sticky top-0 bg-white z-10">
               <tr className="border-b border-[#E8E8E8]">
-                {["#", "Agent", "ยอดวันนี้ / เป้ารายวัน", "ยอดเดือนนี้ / เป้าเดือน", "Orders", "AOV", "Pending", "Follow-up", "สถานะ"].map((h) => (
+                {["#", "Agent", "ยอดวันนี้ / เป้ารายวัน", "ยอดเดือนนี้ / เป้าเดือน", "Orders", "AOV", "รอโอน", "Follow-up", "สถานะ"].map((h) => (
                   <th key={h} className="text-left text-[11px] text-[#8B8E8F] font-medium py-3.5 px-5 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -115,8 +115,8 @@ export default async function TeamPerformancePage() {
                       dailyPct >= 50 ? "text-amber-600 bg-amber-50" :
                       "text-red-500 bg-red-50";
                     const dailyStatusLabel =
-                      dailyPct >= 80 ? "On Track" :
-                      dailyPct >= 50 ? "Behind" : "At Risk";
+                      dailyPct >= 80 ? "ตามเป้า" :
+                      dailyPct >= 50 ? "ตามหลัง" : "เสี่ยง";
 
                     return (
                       <tr key={a.agentId} className="border-b border-[#F7F7F7] hover:bg-[#F7F7F7]/60 transition-colors">

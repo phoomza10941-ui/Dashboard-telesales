@@ -7,7 +7,7 @@ import { updateNickname, updateAvatarUrl } from "@/app/actions/profile";
 const navItems = [
   {
     href: "/supervisor/team-performance",
-    label: "Team Performance",
+    label: "ผลงานทีม",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -26,7 +26,7 @@ const navItems = [
   },
   {
     href: "/supervisor/funnel-diagnosis",
-    label: "Funnel Diagnosis",
+    label: "วิเคราะห์ Funnel",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -35,7 +35,7 @@ const navItems = [
   },
   {
     href: "/supervisor/hot-cases",
-    label: "Hot Case Ranking",
+    label: "เคสร้อน",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
@@ -44,7 +44,7 @@ const navItems = [
   },
   {
     href: "/supervisor/drop-off-risk",
-    label: "Drop-off Risk",
+    label: "เสี่ยงหลุด",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -54,7 +54,7 @@ const navItems = [
   },
   {
     href: "/supervisor/follow-up-compliance",
-    label: "Follow-up Compliance",
+    label: "การติดตาม Follow-up",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
@@ -63,7 +63,7 @@ const navItems = [
   },
   {
     href: "/supervisor/objection-by-person",
-    label: "Objection by Person",
+    label: "ข้อโต้แย้งรายคน",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -72,7 +72,7 @@ const navItems = [
   },
   {
     href: "/supervisor/report",
-    label: "Report",
+    label: "รายงาน",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -85,7 +85,7 @@ const navItems = [
   },
   {
     href: "/supervisor/lead-quality",
-    label: "Lead Quality",
+    label: "คุณภาพ Lead",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
@@ -103,7 +103,7 @@ const navItems = [
   },
   {
     href: "/supervisor/script-recommendation",
-    label: "Script Recommendation",
+    label: "แนะนำ Script",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
@@ -112,7 +112,7 @@ const navItems = [
   },
   {
     href: "/supervisor/coaching-log",
-    label: "Coaching Log",
+    label: "บันทึก Coaching",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -121,7 +121,7 @@ const navItems = [
   },
   {
     href: "/supervisor/settings",
-    label: "Settings",
+    label: "ตั้งค่า",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3"/>
@@ -201,7 +201,7 @@ export default function SupervisorNav({ fullName = "Supervisor", avatarUrl = "",
           </div>
           <div>
             <div className="text-[11px] font-semibold text-[#3D3D3D] leading-none">Supervisor</div>
-            <div className="text-[10px] text-[#8B8E8F] mt-0.5">Team Dashboard</div>
+            <div className="text-[10px] text-[#8B8E8F] mt-0.5">แดชบอร์ดทีม</div>
           </div>
         </div>
       </div>
@@ -229,7 +229,7 @@ export default function SupervisorNav({ fullName = "Supervisor", avatarUrl = "",
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[12px] font-medium text-[#3D3D3D] truncate">{fullName}</div>
-            <div className="text-[10px] text-[#8B8E8F] truncate">Supervisor View</div>
+            <div className="text-[10px] text-[#8B8E8F] truncate">มุมมอง Supervisor</div>
           </div>
           <svg
             className={`shrink-0 text-[#8B8E8F] transition-transform ${profileOpen ? "rotate-180" : ""}`}
@@ -317,7 +317,7 @@ export default function SupervisorNav({ fullName = "Supervisor", avatarUrl = "",
       <div className="px-5 py-4 border-t border-[#E8E8E8] space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#87DE81] animate-pulse" />
-          <span className="text-[11px] text-[#8B8E8F]">Online</span>
+          <span className="text-[11px] text-[#8B8E8F]">ออนไลน์</span>
         </div>
         <button
           onClick={handleLogout}

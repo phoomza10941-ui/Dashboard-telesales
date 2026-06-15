@@ -4,6 +4,14 @@ import { useState, useRef, useCallback } from "react";
 import { saveOrekaLabel, toggleOrekaClosed, renameAgent, setAgentTeam } from "@/app/actions/config";
 import type { AgentTalkTime, AccountId } from "@/lib/oreka";
 import { formatTalkTime } from "@/lib/oreka-format";
+
+interface Recording {
+  id: number;
+  timestamp: string;
+  duration: number;
+  direction: string;
+  remoteParty: string;
+}
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -14,7 +22,7 @@ type ViewMode = "day" | "month";
 const ckey = (a: AgentTalkTime) => `${a.account}:${a.orekaExt}`;
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "overall", label: "Overall" },
+  { id: "overall", label: "ทั้งหมด" },
   { id: "gosell", label: "Gosell" },
   { id: "hopeful", label: "Hopeful" },
 ];
@@ -171,7 +179,7 @@ function SkeletonRows({ count = 8 }: { count?: number }) {
               <div className="h-1.5 w-28 rounded-full bg-[#F0F0F0] animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
             </div>
           </td>
-          {[...Array(4)].map((_, j) => (
+          {[...Array(5)].map((_, j) => (
             <td key={j} className="py-4 px-5"><div className="h-3 w-6 rounded bg-[#F0F0F0] animate-pulse" style={{ animationDelay: `${(i + j) * 60}ms` }} /></td>
           ))}
         </tr>
@@ -212,6 +220,10 @@ export default function TalkTimeClient({
   const [pagesLoaded, setPagesLoaded] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const abortRef = useRef<AbortController | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [recsMap, setRecsMap] = useState<Record<string, Recording[]>>({});
+  const [recsLoading, setRecsLoading] = useState<Set<string>>(new Set());
+  const [recsError, setRecsError] = useState<Record<string, string>>({});
 
   const isToday = mode === "day" && dateKey === todayKey;
   const isCurrentMonth = mode === "month" && monthKey === currentMonthKey;
@@ -274,6 +286,26 @@ export default function TalkTimeClient({
     renameAgent(oldNickname, next)
       .then(res => { if (!res.ok) { setAgents(snapshot); alert(res.error ?? "เปลี่ยนชื่อไม่สำเร็จ"); } })
       .catch(() => { setAgents(snapshot); alert("เปลี่ยนชื่อไม่สำเร็จ"); });
+  }
+
+  async function toggleExpand(a: AgentTalkTime) {
+    const key = ckey(a);
+    if (expanded.has(key)) {
+      setExpanded(prev => { const n = new Set(prev); n.delete(key); return n; });
+      return;
+    }
+    setExpanded(prev => new Set(prev).add(key));
+    if (recsMap[key]) return; // already loaded
+    setRecsLoading(prev => new Set(prev).add(key));
+    try {
+      const res = await fetch(`/api/oreka/recordings?ext=${encodeURIComponent(a.orekaExt)}&account=${a.account}&date=${mode === "day" ? dateKey : dateKey}`);
+      const data = await res.json();
+      setRecsMap(prev => ({ ...prev, [key]: data.recordings ?? [] }));
+    } catch {
+      setRecsError(prev => ({ ...prev, [key]: "โหลดไม่ได้" }));
+    } finally {
+      setRecsLoading(prev => { const n = new Set(prev); n.delete(key); return n; });
+    }
   }
 
   // Effective account = team override (if any) else the natural recording account.
@@ -522,6 +554,7 @@ export default function TalkTimeClient({
                 {["#", "Agent", "ทีม", "เบอร์ (Local Party)", "Talk Time", "สาย", "เข้า", "ออก", "เฉลี่ย/สาย"].map(h => (
                   <th key={h} className="text-left text-[11px] text-[#8B8E8F] font-medium py-3.5 px-5 whitespace-nowrap">{h}</th>
                 ))}
+                <th className="py-3.5 px-5 text-left text-[11px] text-[#8B8E8F] font-medium whitespace-nowrap">บันทึกเสียง</th>
                 <th className="py-3.5 px-5" />
               </tr>
             </thead>
@@ -529,7 +562,7 @@ export default function TalkTimeClient({
               {loading && agents.length === 0 ? (
                 <SkeletonRows count={8} />
               ) : visible.length === 0 ? (
-                <tr><td colSpan={10} className="py-12 text-center text-[12px] text-[#8B8E8F]">
+                <tr><td colSpan={11} className="py-12 text-center text-[12px] text-[#8B8E8F]">
                   {error ? "ไม่สามารถโหลดข้อมูลได้" : `ไม่มีข้อมูล${mode === "day" ? `วัน${isToday ? "นี้" : `ที่ ${displayDate(dateKey)}`}` : `เดือน${periodLabel}`}`}
                 </td></tr>
               ) : (
@@ -546,8 +579,15 @@ export default function TalkTimeClient({
                     ? { row: "hover:bg-amber-50/40", avatar: "bg-amber-100 text-amber-700", bar: "bg-[#58CEE8]", badge: "bg-amber-50 text-amber-600 border border-amber-200" }
                     : { row: "hover:bg-purple-50/40", avatar: "bg-purple-100 text-purple-700", bar: "bg-purple-400", badge: "bg-purple-50 text-purple-600 border border-purple-200" };
 
+                  const key = ckey(a);
+                  const isExpanded = expanded.has(key);
+                  const recs = recsMap[key];
+                  const recLoading = recsLoading.has(key);
+                  const recErr = recsError[key];
+
                   return (
-                    <tr key={`${a.account}:${a.orekaExt}`} className={`group border-b border-[#F7F7F7] transition-colors ${theme.row}`}>
+                    <>
+                    <tr key={`${a.account}:${a.orekaExt}`} className={`group border-b border-[#F7F7F7] transition-colors ${isExpanded ? "" : theme.row}`}>
                       <td className="py-4 px-5 text-[#8B8E8F] font-medium">{i + 1}</td>
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-2.5">
@@ -588,6 +628,19 @@ export default function TalkTimeClient({
                       <td className="py-4 px-5 text-[#8B8E8F]">{a.inCount}</td>
                       <td className="py-4 px-5 text-[#8B8E8F]">{a.outCount}</td>
                       <td className="py-4 px-5 text-[#3D3D3D]">{avg > 0 ? formatTalkTime(avg) : "—"}</td>
+                      <td className="py-4 px-5">
+                        {mode === "day" && (
+                          <button
+                            onClick={() => toggleExpand(a)}
+                            className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${isExpanded ? "border-[#87DE81] bg-[#87DE81]/10 text-[#3D9B3A]" : "border-[#E8E8E8] text-[#8B8E8F] hover:border-[#87DE81] hover:text-[#3D9B3A]"}`}
+                          >
+                            <svg className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                            {recLoading ? "กำลังโหลด…" : `${a.callCount} สาย`}
+                          </button>
+                        )}
+                      </td>
                       <td className="py-4 px-3 text-right">
                         <button
                           onClick={() => closeRow(a)}
@@ -601,6 +654,51 @@ export default function TalkTimeClient({
                         </button>
                       </td>
                     </tr>
+                    {isExpanded && (
+                      <tr key={`${key}:expand`} className="bg-[#F7F7F7] border-b border-[#E8E8E8]">
+                        <td colSpan={11} className="px-8 py-3">
+                          {recLoading && (
+                            <div className="flex items-center gap-2 text-[12px] text-[#8B8E8F] py-2">
+                              <svg className="animate-spin w-4 h-4 text-[#58CEE8]" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+                              </svg>
+                              กำลังดึงบันทึกเสียง…
+                            </div>
+                          )}
+                          {recErr && <p className="text-[12px] text-red-500 py-2">⚠️ {recErr}</p>}
+                          {recs && recs.length === 0 && !recLoading && (
+                            <p className="text-[12px] text-[#8B8E8F] py-2">ไม่มีบันทึกเสียงวันนี้</p>
+                          )}
+                          {recs && recs.length > 0 && (
+                            <div className="flex flex-col gap-2 py-1 max-h-80 overflow-y-auto">
+                              {recs.map(rec => {
+                                const thaiTime = new Date(rec.timestamp + "Z");
+                                thaiTime.setHours(thaiTime.getHours() + 7);
+                                const hh = String(thaiTime.getUTCHours()).padStart(2, "0");
+                                const mm = String(thaiTime.getUTCMinutes()).padStart(2, "0");
+                                return (
+                                  <div key={rec.id} className="flex items-center gap-3 bg-white rounded-xl border border-[#E8E8E8] px-4 py-2.5 flex-wrap">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${rec.direction === "OUT" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-emerald-50 text-emerald-600 border border-emerald-200"}`}>
+                                      {rec.direction === "OUT" ? "โทรออก" : "รับสาย"}
+                                    </span>
+                                    <span className="text-[12px] font-medium text-[#3D3D3D] font-mono">{hh}:{mm}</span>
+                                    <span className="text-[11px] text-[#8B8E8F]">{formatTalkTime(rec.duration)}</span>
+                                    <span className="text-[11px] text-[#C0C0C0] font-mono">{rec.remoteParty}</span>
+                                    <audio
+                                      controls
+                                      preload="none"
+                                      className="h-8 flex-1 min-w-[200px]"
+                                      src={`/api/oreka/audio/${rec.id}?account=${a.account}`}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   );
                 })
               )}

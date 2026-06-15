@@ -5,6 +5,12 @@ import { fmtBahtCompact, fmtBaht } from "@/lib/format";
 
 type Period = "Today" | "7 Days" | "28 Days" | "All";
 const periods: Period[] = ["Today", "7 Days", "28 Days", "All"];
+const periodLabel: Record<Period, string> = {
+  "Today": "วันนี้",
+  "7 Days": "7 วัน",
+  "28 Days": "28 วัน",
+  "All": "ทั้งหมด",
+};
 
 function todayStr() {
   const d = new Date();
@@ -101,7 +107,7 @@ export default function PerformanceClient({
           <button key={p} onClick={() => setPeriod(p)}
             className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
               period === p ? "bg-[#87DE81] text-white shadow-sm" : "text-[#8B8E8F] hover:text-[#3D3D3D] hover:bg-[#F7F7F7]"
-            }`}>{p}</button>
+            }`}>{periodLabel[p]}</button>
         ))}
       </div>
 
@@ -161,7 +167,7 @@ export default function PerformanceClient({
       {/* Progress bar */}
       <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[13px] font-semibold text-[#3D3D3D]">Progress ถึงเป้า ({period})</span>
+          <span className="text-[13px] font-semibold text-[#3D3D3D]">ความคืบหน้าถึงเป้า ({periodLabel[period]})</span>
           <span className="text-[13px] font-bold text-[#3D3D3D]">{pct}%</span>
         </div>
         <div className="w-full h-3 bg-[#E8E8E8] rounded-full overflow-hidden">
@@ -213,7 +219,7 @@ export default function PerformanceClient({
       {/* Product breakdown */}
       {products.length > 0 && (
         <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
-          <h3 className="text-[13px] font-semibold text-[#3D3D3D] mb-4">สินค้าที่ขายได้ ({period})</h3>
+          <h3 className="text-[13px] font-semibold text-[#3D3D3D] mb-4">สินค้าที่ขายได้ ({periodLabel[period]})</h3>
           <div className="space-y-2.5">
             {products.map(([prod, count]) => {
               const pctBar = Math.round((count / orders) * 100);

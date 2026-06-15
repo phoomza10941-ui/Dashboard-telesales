@@ -70,7 +70,7 @@ export default async function DropOffRiskPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Drop-off Risk Alert</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">แจ้งเตือนเสี่ยงหลุด</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">เคสที่กำลังจะหลุด — คัดจาก note field จริง</p>
       </div>
 

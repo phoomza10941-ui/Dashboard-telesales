@@ -187,7 +187,7 @@ export default function CustomersListClient({ rows, allRows }: { rows: SaleRow[]
   const totalSales = filtered.reduce((s, g) => s + g.totalValue, 0);
 
   const VIEWS: { key: View; label: string; activeClass: string }[] = [
-    { key: "overall", label: "Overall", activeClass: "bg-[#3D3D3D] text-white" },
+    { key: "overall", label: "ทั้งหมด", activeClass: "bg-[#3D3D3D] text-white" },
     { key: "gosell",  label: "GoSell",  activeClass: "bg-[#87DE81] text-[#3D9B3A]" },
     { key: "hopeful", label: "Hopeful", activeClass: "bg-[#022EE8] text-[#0E8FA8]" },
   ];
@@ -217,7 +217,7 @@ export default function CustomersListClient({ rows, allRows }: { rows: SaleRow[]
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[18px] font-semibold text-[#3D3D3D]">Customers List</h1>
+            <h1 className="text-[18px] font-semibold text-[#3D3D3D]">รายชื่อลูกค้า</h1>
             <p className="text-[12px] text-[#8B8E8F] mt-0.5">ลูกค้าที่ชำระเงินแล้ว / ปิดการขายแล้ว</p>
           </div>
           <div className="flex items-center gap-1 bg-[#F7F7F7] border border-[#E8E8E8] rounded-xl p-1">

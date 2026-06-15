@@ -47,6 +47,8 @@ export interface OrekaRecording {
   remoteParty: string; // customer number
   direction: "IN" | "OUT" | string;
   userDto?: { firstname?: string; lastname?: string };
+  recordingURL?: string; // full URL to stream audio via Oreka mediastream
+  waveformURL?: string;
 }
 
 export interface AgentTalkTime {
@@ -271,6 +273,35 @@ async function fetchAndAggregate(startUtc: string, endUtc: string): Promise<Agen
   if (failures === ACCOUNTS.length) throw new Error("All Oreka accounts failed to fetch");
 
   return buildResult(perAccount, await fetchExtMaps());
+}
+
+// --- fetch recordings for a specific localParty (agent ext) on a date range ---
+export async function getRecordingsForExt(
+  startUtc: string,
+  endUtc: string,
+  orekaExt: string,
+  accountId: AccountId
+): Promise<OrekaRecording[]> {
+  const acct = ACCOUNTS.find((a) => a.id === accountId);
+  if (!acct) throw new Error(`Unknown account: ${accountId}`);
+  const all = await fetchRecordingsRange(startUtc, endUtc, acct);
+  return all
+    .filter((r) => r.localParty === orekaExt)
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+// Get a valid auth token for the given account (for proxy use)
+export async function getOrekaToken(accountId: AccountId): Promise<string> {
+  const acct = ACCOUNTS.find((a) => a.id === accountId);
+  if (!acct) throw new Error(`Unknown account: ${accountId}`);
+  return getToken(acct);
+}
+
+// Re-login on 401 and return new token
+export async function refreshOrekaToken(accountId: AccountId): Promise<string> {
+  const acct = ACCOUNTS.find((a) => a.id === accountId);
+  if (!acct) throw new Error(`Unknown account: ${accountId}`);
+  return login(acct);
 }
 
 // --- public API with TTL cache (keyed by date) ---

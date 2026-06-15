@@ -69,7 +69,7 @@ export default async function HotCasesPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Hot Case Ranking</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">อันดับเคสร้อน</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">เคสที่ Supervisor ควรเข้าช่วยก่อน — คัดจาก note field จริง</p>
       </div>
 

@@ -51,7 +51,7 @@ export default function PendingPaymentClient({ pendingRows }: { pendingRows: Sal
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[18px] font-semibold text-[#3D3D3D]">Pending Payment</h1>
+          <h1 className="text-[18px] font-semibold text-[#3D3D3D]">รอโอนเงิน</h1>
           <p className="text-[12px] text-[#8B8E8F] mt-0.5">
             รายการที่หมายเหตุระบุว่ารอโอน / รอยืนยัน
           </p>

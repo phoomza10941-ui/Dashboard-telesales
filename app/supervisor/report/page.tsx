@@ -57,7 +57,7 @@ export default async function ReportPage({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Report</h1>
+            <h1 className="text-[16px] font-semibold text-[#3D3D3D]">รายงาน</h1>
             <p className="text-[12px] text-[#8B8E8F] mt-0.5">
               ยอดขายรายวัน — {dateLabel}{isToday ? " (วันนี้)" : ""}
             </p>
@@ -93,7 +93,7 @@ export default async function ReportPage({
         {/* Agent ranking */}
         <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden shrink-0">
           <div className="px-5 py-4 border-b border-[#E8E8E8]">
-            <span className="text-[13px] font-semibold text-[#3D3D3D]">Agent Ranking — {dateLabel}</span>
+            <span className="text-[13px] font-semibold text-[#3D3D3D]">อันดับ Agent — {dateLabel}</span>
           </div>
           {dailyRows.length === 0 ? (
             <p className="px-5 py-8 text-center text-[12px] text-[#8B8E8F]">ยังไม่มียอดขายสำหรับวันนี้</p>
@@ -202,7 +202,7 @@ export default async function ReportPage({
       {/* Header + month switcher */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Report</h1>
+          <h1 className="text-[16px] font-semibold text-[#3D3D3D]">รายงาน</h1>
           <p className="text-[12px] text-[#8B8E8F] mt-0.5">
             ยอดขายรายเดือน — GoSell + Hopeful จาก Database จริง
           </p>
@@ -332,7 +332,7 @@ export default async function ReportPage({
       {/* Agent ranking for selected month */}
       <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden shrink-0">
         <div className="px-5 py-4 border-b border-[#E8E8E8]">
-          <span className="text-[13px] font-semibold text-[#3D3D3D]">Agent Ranking — {selected.label}</span>
+          <span className="text-[13px] font-semibold text-[#3D3D3D]">อันดับ Agent — {selected.label}</span>
         </div>
         <SelectedMonthAgents agents={selected.agents} monthTotal={selected.total} />
       </div>
@@ -464,7 +464,7 @@ function DailyHeatmap({
     <div className="bg-white rounded-2xl border border-[#E8E8E8] overflow-hidden shrink-0">
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#E8E8E8] flex items-center justify-between gap-4 flex-wrap">
-        <span className="text-[13px] font-semibold text-[#3D3D3D]">Daily Heatmap — {label}</span>
+        <span className="text-[13px] font-semibold text-[#3D3D3D]">Heatmap รายวัน — {label}</span>
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-[#C0C0C0]">hover เพื่อดูยอด</span>
           <div className="flex items-center gap-1.5">

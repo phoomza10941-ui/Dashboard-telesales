@@ -51,7 +51,7 @@ export default async function ScriptRecommendationPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Script Recommendation</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">แนะนำ Script</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">
           {sorted.some((s) => s.count > 0)
             ? "Objection ที่เกิดจริงในระบบวันนี้ → สคริปต์ที่ควรใช้"

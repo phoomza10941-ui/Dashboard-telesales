@@ -18,7 +18,7 @@ export default function LeadQualityPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Lead Quality by Source</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">คุณภาพ Lead แยกตามช่องทาง</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">ยอดตกเพราะทีมขาย หรือเพราะ Lead ไม่ดี — วิเคราะห์แยกตามช่องทาง</p>
       </div>
 

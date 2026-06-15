@@ -24,8 +24,8 @@ export default async function SupervisorLayout({ children }: { children: React.R
         <header className="bg-white border-b border-[#E8E8E8] px-6 h-[56px] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-[#87DE81] animate-pulse" />
-            <span className="text-[13px] font-semibold text-[#3D3D3D]">Supervisor Dashboard</span>
-            <span className="text-[11px] text-[#8B8E8F] bg-[#F7F7F7] px-2 py-0.5 rounded-full">Live</span>
+            <span className="text-[13px] font-semibold text-[#3D3D3D]">แดชบอร์ด Supervisor</span>
+            <span className="text-[11px] text-[#8B8E8F] bg-[#F7F7F7] px-2 py-0.5 rounded-full">สด</span>
           </div>
 
           <div className="flex items-center gap-5">
@@ -53,7 +53,7 @@ export default async function SupervisorLayout({ children }: { children: React.R
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
               </svg>
-              <span>{agents.length} agents</span>
+              <span>{agents.length} คน</span>
             </div>
 
             <span className="text-[11px] text-[#8B8E8F]">

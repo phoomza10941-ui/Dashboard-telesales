@@ -20,7 +20,7 @@ export default async function TodayCommandPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[18px] font-semibold text-[#3D3D3D]">Today Command</h1>
+          <h1 className="text-[18px] font-semibold text-[#3D3D3D]">สรุปวันนี้</h1>
           <p className="text-[12px] text-[#8B8E8F] mt-0.5">
             {new Date().toLocaleDateString("th-TH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>

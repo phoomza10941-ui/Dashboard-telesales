@@ -20,7 +20,7 @@ export default async function CoachingLogPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Coaching Log</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">บันทึก Coaching</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">ประวัติการโค้ช / ติดตามผล — บันทึกลง Database</p>
       </div>
 

@@ -10,7 +10,7 @@ export default async function FunnelDiagnosisPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#000000]">Individual Funnel Diagnosis</h1>
+        <h1 className="text-[16px] font-semibold text-[#000000]">วิเคราะห์ Funnel รายคน</h1>
         <p className="text-[12px] text-[#000000] mt-0.5">
           วิเคราะห์สถานะเคสรายคน — คำนวณจาก note field ในระบบ
         </p>
@@ -46,7 +46,7 @@ export default async function FunnelDiagnosisPage() {
               { label: "ตาม", val: followUp, color: "bg-[#022EE8]" },
               { label: "ปิดแล้ว", val: closed, color: "bg-[#26D100]" },
               { label: "หลุด", val: lost, color: "bg-red-700" },
-              { label: "In Prog", val: inProg, color: "bg-[#8B8E8F]/30" },
+              { label: "กำลังดำเนินการ", val: inProg, color: "bg-[#8B8E8F]/30" },
             ];
 
             return (
@@ -86,9 +86,9 @@ export default async function FunnelDiagnosisPage() {
                 {/* Metrics */}
                 <div className="flex gap-3 pt-3 border-t border-[#F7F7F7]">
                   {[
-                    { label: "Close Rate", val: closeRate, warn: closeRate < 20 },
-                    { label: "Pending %", val: pendingPct, warn: pendingPct > 30, isWarn: true },
-                    { label: "Lost %", val: lostPct, warn: lostPct > 30, isLoss: true },
+                    { label: "อัตราปิด", val: closeRate, warn: closeRate < 20 },
+                    { label: "รอโอน %", val: pendingPct, warn: pendingPct > 30, isWarn: true },
+                    { label: "หลุด %", val: lostPct, warn: lostPct > 30, isLoss: true },
                     { label: "ยอดรวม", val: null, label2: `฿${a.allSales.toLocaleString()}` },
                   ].map((m, i) => (
                     <div key={i} className="flex-1 text-center">

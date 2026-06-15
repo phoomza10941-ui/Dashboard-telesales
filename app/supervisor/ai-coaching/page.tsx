@@ -103,7 +103,7 @@ export default async function AiCoachingPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">AI Coaching Recommendation</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">คำแนะนำ AI Coaching</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">วิเคราะห์จากยอดจริง + note field — วันนี้ควรโค้ชใคร เรื่องอะไร</p>
       </div>
 

@@ -109,7 +109,7 @@ export default function PriorityQueueClient({ activeRows }: { activeRows: SaleRo
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[18px] font-semibold text-[#3D3D3D]">Priority Queue</h1>
+          <h1 className="text-[18px] font-semibold text-[#3D3D3D]">คิวสำคัญ</h1>
           <p className="text-[12px] text-[#8B8E8F] mt-0.5">เรียงจากเคสที่ใกล้ปิดการขายมากที่สุด</p>
         </div>
         <div className="text-[12px] text-[#8B8E8F] bg-white border border-[#E8E8E8] rounded-lg px-3 py-1.5">

@@ -62,7 +62,7 @@ export default function CanceledClient({ lostRows }: { lostRows: SaleRow[] }) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[18px] font-semibold text-[#3D3D3D]">Canceled</h1>
+            <h1 className="text-[18px] font-semibold text-[#3D3D3D]">ยกเลิก</h1>
             <p className="text-[12px] text-[#8B8E8F] mt-0.5">
               เคสที่หลุด / ยกเลิก — แก้ไขสถานะเพื่อฟื้นฟู
             </p>

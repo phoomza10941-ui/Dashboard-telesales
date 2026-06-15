@@ -22,7 +22,7 @@ export default async function FollowUpCompliancePage() {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-5">
-        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">Follow-up Compliance</h1>
+        <h1 className="text-[16px] font-semibold text-[#3D3D3D]">การติดตาม Follow-up</h1>
         <p className="text-[12px] text-[#8B8E8F] mt-0.5">ทีมตามลูกค้าครบไหม — คำนวณจาก note field จริง</p>
       </div>
 
