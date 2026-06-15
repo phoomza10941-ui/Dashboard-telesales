@@ -160,6 +160,7 @@ function CallSummarySection({ phone, hasOrekaExt }: { phone: string; hasOrekaExt
       const data = await res.json();
       if (!res.ok) {
         if (data.error === "no_recording") setGenError("ไม่พบการโทรล่าสุดในระบบ Oreka (7 วันที่ผ่านมา)");
+        else if (data.error === "audio_unclear") setGenError("คุณภาพเสียงไม่ชัดเจน ไม่สามารถถอดความได้ กรุณาลองการโทรอื่น");
         else setGenError("เกิดข้อผิดพลาด กรุณาลองใหม่");
         return;
       }

@@ -78,6 +78,19 @@ async function downloadAudio(recordingId: number | string, accountId: AccountId)
 }
 
 // Transcribe audio buffer with OpenAI Whisper
+function isHallucination(text: string): boolean {
+  const words = text.trim().split(/\s+/);
+  if (words.length < 6) return false;
+  // Detect repeated phrase loops (e.g. "ภาษาอังกฤษ" × N)
+  const seen = new Map<string, number>();
+  for (const w of words) {
+    const count = (seen.get(w) ?? 0) + 1;
+    if (count >= 5) return true;
+    seen.set(w, count);
+  }
+  return false;
+}
+
 async function transcribe(audioBuffer: Buffer, recordingId: string): Promise<string> {
   const file = new File([new Uint8Array(audioBuffer)], `recording-${recordingId}.wav`, { type: "audio/wav" });
   const result = await openai.audio.transcriptions.create({
@@ -85,8 +98,13 @@ async function transcribe(audioBuffer: Buffer, recordingId: string): Promise<str
     model: "whisper-1",
     language: "th",
     prompt: WHISPER_PROMPT,
+    temperature: 0,
   });
-  return result.text;
+  const text = result.text;
+  if (isHallucination(text)) {
+    throw new Error("whisper_hallucination");
+  }
+  return text;
 }
 
 // Summarize transcript with GPT-4o

@@ -69,7 +69,11 @@ function AppointmentCard({
       });
       const data = await res.json();
       if (!res.ok) {
-        setSummaryError(data.error === "no_recording" ? "ไม่พบการโทรล่าสุดใน 7 วันที่ผ่านมา" : "เกิดข้อผิดพลาด กรุณาลองใหม่");
+        setSummaryError(
+          data.error === "no_recording" ? "ไม่พบการโทรล่าสุดใน 7 วันที่ผ่านมา" :
+          data.error === "audio_unclear" ? "คุณภาพเสียงไม่ชัดเจน ไม่สามารถถอดความได้" :
+          "เกิดข้อผิดพลาด กรุณาลองใหม่"
+        );
         return;
       }
       setSummary(data);
