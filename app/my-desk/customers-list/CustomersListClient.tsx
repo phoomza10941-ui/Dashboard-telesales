@@ -6,6 +6,75 @@ import type { SaleRow } from "@/lib/db";
 import EditSaleModal from "@/app/my-desk/components/EditSaleModal";
 import { formatTalkTime } from "@/lib/oreka-format";
 
+interface CallRecording {
+  id: number;
+  timestamp: string;
+  duration: number;
+  direction: string;
+  remoteParty: string;
+}
+
+function RecordingsPlayer({ phone, hasOrekaExt }: { phone: string; hasOrekaExt: boolean }) {
+  const [recs, setRecs] = useState<CallRecording[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!phone || !hasOrekaExt) return;
+    setLoading(true);
+    fetch(`/api/oreka/recordings-by-phone?phone=${encodeURIComponent(phone)}`)
+      .then((r) => r.json())
+      .then((d) => setRecs(d.recordings ?? []))
+      .catch(() => setRecs([]))
+      .finally(() => setLoading(false));
+  }, [phone, hasOrekaExt]);
+
+  if (!hasOrekaExt) return null;
+
+  return (
+    <div className="px-4 py-3 border-t border-[#F7F7F7] bg-[#FAFAFA]">
+      <div className="text-[10px] font-semibold text-[#8B8E8F] uppercase tracking-wide mb-2">บันทึกเสียงวันนี้</div>
+      {loading && (
+        <div className="flex items-center gap-2 text-[11px] text-[#8B8E8F]">
+          <svg className="animate-spin w-3 h-3 text-[#58CEE8]" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+          </svg>
+          กำลังโหลด…
+        </div>
+      )}
+      {!loading && recs && recs.length === 0 && (
+        <p className="text-[11px] text-[#C0C0C0]">ไม่มีบันทึกเสียงวันนี้</p>
+      )}
+      {!loading && recs && recs.length > 0 && (
+        <div className="space-y-2">
+          {recs.map((rec) => {
+            const thaiTime = new Date(rec.timestamp + "Z");
+            thaiTime.setHours(thaiTime.getHours() + 7);
+            const hh = String(thaiTime.getUTCHours()).padStart(2, "0");
+            const mm = String(thaiTime.getUTCMinutes()).padStart(2, "0");
+            // Determine account from remoteParty context — default gosell, proxy handles both
+            const account = "gosell";
+            return (
+              <div key={rec.id} className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-[#E8E8E8] px-3 py-2">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${rec.direction === "OUT" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-emerald-50 text-emerald-600 border border-emerald-200"}`}>
+                  {rec.direction === "OUT" ? "โทรออก" : "รับสาย"}
+                </span>
+                <span className="text-[11px] font-medium text-[#3D3D3D] font-mono shrink-0">{hh}:{mm}</span>
+                <span className="text-[11px] text-[#8B8E8F] shrink-0">{formatTalkTime(rec.duration)}</span>
+                <audio
+                  controls
+                  preload="none"
+                  className="h-7 flex-1 min-w-[180px]"
+                  src={`/api/oreka/audio/${rec.id}?account=${account}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 type View = "overall" | "gosell" | "hopeful";
 type MainTab = "registered" | "new_contacts";
 
@@ -562,35 +631,40 @@ export default function CustomersListClient({
 
                       {/* Expandable history list */}
                       {isExpanded && (
-                        <div className="border-t border-[#F7F7F7] divide-y divide-[#F7F7F7]">
-                          {sortedPurchases.map((r, idx) => {
-                            const amt = rowViewTotal(r, view);
-                            const st = parseStatus(r.note);
-                            const stInfo = STATUS_LABEL[st] ?? { label: st, color: "#8B8E8F" };
-                            return (
-                              <div key={r.id ?? idx} className="flex items-center gap-3 px-4 py-2.5">
-                                <span className={`text-[10px] font-bold w-5 text-center shrink-0 ${
-                                  isHopeful ? "text-[#0E8FA8]/50" : "text-[#87DE81]/70"
-                                }`}>
-                                  #{idx + 1}
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-[12px] font-medium text-[#3D3D3D] truncate">
-                                    {r.product || "—"}
-                                  </div>
-                                  <div className="text-[10px] text-[#C0C0C0]">{r.date}</div>
-                                </div>
-                                <span className="text-[10px] font-medium shrink-0" style={{ color: stInfo.color }}>
-                                  {stInfo.label}
-                                </span>
-                                {amt > 0 && (
-                                  <span className="text-[12px] font-semibold text-[#3D3D3D] shrink-0">
-                                    ฿{amt.toLocaleString()}
+                        <div className="border-t border-[#F7F7F7]">
+                          <div className="divide-y divide-[#F7F7F7]">
+                            {sortedPurchases.map((r, idx) => {
+                              const amt = rowViewTotal(r, view);
+                              const st = parseStatus(r.note);
+                              const stInfo = STATUS_LABEL[st] ?? { label: st, color: "#8B8E8F" };
+                              return (
+                                <div key={r.id ?? idx} className="flex items-center gap-3 px-4 py-2.5">
+                                  <span className={`text-[10px] font-bold w-5 text-center shrink-0 ${
+                                    isHopeful ? "text-[#0E8FA8]/50" : "text-[#87DE81]/70"
+                                  }`}>
+                                    #{idx + 1}
                                   </span>
-                                )}
-                              </div>
-                            );
-                          })}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[12px] font-medium text-[#3D3D3D] truncate">
+                                      {r.product || "—"}
+                                    </div>
+                                    <div className="text-[10px] text-[#C0C0C0]">{r.date}</div>
+                                  </div>
+                                  <span className="text-[10px] font-medium shrink-0" style={{ color: stInfo.color }}>
+                                    {stInfo.label}
+                                  </span>
+                                  {amt > 0 && (
+                                    <span className="text-[12px] font-semibold text-[#3D3D3D] shrink-0">
+                                      ฿{amt.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {group.phone && (
+                            <RecordingsPlayer phone={group.phone} hasOrekaExt={hasOrekaExt} />
+                          )}
                         </div>
                       )}
                     </div>
