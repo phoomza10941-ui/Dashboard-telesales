@@ -334,6 +334,7 @@ export default function CustomersListClient({
   const [editRow, setEditRow] = useState<SaleRow | null>(null);
   const [newContacts, setNewContacts] = useState<OrekaContact[] | null>(null);
   const [contactsLoading, setContactsLoading] = useState(false);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   const knownPhones = new Set(allRows.map((r) => r.phone?.trim()).filter(Boolean));
 
@@ -498,60 +499,103 @@ export default function CustomersListClient({
               </div>
             ) : (
               <div className="space-y-3">
-                {filtered.map((group) => (
-                  <div
-                    key={group.key}
-                    onClick={() => setActiveGroup(group)}
-                    className={`bg-white border rounded-xl p-4 cursor-pointer hover:bg-[#F7F7F7] transition-colors ${
-                      isHopeful ? "border-[#022EE8]/30" : "border-[#87DE81]/30"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${
-                        isHopeful ? "bg-[#022EE8]/20 text-[#0E8FA8]" : "bg-[#87DE81]/20 text-[#3D9B3A]"
-                      }`}>
-                        {group.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-[13px] font-semibold text-[#3D3D3D]">{group.name}</span>
-                          {group.isReturning && (
-                            <span className="text-[9px] bg-[#022EE8]/15 text-[#0E8FA8] px-1.5 py-0.5 rounded-full font-semibold border border-[#022EE8]/20">
-                              ลูกค้าเก่า {group.purchases.length} ครั้ง
-                            </span>
+                {filtered.map((group) => {
+                  const isExpanded = expandedKey === group.key;
+                  const sortedPurchases = group.purchases
+                    .slice()
+                    .sort((a, b) => a.date.localeCompare(b.date));
+                  return (
+                    <div
+                      key={group.key}
+                      className={`bg-white border rounded-xl overflow-hidden transition-colors ${
+                        isHopeful ? "border-[#022EE8]/20" : "border-[#87DE81]/20"
+                      }`}
+                    >
+                      {/* Main row — click to open profile modal */}
+                      <div
+                        className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-[#F7F7F7] transition-colors"
+                        onClick={() => setActiveGroup(group)}
+                      >
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${
+                          isHopeful ? "bg-[#022EE8]/15 text-[#0E8FA8]" : "bg-[#87DE81]/20 text-[#3D9B3A]"
+                        }`}>
+                          {group.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[13px] font-semibold text-[#3D3D3D]">{group.name}</span>
+                            {group.isReturning && (
+                              <span className="text-[9px] bg-[#022EE8]/10 text-[#0E8FA8] px-1.5 py-0.5 rounded-full font-semibold">
+                                ลูกค้าเก่า
+                              </span>
+                            )}
+                          </div>
+                          {group.phone && (
+                            <div className="text-[11px] text-[#8B8E8F] mt-0.5">{group.phone}</div>
                           )}
-                          {group.phone && <span className="text-[11px] text-[#8B8E8F]">📞 {group.phone}</span>}
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {group.purchases
-                            .slice()
-                            .sort((a, b) => a.date.localeCompare(b.date))
-                            .map((r, idx) => {
-                              const amt = rowViewTotal(r, view);
-                              return (
-                                <div key={r.id ?? idx} className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] ${
-                                  isHopeful
-                                    ? "bg-[#022EE8]/5 border-[#022EE8]/20 text-[#0E8FA8]"
-                                    : "bg-[#87DE81]/5 border-[#87DE81]/20 text-[#3D9B3A]"
+                        <div className="shrink-0 text-right">
+                          <div className={`text-[15px] font-bold ${isHopeful ? "text-[#0E8FA8]" : "text-[#3D3D3D]"}`}>
+                            ฿{group.totalValue.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Toggle history row */}
+                      <button
+                        onClick={() => setExpandedKey(isExpanded ? null : group.key)}
+                        className={`w-full flex items-center justify-between px-4 py-2 border-t text-[11px] font-medium transition-colors ${
+                          isExpanded
+                            ? "bg-[#F7F7F7] text-[#3D3D3D] border-[#E8E8E8]"
+                            : "text-[#8B8E8F] border-[#F7F7F7] hover:bg-[#F7F7F7] hover:text-[#3D3D3D]"
+                        }`}
+                      >
+                        <span>ประวัติ {group.purchases.length} ครั้ง</span>
+                        <svg
+                          width="12" height="12" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                          className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        >
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </button>
+
+                      {/* Expandable history list */}
+                      {isExpanded && (
+                        <div className="border-t border-[#F7F7F7] divide-y divide-[#F7F7F7]">
+                          {sortedPurchases.map((r, idx) => {
+                            const amt = rowViewTotal(r, view);
+                            const st = parseStatus(r.note);
+                            const stInfo = STATUS_LABEL[st] ?? { label: st, color: "#8B8E8F" };
+                            return (
+                              <div key={r.id ?? idx} className="flex items-center gap-3 px-4 py-2.5">
+                                <span className={`text-[10px] font-bold w-5 text-center shrink-0 ${
+                                  isHopeful ? "text-[#0E8FA8]/50" : "text-[#87DE81]/70"
                                 }`}>
-                                  <span className="text-[9px] font-bold opacity-50">#{idx + 1}</span>
-                                  {r.product && <span className="font-medium">{r.product}</span>}
-                                  {amt > 0 && <span className="font-semibold">฿{amt.toLocaleString()}</span>}
-                                  <span className="text-[9px] opacity-50">{r.date}</span>
+                                  #{idx + 1}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[12px] font-medium text-[#3D3D3D] truncate">
+                                    {r.product || "—"}
+                                  </div>
+                                  <div className="text-[10px] text-[#C0C0C0]">{r.date}</div>
                                 </div>
-                              );
-                            })}
+                                <span className="text-[10px] font-medium shrink-0" style={{ color: stInfo.color }}>
+                                  {stInfo.label}
+                                </span>
+                                {amt > 0 && (
+                                  <span className="text-[12px] font-semibold text-[#3D3D3D] shrink-0">
+                                    ฿{amt.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <div className={`text-[16px] font-bold ${isHopeful ? "text-[#0E8FA8]" : "text-[#3D3D3D]"}`}>
-                          ฿{group.totalValue.toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-[#C0C0C0] mt-0.5">ดูประวัติ →</div>
-                      </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
