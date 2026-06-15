@@ -8,8 +8,23 @@ import { toOrekaStamp } from "./oreka-format";
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Whisper prompt — primes the model with Thai telesales vocabulary so it transcribes
+// prices, brand names, and sales terms correctly instead of guessing phonetically.
+// Keep product names generic so any product type (supplements, devices, insurance, etc.) is handled.
+const WHISPER_PROMPT =
+  "บทสนทนาระหว่างพนักงานขาย Telesales กับลูกค้า ภาษาไทย " +
+  "คำศัพท์การขาย: ปิดการขาย, โอนเงิน, สลิป, ดาวน์, ผ่อน, โปรโมชัน, ส่วนลด, ราคา, บาท, ฟรี, " +
+  "ติดตาม, นัดหมาย, โทรกลับ, รอโอน, รอสลิป. " +
+  "บริษัท: GoSell, Hopeful, dtac, True Move, AIS. " +
+  "รักษาชื่อสินค้า ราคา และตัวเลขให้ถูกต้องตามที่ได้ยิน";
+
 const SUMMARY_PROMPT = `คุณคือผู้เชี่ยวชาญด้านการฝึกอบรมพนักงานขาย Telesales ในประเทศไทย
 วิเคราะห์บทสนทนาที่ถอดความมาแล้วตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่น
+
+กฎสำคัญ:
+- สรุปเฉพาะสิ่งที่พูดในบทสนทนาจริง ห้ามเพิ่มข้อมูลที่ไม่มี
+- ถ้าบทสนทนาไม่ชัดเจนหรือขาดหาย ให้ระบุว่า "ไม่ชัดเจน" แทนการคาดเดา
+- ตัวเลขราคาและชื่อสินค้าต้องตรงตามที่ได้ยิน
 
 รูปแบบ JSON:
 {
@@ -29,6 +44,7 @@ export interface CallSummaryResult {
   coachingTips: string[];
   duration: number;
   calledAt: string;
+  transcript: string;
 }
 
 export interface SavedCallSummary {
@@ -38,6 +54,7 @@ export interface SavedCallSummary {
   duration: number | null;
   calledAt: string | null;
   createdAt: string;
+  transcript: string | null;
 }
 
 // Download audio buffer from Oreka mediastream
@@ -67,6 +84,7 @@ async function transcribe(audioBuffer: Buffer, recordingId: string): Promise<str
     file,
     model: "whisper-1",
     language: "th",
+    prompt: WHISPER_PROMPT,
   });
   return result.text;
 }
@@ -83,6 +101,7 @@ async function summarize(transcript: string): Promise<{ summary: string; coachin
       { role: "user", content: transcript },
     ],
     response_format: { type: "json_object" },
+    temperature: 0.2,
     max_tokens: 500,
   });
   const raw = completion.choices[0]?.message?.content ?? "{}";
@@ -170,6 +189,7 @@ export async function generateSummaryForPhone(
       coachingTips: Array.isArray(existing.coaching_tips) ? existing.coaching_tips : [],
       duration: existing.duration ?? 0,
       calledAt: existing.called_at ?? "",
+      transcript: existing.transcript ?? "",
     };
   }
 
@@ -197,6 +217,7 @@ export async function generateSummaryForPhone(
     coachingTips: coaching_tips,
     duration: recording.duration,
     calledAt: recording.calledAt,
+    transcript,
   };
 }
 
@@ -207,7 +228,7 @@ export async function getSummariesForPhone(
 ): Promise<SavedCallSummary[]> {
   const { data } = await adminClient
     .from("call_summaries")
-    .select("id, summary, coaching_tips, duration, called_at, created_at")
+    .select("id, summary, coaching_tips, duration, called_at, created_at, transcript")
     .eq("agent_id", agentId)
     .eq("phone", phone)
     .not("transcript", "is", null)
@@ -221,5 +242,6 @@ export async function getSummariesForPhone(
     duration: r.duration,
     calledAt: r.called_at,
     createdAt: r.created_at,
+    transcript: r.transcript ?? null,
   }));
 }

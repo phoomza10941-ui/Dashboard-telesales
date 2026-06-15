@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       coachingTips: result.coachingTips,
       duration: result.duration,
       calledAt: result.calledAt,
+      transcript: result.transcript ?? null,
     });
   } catch (e) {
     console.error("[call-summary/generate]", e);

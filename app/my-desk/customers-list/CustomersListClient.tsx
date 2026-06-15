@@ -129,14 +129,16 @@ interface SavedSummary {
   duration: number | null;
   calledAt: string | null;
   createdAt: string;
+  transcript?: string | null;
 }
 
 // ── Call Summary Section ───────────────────────────────────────────────────────
 function CallSummarySection({ phone, hasOrekaExt }: { phone: string; hasOrekaExt: boolean }) {
   const [summaries, setSummaries] = useState<SavedSummary[] | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [genResult, setGenResult] = useState<{ summary: string; coachingTips: string[]; duration: number; calledAt: string } | null>(null);
+  const [genResult, setGenResult] = useState<{ summary: string; coachingTips: string[]; duration: number; calledAt: string; transcript?: string } | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   useEffect(() => {
     if (!phone) return;
@@ -212,6 +214,7 @@ function CallSummarySection({ phone, hasOrekaExt }: { phone: string; hasOrekaExt
           : null;
         const tips: string[] = "coachingTips" in s ? s.coachingTips : [];
 
+        const transcript = "transcript" in s ? s.transcript : null;
         return (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -234,6 +237,25 @@ function CallSummarySection({ phone, hasOrekaExt }: { phone: string; hasOrekaExt
                     <span>{tip}</span>
                   </div>
                 ))}
+              </div>
+            )}
+            {transcript && (
+              <div>
+                <button
+                  onClick={() => setShowTranscript((v) => !v)}
+                  className="flex items-center gap-1.5 text-[10px] text-[#8B8E8F] hover:text-[#3D3D3D] transition-colors mt-1"
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                    className={`transition-transform ${showTranscript ? "rotate-180" : ""}`}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                  {showTranscript ? "ซ่อนบทสนทนา" : "ดูบทสนทนาที่ถอดความ"}
+                </button>
+                {showTranscript && (
+                  <div className="mt-2 p-3 bg-[#F7F7F7] border border-[#E8E8E8] rounded-xl">
+                    <p className="text-[11px] text-[#8B8E8F] leading-relaxed whitespace-pre-wrap">{transcript}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
