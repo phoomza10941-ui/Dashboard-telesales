@@ -6,6 +6,13 @@ export default async function CustomersListPage() {
   const data = user ? await getMyData(user.id) : null;
   const allRows = data?.rows ?? [];
   const closedRows = filterClosed(allRows);
+  const hasOrekaExt = !!(user?.orekaExtGosell || user?.orekaExtHopeful);
 
-  return <CustomersListClient rows={closedRows} allRows={allRows} />;
+  return (
+    <CustomersListClient
+      rows={closedRows}
+      allRows={allRows}
+      hasOrekaExt={hasOrekaExt}
+    />
+  );
 }
