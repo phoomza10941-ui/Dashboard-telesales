@@ -4,6 +4,13 @@ import { adminClient } from "./supabase/admin";
 import { getOrekaToken, refreshOrekaToken } from "./oreka";
 import type { AccountId } from "./oreka";
 import { toOrekaStamp } from "./oreka-format";
+import { tmpdir } from "os";
+import { join } from "path";
+import { writeFile, readFile, unlink } from "fs/promises";
+import ffmpegPath from "ffmpeg-static";
+import Ffmpeg from "fluent-ffmpeg";
+
+if (ffmpegPath) Ffmpeg.setFfmpegPath(ffmpegPath);
 
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -111,12 +118,42 @@ function isHallucination(text: string): boolean {
   return false;
 }
 
+// Re-encode any audio (including G.711 µ-law/A-law telephone codecs) to
+// PCM WAV 16kHz mono — the format Whisper handles most reliably.
+async function reencodeToWav(buffer: Buffer, recordingId: string): Promise<Buffer> {
+  const inPath  = join(tmpdir(), `oreka-in-${recordingId}`);
+  const outPath = join(tmpdir(), `oreka-out-${recordingId}.wav`);
+  await writeFile(inPath, buffer);
+  await new Promise<void>((resolve, reject) => {
+    Ffmpeg(inPath)
+      .audioChannels(1)
+      .audioFrequency(16000)
+      .audioCodec("pcm_s16le")
+      .format("wav")
+      .on("error", reject)
+      .on("end", () => resolve())
+      .save(outPath);
+  });
+  const out = await readFile(outPath);
+  await Promise.all([unlink(inPath).catch(() => {}), unlink(outPath).catch(() => {})]);
+  return out;
+}
+
 async function transcribe(
   buffer: Buffer,
   format: { ext: string; mime: string },
   recordingId: string,
 ): Promise<string> {
-  const file = new File([new Uint8Array(buffer)], `recording-${recordingId}.${format.ext}`, { type: format.mime });
+  let pcm: Buffer;
+  try {
+    pcm = await reencodeToWav(buffer, recordingId);
+    console.log(`[call-summary] re-encoded ${recordingId} (${format.ext}) → PCM WAV 16kHz mono, ${pcm.length} bytes`);
+  } catch (e) {
+    console.error("[call-summary] ffmpeg re-encode failed, sending original:", e);
+    pcm = buffer;
+  }
+
+  const file = new File([new Uint8Array(pcm)], `recording-${recordingId}.wav`, { type: "audio/wav" });
   const result = await openai.audio.transcriptions.create({
     file,
     model: "whisper-1",
