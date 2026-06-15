@@ -4,13 +4,7 @@ import { adminClient } from "./supabase/admin";
 import { getOrekaToken, refreshOrekaToken } from "./oreka";
 import type { AccountId } from "./oreka";
 import { toOrekaStamp } from "./oreka-format";
-import { tmpdir } from "os";
-import { join } from "path";
-import { writeFile, readFile, unlink } from "fs/promises";
-import ffmpegPath from "ffmpeg-static";
-import Ffmpeg from "fluent-ffmpeg";
-
-if (ffmpegPath) Ffmpeg.setFfmpegPath(ffmpegPath);
+import alawmulaw from "alawmulaw";
 
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -118,25 +112,85 @@ function isHallucination(text: string): boolean {
   return false;
 }
 
-// Re-encode any audio (including G.711 µ-law/A-law telephone codecs) to
-// PCM WAV 16kHz mono — the format Whisper handles most reliably.
-async function reencodeToWav(buffer: Buffer, recordingId: string): Promise<Buffer> {
-  const inPath  = join(tmpdir(), `oreka-in-${recordingId}`);
-  const outPath = join(tmpdir(), `oreka-out-${recordingId}.wav`);
-  await writeFile(inPath, buffer);
-  await new Promise<void>((resolve, reject) => {
-    Ffmpeg(inPath)
-      .audioChannels(1)
-      .audioFrequency(16000)
-      .audioCodec("pcm_s16le")
-      .format("wav")
-      .on("error", reject)
-      .on("end", () => resolve())
-      .save(outPath);
-  });
-  const out = await readFile(outPath);
-  await Promise.all([unlink(inPath).catch(() => {}), unlink(outPath).catch(() => {})]);
-  return out;
+// WAV format tags
+const WAV_PCM   = 1;
+const WAV_ALAW  = 6;
+const WAV_ULAW  = 7;
+
+// Parse a WAV buffer and return its header fields + raw audio data bytes.
+function parseWav(buf: Buffer): {
+  formatTag: number; channels: number; sampleRate: number;
+  bitsPerSample: number; audioData: Buffer;
+} | null {
+  if (buf.length < 44) return null;
+  if (buf.toString("ascii", 0, 4) !== "RIFF") return null;
+  if (buf.toString("ascii", 8, 12) !== "WAVE") return null;
+
+  let offset = 12;
+  let formatTag = 0, channels = 0, sampleRate = 0, bitsPerSample = 0;
+  let audioData: Buffer | null = null;
+
+  while (offset + 8 <= buf.length) {
+    const chunkId   = buf.toString("ascii", offset, offset + 4);
+    const chunkSize = buf.readUInt32LE(offset + 4);
+    offset += 8;
+    if (chunkId === "fmt ") {
+      formatTag    = buf.readUInt16LE(offset);
+      channels     = buf.readUInt16LE(offset + 2);
+      sampleRate   = buf.readUInt32LE(offset + 4);
+      bitsPerSample = buf.readUInt16LE(offset + 14);
+    } else if (chunkId === "data") {
+      audioData = buf.slice(offset, offset + chunkSize);
+    }
+    offset += chunkSize + (chunkSize % 2); // chunks are word-aligned
+  }
+
+  if (!audioData) return null;
+  return { formatTag, channels, sampleRate, bitsPerSample, audioData };
+}
+
+// Build a minimal PCM WAV file header + data.
+function buildPcmWav(samples: Int16Array, sampleRate: number, channels: number): Buffer {
+  const dataLen  = samples.length * 2;
+  const buf      = Buffer.allocUnsafe(44 + dataLen);
+  buf.write("RIFF", 0); buf.writeUInt32LE(36 + dataLen, 4);
+  buf.write("WAVE", 8); buf.write("fmt ", 12);
+  buf.writeUInt32LE(16, 16);          // fmt chunk size
+  buf.writeUInt16LE(1, 20);           // PCM
+  buf.writeUInt16LE(channels, 22);
+  buf.writeUInt32LE(sampleRate, 24);
+  buf.writeUInt32LE(sampleRate * channels * 2, 28); // byte rate
+  buf.writeUInt16LE(channels * 2, 32); // block align
+  buf.writeUInt16LE(16, 34);           // bits per sample
+  buf.write("data", 36); buf.writeUInt32LE(dataLen, 40);
+  for (let i = 0; i < samples.length; i++) buf.writeInt16LE(samples[i], 44 + i * 2);
+  return buf;
+}
+
+// Convert G.711 (µ-law or A-law) WAV buffer to PCM WAV. Returns original if already PCM.
+function decodeG711Wav(input: Buffer): { buffer: Buffer; converted: boolean } {
+  const wav = parseWav(input);
+  if (!wav) return { buffer: input, converted: false };
+
+  const { formatTag, channels, sampleRate, bitsPerSample, audioData } = wav;
+  if (formatTag === WAV_PCM) return { buffer: input, converted: false };
+
+  if (formatTag !== WAV_ULAW && formatTag !== WAV_ALAW) {
+    console.log(`[call-summary] WAV format tag ${formatTag} — sending as-is`);
+    return { buffer: input, converted: false };
+  }
+
+  const codec = formatTag === WAV_ULAW ? "ulaw" : "alaw";
+  console.log(`[call-summary] decoding G.711 ${codec} ${sampleRate}Hz ${bitsPerSample}bit`);
+
+  const raw = new Uint8Array(audioData);
+  const pcmSamples: Int16Array =
+    formatTag === WAV_ULAW
+      ? alawmulaw.mulaw.decode(raw)
+      : alawmulaw.alaw.decode(raw);
+
+  const out = buildPcmWav(pcmSamples, sampleRate, channels);
+  return { buffer: out, converted: true };
 }
 
 async function transcribe(
@@ -144,13 +198,9 @@ async function transcribe(
   format: { ext: string; mime: string },
   recordingId: string,
 ): Promise<string> {
-  let pcm: Buffer;
-  try {
-    pcm = await reencodeToWav(buffer, recordingId);
-    console.log(`[call-summary] re-encoded ${recordingId} (${format.ext}) → PCM WAV 16kHz mono, ${pcm.length} bytes`);
-  } catch (e) {
-    console.error("[call-summary] ffmpeg re-encode failed, sending original:", e);
-    pcm = buffer;
+  const { buffer: pcm, converted } = decodeG711Wav(buffer);
+  if (converted) {
+    console.log(`[call-summary] G.711 → PCM WAV conversion done, ${pcm.length} bytes`);
   }
 
   const file = new File([new Uint8Array(pcm)], `recording-${recordingId}.wav`, { type: "audio/wav" });
