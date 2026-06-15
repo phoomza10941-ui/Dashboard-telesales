@@ -4,7 +4,7 @@ import { adminClient } from "./supabase/admin";
 import { getOrekaToken, refreshOrekaToken } from "./oreka";
 import type { AccountId } from "./oreka";
 import { toOrekaStamp } from "./oreka-format";
-import alawmulaw from "alawmulaw";
+import { alaw as alawCodec, mulaw as mulawCodec } from "alawmulaw";
 
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -186,8 +186,8 @@ function decodeG711Wav(input: Buffer): { buffer: Buffer; converted: boolean } {
   const raw = new Uint8Array(audioData);
   const pcmSamples: Int16Array =
     formatTag === WAV_ULAW
-      ? alawmulaw.mulaw.decode(raw)
-      : alawmulaw.alaw.decode(raw);
+      ? mulawCodec.decode(raw)
+      : alawCodec.decode(raw);
 
   const out = buildPcmWav(pcmSamples, sampleRate, channels);
   return { buffer: out, converted: true };
