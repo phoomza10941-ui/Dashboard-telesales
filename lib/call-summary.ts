@@ -178,7 +178,7 @@ export async function generateSummaryForPhone(
   const transcript = await transcribe(audioBuffer, String(recording.id));
   const { summary, coaching_tips } = await summarize(transcript);
 
-  await adminClient.from("call_summaries").insert({
+  const { error: insertError } = await adminClient.from("call_summaries").insert({
     agent_id: agentId,
     recording_id: String(recording.id),
     phone: customerPhone,
@@ -188,6 +188,7 @@ export async function generateSummaryForPhone(
     summary,
     coaching_tips,
   });
+  if (insertError) console.error("[call-summary] insert failed:", insertError);
 
   return {
     recordingId: String(recording.id),
