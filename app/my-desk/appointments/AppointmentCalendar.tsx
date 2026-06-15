@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import type { AppointmentRow } from "@/lib/db";
 import NewAppointmentModal from "./NewAppointmentModal";
+import { formatTalkTime } from "@/lib/oreka-format";
 
 // ── Thai Buddhist Era utilities ──────────────────────────────────────────────
 
@@ -33,16 +34,51 @@ function todayISO(): string {
 
 // ── AppointmentCard ──────────────────────────────────────────────────────────
 
+interface SummaryResult {
+  summary: string;
+  coachingTips: string[];
+  duration: number;
+  calledAt: string;
+}
+
 function AppointmentCard({
   appointment,
+  hasOrekaExt,
   onStatusChange,
   onDelete,
 }: {
   appointment: AppointmentRow;
+  hasOrekaExt: boolean;
   onStatusChange: (id: string, status: "completed" | "cancelled") => void;
   onDelete: (id: string) => void;
 }) {
   const [actionLoading, setActionLoading] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summary, setSummary] = useState<SummaryResult | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  async function handleSummarize() {
+    if (!appointment.customerPhone) return;
+    setSummarizing(true);
+    setSummaryError(null);
+    try {
+      const res = await fetch("/api/call-summary/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: appointment.customerPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSummaryError(data.error === "no_recording" ? "ไม่พบการโทรล่าสุดใน 7 วันที่ผ่านมา" : "เกิดข้อผิดพลาด กรุณาลองใหม่");
+        return;
+      }
+      setSummary(data);
+    } catch {
+      setSummaryError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setSummarizing(false);
+    }
+  }
 
   const badgeMap: Record<AppointmentRow["status"], { label: string; cls: string }> = {
     pending: { label: "รอนัด", cls: "bg-[#58CEE8]/15 text-[#0E8FA8]" },
@@ -109,6 +145,58 @@ function AppointmentCard({
             </button>
           </div>
         )}
+
+        {/* Call summary button — only when phone exists + Oreka configured + not yet summarized */}
+        {hasOrekaExt && appointment.customerPhone && !summary && (
+          <button
+            onClick={handleSummarize}
+            disabled={summarizing}
+            className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#0E8FA8] border border-[#58CEE8]/40 bg-[#58CEE8]/5 hover:bg-[#58CEE8]/10 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-60"
+          >
+            {summarizing ? (
+              <>
+                <svg className="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                กำลังสรุป...
+              </>
+            ) : (
+              <>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                สรุปบทสนทนา
+              </>
+            )}
+          </button>
+        )}
+
+        {summaryError && (
+          <p className="mt-1.5 text-[10px] text-[#CC3333]">{summaryError}</p>
+        )}
+
+        {summary && (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-[#8B8E8F] uppercase tracking-wide">สรุปการโทรล่าสุด</span>
+              {summary.duration > 0 && (
+                <span className="text-[10px] text-[#C0C0C0]">({formatTalkTime(summary.duration)})</span>
+              )}
+            </div>
+            <p className="text-[11px] text-[#3D3D3D] leading-relaxed">{summary.summary}</p>
+            {summary.coachingTips.length > 0 && (
+              <div className="bg-[#87DE81]/8 border border-[#87DE81]/20 rounded-lg p-2.5 space-y-1">
+                <div className="text-[10px] font-semibold text-[#3D9B3A]">💡 คำแนะนำ</div>
+                {summary.coachingTips.map((tip, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-[10px] text-[#3D3D3D]">
+                    <span className="text-[#87DE81] font-bold shrink-0">•</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <button
         onClick={handleDelete}
@@ -129,9 +217,10 @@ function AppointmentCard({
 interface Props {
   initialAppointments: AppointmentRow[];
   initialMonth: string; // "YYYY-MM"
+  hasOrekaExt: boolean;
 }
 
-export default function AppointmentCalendar({ initialAppointments, initialMonth }: Props) {
+export default function AppointmentCalendar({ initialAppointments, initialMonth, hasOrekaExt }: Props) {
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [appointments, setAppointments] = useState<AppointmentRow[]>(initialAppointments);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -289,6 +378,7 @@ export default function AppointmentCalendar({ initialAppointments, initialMonth 
             <AppointmentCard
               key={a.id}
               appointment={a}
+              hasOrekaExt={hasOrekaExt}
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
             />
