@@ -57,8 +57,25 @@ export interface SavedCallSummary {
   transcript: string | null;
 }
 
+// Map Oreka Content-Type to a Whisper-safe { ext, mime } pair.
+// Whisper supports: mp3, mp4, mpeg, mpga, m4a, wav, webm, ogg, flac.
+// Oreka typically returns audio/mpeg (MP3) or audio/wav.
+function resolveAudioFormat(contentType: string): { ext: string; mime: string } {
+  const ct = contentType.split(";")[0].trim().toLowerCase();
+  if (ct === "audio/mpeg" || ct === "audio/mp3" || ct === "audio/mpga") return { ext: "mp3", mime: "audio/mpeg" };
+  if (ct === "audio/mp4" || ct === "audio/x-m4a" || ct === "audio/m4a")  return { ext: "mp4", mime: "audio/mp4" };
+  if (ct === "audio/ogg" || ct === "audio/vorbis")                        return { ext: "ogg", mime: "audio/ogg" };
+  if (ct === "audio/webm")                                                 return { ext: "webm", mime: "audio/webm" };
+  if (ct === "audio/flac" || ct === "audio/x-flac")                       return { ext: "flac", mime: "audio/flac" };
+  // Default: treat as WAV (works for audio/wav, audio/x-wav, audio/pcm, unknown)
+  return { ext: "wav", mime: "audio/wav" };
+}
+
 // Download audio buffer from Oreka mediastream
-async function downloadAudio(recordingId: number | string, accountId: AccountId): Promise<Buffer> {
+async function downloadAudio(
+  recordingId: number | string,
+  accountId: AccountId,
+): Promise<{ buffer: Buffer; format: { ext: string; mime: string } }> {
   if (!BASE) throw new Error("OREKA_BASE_URL not configured");
   const url = `${BASE}/orktrack/rest/mediastream/${recordingId}`;
 
@@ -73,15 +90,18 @@ async function downloadAudio(recordingId: number | string, accountId: AccountId)
     res = await doFetch(token);
   }
   if (!res.ok) throw new Error(`Oreka audio download failed: HTTP ${res.status}`);
+
+  const contentType = res.headers.get("content-type") ?? "audio/wav";
+  console.log(`[call-summary] Oreka content-type for ${recordingId}: ${contentType}`);
+
   const ab = await res.arrayBuffer();
-  return Buffer.from(ab);
+  return { buffer: Buffer.from(ab), format: resolveAudioFormat(contentType) };
 }
 
 // Transcribe audio buffer with OpenAI Whisper
 function isHallucination(text: string): boolean {
   const words = text.trim().split(/\s+/);
   if (words.length < 6) return false;
-  // Detect repeated phrase loops (e.g. "ภาษาอังกฤษ" × N)
   const seen = new Map<string, number>();
   for (const w of words) {
     const count = (seen.get(w) ?? 0) + 1;
@@ -91,8 +111,12 @@ function isHallucination(text: string): boolean {
   return false;
 }
 
-async function transcribe(audioBuffer: Buffer, recordingId: string): Promise<string> {
-  const file = new File([new Uint8Array(audioBuffer)], `recording-${recordingId}.wav`, { type: "audio/wav" });
+async function transcribe(
+  buffer: Buffer,
+  format: { ext: string; mime: string },
+  recordingId: string,
+): Promise<string> {
+  const file = new File([new Uint8Array(buffer)], `recording-${recordingId}.${format.ext}`, { type: format.mime });
   const result = await openai.audio.transcriptions.create({
     file,
     model: "whisper-1",
@@ -212,8 +236,8 @@ export async function generateSummaryForPhone(
   }
 
   // Process new recording
-  const audioBuffer = await downloadAudio(recording.id, recording.accountId);
-  const transcript = await transcribe(audioBuffer, String(recording.id));
+  const { buffer, format } = await downloadAudio(recording.id, recording.accountId);
+  const transcript = await transcribe(buffer, format, String(recording.id));
   const { summary, coaching_tips } = await summarize(transcript);
 
   const { error: insertError } = await adminClient.from("call_summaries").insert({
