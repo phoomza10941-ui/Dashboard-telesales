@@ -342,7 +342,7 @@ function CustomerProfile({ group, hasOrekaExt, onClose, onAddNew, onEdit }: {
               const stInfo = STATUS_LABEL[st] ?? { label: st, color: "#8B8E8F" };
               const total = rowTotal(r);
               return (
-                <div key={r.id ?? i} className="flex items-center gap-3 px-5 py-3">
+                <div key={`${r.id ?? 'row'}-${i}`} className="flex items-center gap-3 px-5 py-3">
                   <div className="text-[11px] text-[#C0C0C0] w-20 shrink-0">{r.date}</div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-medium text-[#3D3D3D] truncate">{r.product || "—"}</div>
@@ -661,7 +661,7 @@ export default function CustomersListClient({
                               const st = parseStatus(r.note);
                               const stInfo = STATUS_LABEL[st] ?? { label: st, color: "#8B8E8F" };
                               return (
-                                <div key={r.id ?? idx} className="flex items-center gap-3 px-4 py-2.5">
+                                <div key={`${r.id ?? 'row'}-${idx}`} className="flex items-center gap-3 px-4 py-2.5">
                                   <span className={`text-[10px] font-bold w-5 text-center shrink-0 ${
                                     isHopeful ? "text-[#0E8FA8]/50" : "text-[#87DE81]/70"
                                   }`}>
