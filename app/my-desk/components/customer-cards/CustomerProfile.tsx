@@ -106,7 +106,7 @@ export function CustomerProfile({ group, hasOrekaExt, onClose, onAddNew, onEdit,
           </div>
 
           {showCalls && group.phone && hasOrekaExt && (
-            <RecordingsPlayer phone={group.phone} hasOrekaExt={hasOrekaExt} days={7} />
+            <RecordingsPlayer phone={group.phone} hasOrekaExt={hasOrekaExt} />
           )}
           {showCalls && group.phone && (
             <CallSummarySection phone={group.phone} hasOrekaExt={hasOrekaExt} />
