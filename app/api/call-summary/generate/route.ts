@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
-    if (msg === "whisper_hallucination") {
+    if (msg === "AUDIO_UNCLEAR" || msg === "whisper_hallucination") {
       return NextResponse.json({ error: "audio_unclear" }, { status: 422 });
     }
     console.error("[call-summary/generate]", e);

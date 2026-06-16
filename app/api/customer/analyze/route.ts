@@ -5,6 +5,22 @@ import { getAiExtractionFields } from "@/lib/db";
 import { getProductKnowledge } from "@/lib/notion";
 import type { AccountId } from "@/lib/oreka";
 
+/** Map internal error messages to actionable Thai for the agent. */
+function friendlyErrorMessage(raw: string): string {
+  if (
+    raw.includes("AUDIO_UNCLEAR") ||
+    raw.includes("whisper") ||
+    raw.includes("hallucinat") ||
+    raw === "transcription_failed"
+  ) {
+    return "สายนี้เสียงไม่ชัดหรือไม่มีบทสนทนา — ลองเลือกสายอื่น";
+  }
+  if (raw.includes("download failed") || raw.includes("HTTP")) {
+    return "ดึงไฟล์เสียงจากระบบไม่สำเร็จ ลองใหม่อีกครั้ง";
+  }
+  return raw;
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const {
@@ -37,7 +53,7 @@ export async function POST(req: NextRequest) {
         send({ type: "progress", pct: 33, label: "📝 ถอดเสียงด้วย Whisper..." });
         const transcript = await transcribeAudio(buffer, format, orekaRecordingId);
         if (!transcript) {
-          send({ type: "error", message: "ถอดเสียงไม่สำเร็จ" });
+          send({ type: "error", message: "สายนี้เสียงไม่ชัดหรือไม่มีบทสนทนา — ลองเลือกสายอื่น" });
           controller.close();
           return;
         }
@@ -58,9 +74,7 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error("[customer/analyze]", err);
         const raw = err instanceof Error ? err.message : "Analysis failed";
-        const message = raw === "whisper_hallucination"
-          ? "ถอดเสียงไม่สำเร็จ — สายนี้เงียบหรือมีเสียงรบกวน กรุณาเลือกสายอื่น"
-          : raw;
+        const message = friendlyErrorMessage(raw);
         send({ type: "error", message });
         controller.close();
       }

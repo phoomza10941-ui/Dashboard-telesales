@@ -7,6 +7,7 @@ import { toOrekaStamp } from "./oreka-format";
 import { alaw as alawCodec, mulaw as mulawCodec } from "alawmulaw";
 import { getProductKnowledge } from "./notion";
 import { getCoachingPromptOverride } from "./db";
+import { isLikelyHallucination } from "./transcript-quality";
 
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -95,51 +96,6 @@ export async function downloadAudio(
 
   const ab = await res.arrayBuffer();
   return { buffer: Buffer.from(ab), format: resolveAudioFormat(contentType) };
-}
-
-// Detect Whisper hallucination. Real transcripts of a sales call are varied; Whisper's
-// failure modes on silence/hold-music are (a) one word/phrase looping, (b) very low
-// vocabulary diversity, (c) known Thai filler loops. Any of these → treat as unusable.
-const HALLUCINATION_PHRASES = [
-  "ขอบคุณค่ะ", "ขอบคุณครับ", "สวัสดีค่ะ", "สวัสดีครับ",
-  "แล้วเจอกันใหม่", "บ๊ายบาย", "ค่ะค่ะค่ะ",
-];
-
-function isHallucination(text: string): boolean {
-  const clean = text.trim();
-  if (!clean) return true;
-
-  const words = clean.split(/\s+/);
-  if (words.length < 6) return false; // too short to judge — let it through
-
-  // (a) any single token repeated a lot
-  const seen = new Map<string, number>();
-  for (const w of words) {
-    const count = (seen.get(w) ?? 0) + 1;
-    if (count >= 5) return true;
-    seen.set(w, count);
-  }
-
-  // (b) low vocabulary diversity (e.g. "ค่ะ ขอบคุณ ค่ะ ขอบคุณ ..." loops)
-  const uniqueRatio = seen.size / words.length;
-  if (words.length >= 12 && uniqueRatio < 0.25) return true;
-
-  // (c) repeated bigram loop ("ขอบคุณ ค่ะ ขอบคุณ ค่ะ ...")
-  const bigrams = new Map<string, number>();
-  for (let i = 0; i + 1 < words.length; i++) {
-    const bg = words[i] + " " + words[i + 1];
-    const c = (bigrams.get(bg) ?? 0) + 1;
-    if (c >= 4) return true;
-    bigrams.set(bg, c);
-  }
-
-  // (d) the whole transcript is just a known filler phrase
-  const collapsed = clean.replace(/\s+/g, "");
-  if (HALLUCINATION_PHRASES.some((p) => collapsed === p.replace(/\s+/g, "") || collapsed === p.repeat(2))) {
-    return true;
-  }
-
-  return false;
 }
 
 // WAV format tags
@@ -259,8 +215,8 @@ export async function transcribeAudio(
   }
 
   if (!text) throw lastErr ?? new Error("transcription_failed");
-  if (isHallucination(text)) {
-    throw new Error("whisper_hallucination");
+  if (isLikelyHallucination(text)) {
+    throw new Error("AUDIO_UNCLEAR");
   }
   return text;
 }
