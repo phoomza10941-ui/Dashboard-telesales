@@ -7,6 +7,10 @@ import type { AccountId } from "@/lib/oreka";
 
 /** Map internal error messages to actionable Thai for the agent. */
 function friendlyErrorMessage(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes("timeout") || lower.includes("timed out") || lower.includes("aborted")) {
+    return "ใช้เวลาประมวลผลนานเกินไป กรุณาลองใหม่อีกครั้ง";
+  }
   if (
     raw.includes("AUDIO_UNCLEAR") ||
     raw.includes("whisper") ||
@@ -59,15 +63,18 @@ export async function POST(req: NextRequest) {
         }
 
         send({ type: "progress", pct: 70, label: "🧠 วิเคราะห์ด้วย AI..." });
+        console.log("[customer/analyze] fetching AI context (fields + product knowledge)...");
         const [enabledFields, productKnowledge] = await Promise.all([
           getAiExtractionFields(),
           getProductKnowledge(),
         ]);
+        console.log(`[customer/analyze] AI context ready (fields=${Object.keys(enabledFields).length}, pk=${productKnowledge.length} chars); extracting...`);
         const fields = await extractCustomerInfo(
           transcript,
           enabledFields as unknown as Record<string, boolean>,
           productKnowledge,
         );
+        console.log("[customer/analyze] extraction complete:", Object.keys(fields));
 
         send({ type: "done", pct: 100, fields, transcript });
         controller.close();

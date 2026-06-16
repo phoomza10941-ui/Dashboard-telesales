@@ -12,6 +12,7 @@ async function fetchBlocks(blockId: string, token: string): Promise<string> {
         Authorization: `Bearer ${token}`,
         "Notion-Version": NOTION_VERSION,
       },
+      signal: AbortSignal.timeout(8000),
     }
   );
   if (!res.ok) throw new Error(`Notion API ${res.status}`);

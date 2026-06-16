@@ -239,7 +239,7 @@ async function summarize(transcript: string, productKnowledge?: string, coaching
     response_format: { type: "json_object" },
     temperature: 0,
     max_tokens: 500,
-  });
+  }, { timeout: 45000, maxRetries: 1 });
   const raw = completion.choices[0]?.message?.content ?? "{}";
   try {
     const parsed = JSON.parse(raw);
@@ -446,7 +446,7 @@ export async function extractCustomerInfo(
       { role: "user", content: transcript },
     ],
     temperature: 0,
-  });
+  }, { timeout: 45000, maxRetries: 1 });
 
   try {
     return JSON.parse(response.choices[0].message.content ?? "{}") as ExtractedCustomerFields;
