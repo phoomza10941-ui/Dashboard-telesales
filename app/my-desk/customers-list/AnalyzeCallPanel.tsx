@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition, ReactNode } from "react";
+import { useState, useTransition, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 interface OrekaRecording {
@@ -39,6 +39,8 @@ const MIN_USEFUL_DURATION = 60;
 export default function AnalyzeCallPanel({
   agentId,
   customerId,
+  prefillPhone,
+  prefillName,
   orekaExtGosell,
   orekaExtHopeful,
   initialRecordings,
@@ -46,6 +48,8 @@ export default function AnalyzeCallPanel({
 }: {
   agentId: string;
   customerId?: string;
+  prefillPhone?: string;
+  prefillName?: string;
   orekaExtGosell: string;
   orekaExtHopeful: string;
   initialRecordings: OrekaRecording[];
@@ -60,8 +64,28 @@ export default function AnalyzeCallPanel({
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [showShort, setShowShort] = useState(false);
+  const [loadingPct, setLoadingPct] = useState(0);
   const [, startTransition] = useTransition();
   const router = useRouter();
+
+  // Animate a fake progress bar while waiting for the API
+  useEffect(() => {
+    if (step !== "loading") return;
+    setLoadingPct(3);
+    const id = setInterval(() => {
+      setLoadingPct((p) => {
+        const gap = 90 - p;
+        return p + Math.max(0.4, gap * 0.025);
+      });
+    }, 500);
+    return () => clearInterval(id);
+  }, [step]);
+
+  function loadingPhase(pct: number) {
+    if (pct < 25) return "⬇️ ดาวน์โหลดเสียง...";
+    if (pct < 78) return "📝 ถอดเสียงด้วย Whisper...";
+    return "🧠 วิเคราะห์ด้วย AI...";
+  }
 
   function handleOpen() {
     setOpen(true);
@@ -70,7 +94,8 @@ export default function AnalyzeCallPanel({
     setExtracted({});
     setEditedFields({});
     setError("");
-    setSearch("");
+    // Pre-fill search with customer phone so matching calls show immediately
+    setSearch(prefillPhone ? prefillPhone.replace(/[-\s+]/g, "").slice(-9) : "");
     setShowShort(false);
   }
 
@@ -103,6 +128,8 @@ export default function AnalyzeCallPanel({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "วิเคราะห์ไม่สำเร็จ");
+      setLoadingPct(100);
+      await new Promise((r) => setTimeout(r, 300));
       setExtracted(data.fields ?? {});
       setEditedFields(data.fields ?? {});
       setStep("results");
@@ -122,7 +149,9 @@ export default function AnalyzeCallPanel({
           id: customerId,
           agentId,
           orekaRecId: selectedRec?.id,
-          phone: selectedRec?.remoteParty,
+          phone: selectedRec?.remoteParty ?? prefillPhone,
+          // For sales-derived contacts, seed name from sales record if AI didn't extract it
+          ...(prefillName && !editedFields.first_name ? { nickname: prefillName } : {}),
           ...editedFields,
         }),
       });
@@ -269,11 +298,21 @@ export default function AnalyzeCallPanel({
               )}
 
               {step === "loading" && (
-                <div className="flex flex-col items-center justify-center py-16 gap-4">
-                  <div className="w-8 h-8 border-2 border-[#87DE81] border-t-transparent rounded-full animate-spin" />
-                  <div className="text-[12px] text-[#8B8E8F] text-center">
-                    กำลังถอดเสียงและวิเคราะห์ด้วย AI...
-                    <div className="text-[11px] text-[#C0C0C0] mt-1">ใช้เวลาประมาณ 30–60 วินาที</div>
+                <div className="flex flex-col items-center justify-center py-16 gap-5 px-6">
+                  <div className="w-full space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[12px] text-[#8B8E8F]">{loadingPhase(loadingPct)}</span>
+                      <span className="text-[13px] font-semibold text-[#3D3D3D] tabular-nums">
+                        {Math.round(loadingPct)}%
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-[#E8E8E8] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#87DE81] rounded-full transition-all duration-500"
+                        style={{ width: `${loadingPct}%` }}
+                      />
+                    </div>
+                    <div className="text-[11px] text-[#C0C0C0] text-center">ใช้เวลาประมาณ 30–60 วินาที</div>
                   </div>
                 </div>
               )}

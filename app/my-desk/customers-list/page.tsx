@@ -1,4 +1,4 @@
-import { getCurrentUser, getCustomers } from "@/lib/db";
+import { getCurrentUser, getCustomers, getSalesContacts, Customer } from "@/lib/db";
 import { getTodayRecordingsForExts } from "@/lib/oreka";
 import { redirect } from "next/navigation";
 import AnalyzeCallPanel from "./AnalyzeCallPanel";
@@ -13,10 +13,35 @@ export default async function CustomersListPage() {
   const orekaExtHopeful = user.orekaExtHopeful ?? "";
 
   const exts = [orekaExtGosell, orekaExtHopeful].filter(Boolean);
-  const [customers, recordings] = await Promise.all([
+  const [customersFromDb, recordings] = await Promise.all([
     getCustomers(user.id),
     exts.length > 0 ? getTodayRecordingsForExts(exts).catch(() => []) : Promise.resolve([]),
   ]);
+
+  // Merge sales contacts that don't already have a customer record
+  const existingPhones = new Set(customersFromDb.map((c) => c.phone ?? "").filter(Boolean));
+  const salesContacts = await getSalesContacts(user.id, existingPhones);
+
+  const now = new Date().toISOString();
+  const virtualCustomers: Customer[] = salesContacts.map((sc) => ({
+    id: `__sales__${sc.phone}`,
+    agentId: user.id,
+    phone: sc.phone,
+    firstName: null,
+    lastName: null,
+    nickname: sc.name || null,
+    diseases: null,
+    symptoms: null,
+    medications: null,
+    consultedDoc: null,
+    patientType: null,
+    orekaRecId: null,
+    notes: null,
+    createdAt: now,
+    updatedAt: now,
+  }));
+
+  const customers = [...customersFromDb, ...virtualCustomers];
 
   return (
     <div className="p-6 max-w-3xl mx-auto">

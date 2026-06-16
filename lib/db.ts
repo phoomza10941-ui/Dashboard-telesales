@@ -1264,6 +1264,31 @@ export async function getCustomers(agentId: string): Promise<Customer[]> {
   return data.map(rowToCustomer);
 }
 
+// Returns unique phone+name pairs from the sales table that don't already have a customers record.
+// Used to populate the "ยังไม่ได้ดึง" tab with existing sales contacts.
+export async function getSalesContacts(
+  agentId: string,
+  existingPhones: Set<string>
+): Promise<{ phone: string; name: string }[]> {
+  const { data, error } = await adminClient
+    .from("sales")
+    .select("customer_name, phone")
+    .eq("agent_id", agentId)
+    .not("phone", "is", null)
+    .neq("phone", "");
+  if (error || !data) return [];
+
+  const seen = new Set<string>();
+  const result: { phone: string; name: string }[] = [];
+  for (const row of data) {
+    const phone = (row.phone as string)?.trim();
+    if (!phone || seen.has(phone) || existingPhones.has(phone)) continue;
+    seen.add(phone);
+    result.push({ phone, name: (row.customer_name as string) ?? "" });
+  }
+  return result;
+}
+
 export async function upsertCustomer(
   agentId: string,
   fields: Partial<Omit<Customer, "id" | "agentId" | "createdAt" | "updatedAt">> & { id?: string }
