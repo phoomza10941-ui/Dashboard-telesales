@@ -1,7 +1,7 @@
 -- customers table: one profile per customer, scoped to agent
 CREATE TABLE IF NOT EXISTS customers (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id      UUID REFERENCES auth.users NOT NULL,
+  agent_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   phone         TEXT,
   first_name    TEXT,
   last_name     TEXT,
@@ -20,11 +20,17 @@ CREATE TABLE IF NOT EXISTS customers (
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "agents see own customers" ON customers
-  FOR ALL USING (agent_id = auth.uid());
+  FOR ALL
+  USING (agent_id = auth.uid())
+  WITH CHECK (agent_id = auth.uid());
 
 -- Allow admin/service role to bypass RLS
 CREATE POLICY "service role bypass" ON customers
   FOR ALL TO service_role USING (true);
+
+-- Indexes for common query patterns
+CREATE INDEX IF NOT EXISTS idx_customers_agent_id ON customers (agent_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_customers_agent_phone ON customers (agent_id, phone) WHERE phone IS NOT NULL;
 
 -- AI extraction fields config (stored in team_config)
 INSERT INTO team_config (key, value)
