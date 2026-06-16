@@ -21,6 +21,9 @@ export interface SaleRow {
   hopefulCrm: number;
   hopefulUpsell: number;
   note: string;
+  // Explicit product line picked at contact creation ('gosell' | 'hopeful').
+  // Empty/undefined for legacy rows — UI falls back to inferring from amounts.
+  channel?: "gosell" | "hopeful" | "";
 }
 
 export interface AgentData {
@@ -118,6 +121,7 @@ export async function getMyData(userId: string): Promise<AgentData | null> {
     hopefulCrm: Number(r.hopeful_crm) || 0,
     hopefulUpsell: Number(r.hopeful_upsell) || 0,
     note: r.note ?? "",
+    channel: r.channel ?? "",
   }));
 
   const closedRows = saleRows.filter((r) => parseNoteStatus(r.note) === "closed");
@@ -160,6 +164,7 @@ export async function addSale(userId: string, row: SaleRow): Promise<void> {
     hopeful_crm: row.hopefulCrm || 0,
     hopeful_upsell: row.hopefulUpsell || 0,
     note: row.note,
+    channel: row.channel || null,
   });
   if (error) throw new Error(error.message);
 }
@@ -459,6 +464,7 @@ export async function getAllAgentsAnalysis(): Promise<AgentAnalysis[]> {
       hopefulCrm: Number(r.hopeful_crm) || 0,
       hopefulUpsell: Number(r.hopeful_upsell) || 0,
       note: r.note ?? "",
+      channel: r.channel ?? "",
     }));
 
     const todayRows = allRows.filter((r) => today.some((t) => r.date.startsWith(t) || r.date === t));
@@ -546,7 +552,7 @@ export async function updateSaleNote(id: string, note: string): Promise<void> {
 }
 
 export async function updateSale(id: string, agentId: string, row: Partial<SaleRow>): Promise<void> {
-  const { error } = await adminClient.from("sales").update({
+  const update: Record<string, unknown> = {
     date: row.date,
     customer_name: row.name,
     phone: row.phone,
@@ -559,7 +565,11 @@ export async function updateSale(id: string, agentId: string, row: Partial<SaleR
     hopeful_crm: row.hopefulCrm ?? 0,
     hopeful_upsell: row.hopefulUpsell ?? 0,
     note: row.note,
-  }).eq("id", id).eq("agent_id", agentId);
+  };
+  // Only touch channel when explicitly provided, so amount-only edits
+  // (e.g. EditSaleModal) don't wipe a stored channel.
+  if (row.channel) update.channel = row.channel;
+  const { error } = await adminClient.from("sales").update(update).eq("id", id).eq("agent_id", agentId);
   if (error) throw new Error(error.message);
 }
 
@@ -895,6 +905,7 @@ export async function getCustomerHistoryByPhone(phone: string, agentId: string):
     hopefulCrm: Number(r.hopeful_crm) || 0,
     hopefulUpsell: Number(r.hopeful_upsell) || 0,
     note: r.note ?? "",
+    channel: r.channel ?? "",
   }));
 }
 

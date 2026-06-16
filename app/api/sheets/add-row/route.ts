@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
 
     const body = await req.json();
-    const { date, name, phone, address, product, quantity, phoneClose, upsell, crm, hopefulPhoneClose, hopefulCrm, hopefulUpsell, note } = body;
+    const { date, name, phone, address, product, quantity, phoneClose, upsell, crm, hopefulPhoneClose, hopefulCrm, hopefulUpsell, note, channel } = body;
     if (!name) return NextResponse.json({ error: "กรุณากรอกชื่อลูกค้า" }, { status: 400 });
 
     await addSale(user.id, {
@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       hopefulCrm: parseFloat(hopefulCrm) || 0,
       hopefulUpsell: parseFloat(hopefulUpsell) || 0,
       note: note || "",
+      channel: channel === "gosell" || channel === "hopeful" ? channel : "",
     });
 
     return NextResponse.json({ success: true });

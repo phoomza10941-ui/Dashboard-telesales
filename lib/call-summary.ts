@@ -9,15 +9,11 @@ import { alaw as alawCodec, mulaw as mulawCodec } from "alawmulaw";
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Whisper prompt — primes the model with Thai telesales vocabulary so it transcribes
-// prices, brand names, and sales terms correctly instead of guessing phonetically.
-// Keep product names generic so any product type (supplements, devices, insurance, etc.) is handled.
+// Whisper prompt — a SHORT context cue only. A long comma-separated vocab list makes
+// Whisper "leak" the prompt words into its output on unclear audio (a documented
+// hallucination mode), so keep this to a single natural sentence, not a glossary.
 const WHISPER_PROMPT =
-  "บทสนทนาระหว่างพนักงานขาย Telesales กับลูกค้า ภาษาไทย " +
-  "คำศัพท์การขาย: ปิดการขาย, โอนเงิน, สลิป, ดาวน์, ผ่อน, โปรโมชัน, ส่วนลด, ราคา, บาท, ฟรี, " +
-  "ติดตาม, นัดหมาย, โทรกลับ, รอโอน, รอสลิป. " +
-  "บริษัท: GoSell, Hopeful, dtac, True Move, AIS. " +
-  "รักษาชื่อสินค้า ราคา และตัวเลขให้ถูกต้องตามที่ได้ยิน";
+  "บทสนทนาทางโทรศัพท์ภาษาไทยระหว่างพนักงานขายกับลูกค้า เกี่ยวกับสินค้า ราคา และการชำระเงิน";
 
 const SUMMARY_PROMPT = `คุณคือผู้เชี่ยวชาญด้านการฝึกอบรมพนักงานขาย Telesales ในประเทศไทย
 วิเคราะห์บทสนทนาที่ถอดความมาแล้วตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่น
@@ -99,16 +95,48 @@ async function downloadAudio(
   return { buffer: Buffer.from(ab), format: resolveAudioFormat(contentType) };
 }
 
-// Transcribe audio buffer with OpenAI Whisper
+// Detect Whisper hallucination. Real transcripts of a sales call are varied; Whisper's
+// failure modes on silence/hold-music are (a) one word/phrase looping, (b) very low
+// vocabulary diversity, (c) known Thai filler loops. Any of these → treat as unusable.
+const HALLUCINATION_PHRASES = [
+  "ขอบคุณค่ะ", "ขอบคุณครับ", "สวัสดีค่ะ", "สวัสดีครับ",
+  "แล้วเจอกันใหม่", "บ๊ายบาย", "ค่ะค่ะค่ะ",
+];
+
 function isHallucination(text: string): boolean {
-  const words = text.trim().split(/\s+/);
-  if (words.length < 6) return false;
+  const clean = text.trim();
+  if (!clean) return true;
+
+  const words = clean.split(/\s+/);
+  if (words.length < 6) return false; // too short to judge — let it through
+
+  // (a) any single token repeated a lot
   const seen = new Map<string, number>();
   for (const w of words) {
     const count = (seen.get(w) ?? 0) + 1;
     if (count >= 5) return true;
     seen.set(w, count);
   }
+
+  // (b) low vocabulary diversity (e.g. "ค่ะ ขอบคุณ ค่ะ ขอบคุณ ..." loops)
+  const uniqueRatio = seen.size / words.length;
+  if (words.length >= 12 && uniqueRatio < 0.25) return true;
+
+  // (c) repeated bigram loop ("ขอบคุณ ค่ะ ขอบคุณ ค่ะ ...")
+  const bigrams = new Map<string, number>();
+  for (let i = 0; i + 1 < words.length; i++) {
+    const bg = words[i] + " " + words[i + 1];
+    const c = (bigrams.get(bg) ?? 0) + 1;
+    if (c >= 4) return true;
+    bigrams.set(bg, c);
+  }
+
+  // (d) the whole transcript is just a known filler phrase
+  const collapsed = clean.replace(/\s+/g, "");
+  if (HALLUCINATION_PHRASES.some((p) => collapsed === p.replace(/\s+/g, "") || collapsed === p.repeat(2))) {
+    return true;
+  }
+
   return false;
 }
 
@@ -203,34 +231,51 @@ async function transcribe(
     console.log(`[call-summary] G.711 → PCM WAV conversion done, ${pcm.length} bytes`);
   }
 
-  const file = new File([new Uint8Array(pcm)], `recording-${recordingId}.wav`, { type: "audio/wav" });
-  const result = await openai.audio.transcriptions.create({
-    file,
-    model: "whisper-1",
-    language: "th",
-    prompt: WHISPER_PROMPT,
-    temperature: 0,
-  });
-  const text = result.text;
+  // gpt-4o-transcribe hallucinates far less than whisper-1 on 8kHz Thai telephony.
+  // We try it first and fall back to whisper-1 only if the request itself fails.
+  const models = ["gpt-4o-transcribe", "whisper-1"] as const;
+  let text = "";
+  let lastErr: unknown = null;
+
+  for (const model of models) {
+    try {
+      const file = new File([new Uint8Array(pcm)], `recording-${recordingId}.wav`, { type: "audio/wav" });
+      const result = await openai.audio.transcriptions.create({
+        file,
+        model,
+        language: "th",
+        prompt: WHISPER_PROMPT,
+        temperature: 0,
+      });
+      text = result.text;
+      console.log(`[call-summary] transcribed ${recordingId} via ${model}, ${text.length} chars`);
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[call-summary] ${model} failed for ${recordingId}:`, e instanceof Error ? e.message : e);
+    }
+  }
+
+  if (!text) throw lastErr ?? new Error("transcription_failed");
   if (isHallucination(text)) {
     throw new Error("whisper_hallucination");
   }
   return text;
 }
 
-// Summarize transcript with GPT-4o
+// Summarize transcript with gpt-4o-mini (simple JSON extraction — ~15× cheaper than gpt-4o)
 async function summarize(transcript: string): Promise<{ summary: string; coaching_tips: string[] }> {
   if (!transcript.trim()) {
     return { summary: "ไม่พบเนื้อหาการสนทนา", coaching_tips: [] };
   }
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     messages: [
       { role: "system", content: SUMMARY_PROMPT },
       { role: "user", content: transcript },
     ],
     response_format: { type: "json_object" },
-    temperature: 0.2,
+    temperature: 0,
     max_tokens: 500,
   });
   const raw = completion.choices[0]?.message?.content ?? "{}";

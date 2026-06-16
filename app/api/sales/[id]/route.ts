@@ -36,6 +36,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     hopefulCrm: parseFloat(body.hopefulCrm) || 0,
     hopefulUpsell: parseFloat(body.hopefulUpsell) || 0,
     note: body.note ?? "",
+    channel: body.channel === "gosell" || body.channel === "hopeful" ? body.channel : undefined,
   });
 
   await broadcast();
