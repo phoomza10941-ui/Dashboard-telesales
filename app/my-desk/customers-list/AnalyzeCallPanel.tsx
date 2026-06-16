@@ -272,16 +272,17 @@ export default function AnalyzeCallPanel({
                               : "border-[#E8E8E8] hover:border-[#87DE81] hover:bg-[#f0fdf4]"
                           }`}
                         >
-                          <div className="flex items-center justify-between text-[12px]">
-                            <span className="font-medium text-[#3D3D3D]">
-                              {rec.direction === "IN" ? "📞 สายเข้า" : "📲 สายออก"} —{" "}
-                              {formatTime(rec.timestamp)}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[13px] font-semibold text-[#3D3D3D] tracking-wide">
+                              {rec.remoteParty}
                             </span>
-                            <span className={`font-medium ${rec.duration < MIN_USEFUL_DURATION ? "text-[#C0C0C0]" : "text-[#8B8E8F]"}`}>
+                            <span className={`text-[12px] font-medium shrink-0 ${rec.duration < MIN_USEFUL_DURATION ? "text-[#C0C0C0]" : "text-[#58CEE8]"}`}>
                               {formatDuration(rec.duration)}
                             </span>
                           </div>
-                          <div className="text-[11px] text-[#8B8E8F] mt-0.5">{rec.remoteParty}</div>
+                          <div className="text-[11px] text-[#8B8E8F] mt-0.5">
+                            {rec.direction === "IN" ? "📞 สายเข้า" : "📲 สายออก"} · {formatTime(rec.timestamp)}
+                          </div>
                         </button>
                       ))}
 

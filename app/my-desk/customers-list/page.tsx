@@ -50,7 +50,20 @@ export default async function CustomersListPage() {
           <h1 className="text-[18px] font-semibold text-[#3D3D3D]">รายชื่อลูกค้า</h1>
           <p className="text-[13px] text-[#8B8E8F] mt-1">ข้อมูลลูกค้าที่ดึงจากสายโทรด้วย AI</p>
         </div>
-        <AddCustomerPanel agentId={user.id} />
+        <div className="flex items-center gap-2 shrink-0">
+          <AnalyzeCallPanel
+            agentId={user.id}
+            orekaExtGosell={orekaExtGosell}
+            orekaExtHopeful={orekaExtHopeful}
+            initialRecordings={recordings}
+            trigger={
+              <button className="flex items-center gap-1.5 border border-[#58CEE8] text-[#58CEE8] text-[13px] font-medium px-4 py-2 rounded-xl hover:bg-[#f0fbff] transition-colors">
+                🎙 วิเคราะห์สาย
+              </button>
+            }
+          />
+          <AddCustomerPanel agentId={user.id} />
+        </div>
       </div>
 
       {customers.length === 0 ? (
