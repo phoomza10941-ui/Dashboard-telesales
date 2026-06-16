@@ -2,6 +2,7 @@
 import { useState } from "react";
 import AnalyzeCallPanel from "./AnalyzeCallPanel";
 import { CallSummarySection } from "@/app/my-desk/components/customer-cards/CallSummarySection";
+import { CallCalendar } from "@/app/my-desk/components/customer-cards/CallCalendar";
 import type { Customer } from "@/lib/db";
 
 interface OrekaRecording {
@@ -133,6 +134,9 @@ function CustomerCard({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
+  const todayISO = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState(todayISO);
+
   const displayName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
   const initial = (c.firstName ?? c.nickname ?? c.phone ?? "?").charAt(0).toUpperCase();
   const filledFields = DETAIL_FIELDS.filter(({ key }) => !!c[key]);
@@ -221,6 +225,20 @@ function CustomerCard({
             </div>
           )}
 
+          {/* Call calendar */}
+          {c.phone && (
+            <div className="px-5 pt-2 pb-1">
+              <div className="text-[10px] font-semibold text-[#8B8E8F] uppercase tracking-wide mb-2">
+                ประวัติการโทร
+              </div>
+              <CallCalendar
+                phone={c.phone}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+              />
+            </div>
+          )}
+
           {/* AI call summary + coaching tips */}
           {c.phone && (
             <CallSummarySection phone={c.phone} hasOrekaExt={hasOrekaExt} />
@@ -228,7 +246,7 @@ function CustomerCard({
 
           {!c.phone && (
             <div className="px-5 py-4 text-[11px] text-[#C0C0C0] text-center">
-              ไม่มีเบอร์โทร — ไม่สามารถดึงสรุปการโทรได้
+              ไม่มีเบอร์โทร — ไม่สามารถดึงประวัติการโทรได้
             </div>
           )}
         </div>
