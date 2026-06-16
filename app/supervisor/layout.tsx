@@ -3,6 +3,7 @@ import { getDailyTarget, getAllAgentsAnalysis, getCurrentUser } from "@/lib/db";
 import SupervisorNav from "./components/SupervisorNav";
 import RealtimeRefresh from "@/app/components/RealtimeRefresh";
 import { redirect } from "next/navigation";
+import PageTransition from "@/app/my-desk/components/PageTransition";
 
 export default async function SupervisorLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -64,7 +65,7 @@ export default async function SupervisorLayout({ children }: { children: React.R
 
         <main className="flex-1 overflow-y-auto bg-[#F7F7F7] p-6">
           <RealtimeRefresh />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
     </div>

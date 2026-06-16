@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useTransition } from "react";
+import { useState, useRef, useTransition, useEffect } from "react";
 import { updateNickname, updateAvatarUrl } from "@/app/actions/profile";
 
 interface NavItem {
@@ -176,6 +176,7 @@ interface SupervisorNavProps {
 export default function SupervisorNav({ fullName = "Supervisor", avatarUrl = "", nickname = "" }: SupervisorNavProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(avatarUrl);
   const [nicknameVal, setNicknameVal] = useState(nickname);
@@ -183,6 +184,10 @@ export default function SupervisorNav({ fullName = "Supervisor", avatarUrl = "",
   const [saving, setSaving] = useState(false);
   const [, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
 
   const initials = fullName.split(" ").slice(0, 2).map((w) => w.charAt(0)).join("") || "S";
 
@@ -351,23 +356,30 @@ export default function SupervisorNav({ fullName = "Supervisor", avatarUrl = "",
             </div>
             {group.items.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              const isPending = pendingHref === item.href && !isActive;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => { if (!isActive) setPendingHref(item.href); }}
                   className={`relative flex items-center gap-3 px-5 py-2.5 text-[12px] transition-colors group ${
                     isActive
                       ? "text-[#3D3D3D] bg-[#022EE8]/8 font-medium"
+                      : isPending
+                      ? "text-[#3D3D3D] bg-[#F7F7F7]"
                       : "text-[#8B8E8F] hover:text-[#3D3D3D] hover:bg-[#F7F7F7]"
                   }`}
                 >
-                  {isActive && (
-                    <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full bg-[#022EE8]" />
+                  {(isActive || isPending) && (
+                    <span className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${isPending ? "bg-[#022EE8]/40 animate-pulse" : "bg-[#022EE8]"}`} />
                   )}
-                  <span className={isActive ? "text-[#022EE8]" : "text-[#8B8E8F] group-hover:text-[#3D3D3D] transition-colors"}>
+                  <span className={isActive ? "text-[#022EE8]" : isPending ? "text-[#022EE8]/60" : "text-[#8B8E8F] group-hover:text-[#3D3D3D] transition-colors"}>
                     {item.icon}
                   </span>
-                  <span className="leading-tight">{item.label}</span>
+                  <span className="leading-tight flex-1">{item.label}</span>
+                  {isPending && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#022EE8] animate-pulse shrink-0" />
+                  )}
                 </Link>
               );
             })}
