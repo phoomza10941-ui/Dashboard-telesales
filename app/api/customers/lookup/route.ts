@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser, getCustomerHistoryByPhone } from "@/lib/db";
-import { parseNoteStatus } from "@/lib/note-utils";
+import { rowStatus } from "@/lib/note-utils";
 
 function todayDMY() {
   const now = new Date(Date.now() + 7 * 3_600_000);
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     product: r.product,
     total: r.phoneClose + r.upsell + r.crm + r.hopefulPhoneClose + r.hopefulCrm + r.hopefulUpsell,
     note: r.note,
-    status: parseNoteStatus(r.note),
+    status: rowStatus(r),
     name: r.name,
     address: r.address,
   }));

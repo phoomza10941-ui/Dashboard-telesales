@@ -12,8 +12,8 @@ import {
   getAgentsWithTargets,
   getDailyTarget,
   getTodayHourlySales,
-  parseNoteStatus,
-  parseNoteObjection,
+  rowStatus,
+  rowObjection,
   type AgentAnalysis,
 } from "@/lib/db";
 import { getTalkTimeByAgentSafe } from "@/lib/oreka";
@@ -125,7 +125,7 @@ export default async function WarRoomPage() {
   const todayStatusMap: Record<string, number> = {};
   analyses.forEach((a) => {
     a.todayRows.forEach((r) => {
-      const st = parseNoteStatus(r.note);
+      const st = rowStatus(r);
       todayStatusMap[st] = (todayStatusMap[st] ?? 0) + 1;
     });
   });
@@ -143,12 +143,12 @@ export default async function WarRoomPage() {
   const followUpObj: Record<string, number> = {};
   analyses.forEach((a) => {
     [...a.pendingTransferRows, ...a.followUpRows].forEach((r) => {
-      const obj = parseNoteObjection(r.note) ?? "อื่นๆ";
+      const obj = rowObjection(r) ?? "อื่นๆ";
       followUpObj[obj] = (followUpObj[obj] ?? 0) + 1;
     });
   });
   const rawPendingWithoutObj = analyses.reduce((s, a) => {
-    return s + a.pendingTransferRows.filter((r) => !parseNoteObjection(r.note)).length;
+    return s + a.pendingTransferRows.filter((r) => !rowObjection(r)).length;
   }, 0);
   if (rawPendingWithoutObj > 0) followUpObj["รอโอน"] = (followUpObj["รอโอน"] ?? 0) + rawPendingWithoutObj;
   const followUpPool = Object.entries(followUpObj).sort((a, b) => b[1] - a[1]).slice(0, 5);

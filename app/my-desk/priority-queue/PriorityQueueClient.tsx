@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { SaleRow } from "@/lib/db";
-import { parseNoteStatus, parseNoteObjection, saleTotal } from "@/lib/note-utils";
+import { rowStatus, rowObjection, saleTotal } from "@/lib/note-utils";
 import UpdateNotePanel from "@/app/my-desk/components/UpdateNotePanel";
 import EditSaleModal from "@/app/my-desk/components/EditSaleModal";
 
@@ -30,8 +30,8 @@ function daysSince(dateStr: string): number {
 }
 
 function scoreRow(row: SaleRow): ScoredRow {
-  const status = parseNoteStatus(row.note);
-  const objection = parseNoteObjection(row.note);
+  const status = rowStatus(row);
+  const objection = rowObjection(row);
   const note = row.note.toLowerCase();
   const total = saleTotal(row);
   const days = daysSince(row.date);

@@ -1,8 +1,8 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { adminClient } from "./supabase/admin";
 import { createClient } from "./supabase/server";
-export { parseNoteStatus, parseNoteObjection, saleTotal, type NoteStatus } from "./note-utils";
-import { parseNoteStatus, parseNoteObjection } from "./note-utils";
+export { parseNoteStatus, parseNoteObjection, saleTotal, rowStatus, rowObjection, type NoteStatus } from "./note-utils";
+import { parseNoteStatus, parseNoteObjection, rowStatus, rowObjection, type NoteStatus } from "./note-utils";
 
 export interface SaleRow {
   id?: string;
@@ -24,6 +24,11 @@ export interface SaleRow {
   // Explicit product line picked at contact creation ('gosell' | 'hopeful').
   // Empty/undefined for legacy rows — UI falls back to inferring from amounts.
   channel?: "gosell" | "hopeful" | "";
+  // Derived-and-stored from the note at write time. NULL/empty for legacy rows
+  // not yet backfilled — use rowStatus()/rowObjection() which fall back to the
+  // note parser rather than reading these fields directly.
+  status?: NoteStatus | "";
+  objection?: string | null;
 }
 
 export interface AgentData {
@@ -122,9 +127,11 @@ export async function getMyData(userId: string): Promise<AgentData | null> {
     hopefulUpsell: Number(r.hopeful_upsell) || 0,
     note: r.note ?? "",
     channel: r.channel ?? "",
+    status: r.status ?? "",
+    objection: r.objection ?? null,
   }));
 
-  const closedRows = saleRows.filter((r) => parseNoteStatus(r.note) === "closed");
+  const closedRows = saleRows.filter((r) => rowStatus(r) === "closed");
   const totalPhoneClose = closedRows.reduce((s, r) => s + r.phoneClose + r.hopefulPhoneClose, 0);
   const totalUpsell = closedRows.reduce((s, r) => s + r.upsell + r.hopefulUpsell, 0);
   const totalCrm = closedRows.reduce((s, r) => s + r.crm + r.hopefulCrm, 0);
@@ -165,6 +172,8 @@ export async function addSale(userId: string, row: SaleRow): Promise<void> {
     hopeful_upsell: row.hopefulUpsell || 0,
     note: row.note,
     channel: row.channel || null,
+    status: parseNoteStatus(row.note ?? ""),
+    objection: parseNoteObjection(row.note ?? ""),
   });
   if (error) throw new Error(error.message);
 }
@@ -185,11 +194,11 @@ export function filterToday(rows: SaleRow[]): SaleRow[] {
 }
 
 export function filterClosed(rows: SaleRow[]): SaleRow[] {
-  return rows.filter((r) => parseNoteStatus(r.note) === "closed");
+  return rows.filter((r) => rowStatus(r) === "closed");
 }
 
 export function filterLost(rows: SaleRow[]): SaleRow[] {
-  return rows.filter((r) => parseNoteStatus(r.note) === "lost");
+  return rows.filter((r) => rowStatus(r) === "lost");
 }
 
 // filter rows ที่ note บ่งบอกว่าต้อง follow-up
@@ -465,19 +474,21 @@ export async function getAllAgentsAnalysis(): Promise<AgentAnalysis[]> {
       hopefulUpsell: Number(r.hopeful_upsell) || 0,
       note: r.note ?? "",
       channel: r.channel ?? "",
+      status: r.status ?? "",
+      objection: r.objection ?? null,
     }));
 
     const todayRows = allRows.filter((r) => today.some((t) => r.date.startsWith(t) || r.date === t));
-    const todayClosedRows = todayRows.filter((r) => parseNoteStatus(r.note) === "closed");
+    const todayClosedRows = todayRows.filter((r) => rowStatus(r) === "closed");
     const todaySales = todayClosedRows.reduce((s, r) => s + r.phoneClose + r.upsell + r.crm + r.hopefulPhoneClose + r.hopefulCrm + r.hopefulUpsell, 0);
 
     const statusCounts: Record<string, number> = {};
     const objections: Record<string, number> = {};
 
     allRows.forEach((r) => {
-      const st = parseNoteStatus(r.note);
+      const st = rowStatus(r);
       statusCounts[st] = (statusCounts[st] ?? 0) + 1;
-      const obj = parseNoteObjection(r.note);
+      const obj = rowObjection(r);
       if (obj) objections[obj] = (objections[obj] ?? 0) + 1;
     });
 
@@ -487,10 +498,10 @@ export async function getAllAgentsAnalysis(): Promise<AgentAnalysis[]> {
       avatarUrl: avatarMap[profile.id] ?? "",
       todaySales,
       todayOrders: todayClosedRows.length,
-      allSales: allRows.filter((r) => parseNoteStatus(r.note) === "closed").reduce((s, r) => s + r.phoneClose + r.upsell + r.crm + r.hopefulPhoneClose + r.hopefulCrm + r.hopefulUpsell, 0),
-      allOrders: allRows.filter((r) => parseNoteStatus(r.note) === "closed").length,
-      pendingTransferRows: allRows.filter((r) => parseNoteStatus(r.note) === "pending_transfer"),
-      followUpRows: allRows.filter((r) => parseNoteStatus(r.note) === "follow_up"),
+      allSales: allRows.filter((r) => rowStatus(r) === "closed").reduce((s, r) => s + r.phoneClose + r.upsell + r.crm + r.hopefulPhoneClose + r.hopefulCrm + r.hopefulUpsell, 0),
+      allOrders: allRows.filter((r) => rowStatus(r) === "closed").length,
+      pendingTransferRows: allRows.filter((r) => rowStatus(r) === "pending_transfer"),
+      followUpRows: allRows.filter((r) => rowStatus(r) === "follow_up"),
       objections,
       statusCounts,
       todayRows,
@@ -547,7 +558,10 @@ export async function updateCoachingResult(id: string, result: string): Promise<
 }
 
 export async function updateSaleNote(id: string, note: string): Promise<void> {
-  const { error } = await adminClient.from("sales").update({ note }).eq("id", id);
+  const { error } = await adminClient
+    .from("sales")
+    .update({ note, status: parseNoteStatus(note), objection: parseNoteObjection(note) })
+    .eq("id", id);
   if (error) throw new Error(error.message);
 }
 
@@ -569,6 +583,11 @@ export async function updateSale(id: string, agentId: string, row: Partial<SaleR
   // Only touch channel when explicitly provided, so amount-only edits
   // (e.g. EditSaleModal) don't wipe a stored channel.
   if (row.channel) update.channel = row.channel;
+  // Keep status/objection columns in sync whenever the note is edited.
+  if (row.note !== undefined) {
+    update.status = parseNoteStatus(row.note);
+    update.objection = parseNoteObjection(row.note);
+  }
   const { error } = await adminClient.from("sales").update(update).eq("id", id).eq("agent_id", agentId);
   if (error) throw new Error(error.message);
 }
@@ -611,7 +630,7 @@ export async function getDailySalesForDate(dateISO: string): Promise<DailySalesR
 
   (sales as { agent_id: string; phone_close: number; upsell: number; crm: number; hopeful_phone_close: number; hopeful_crm: number; hopeful_upsell: number; note: string; date: string }[]).forEach((s) => {
     if (s.date !== dmyCE && s.date !== dmyBE) return;
-    if (parseNoteStatus(s.note ?? "") !== "closed") return;
+    if (rowStatus(s) !== "closed") return;
 
     if (!agentMap.has(s.agent_id)) {
       agentMap.set(s.agent_id, {
@@ -697,7 +716,7 @@ export async function getMonthlyReport(): Promise<MonthlyReportRow[]> {
   const monthMap = new Map<string, MonthlyReportRow>();
 
   (allSales as { agent_id: string; date: string; phone_close: number; upsell: number; crm: number; hopeful_phone_close: number; hopeful_crm: number; hopeful_upsell: number; note: string }[]).forEach((s) => {
-    if (parseNoteStatus(s.note ?? "") !== "closed") return;
+    if (rowStatus(s) !== "closed") return;
     const key = parseDateToMonthKey(s.date ?? "");
     if (!key) return;
     const [mm, yyyy] = key.split("/");
@@ -790,7 +809,7 @@ export async function getTodayHourlySales(): Promise<{ hour: number; sales: numb
 
   const hourMap: Record<number, { sales: number; orders: number }> = {};
   (data as { phone_close: number; upsell: number; crm: number; hopeful_phone_close: number; hopeful_crm: number; hopeful_upsell: number; created_at: string; note: string }[]).forEach((s) => {
-    if (parseNoteStatus(s.note ?? "") !== "closed") return;
+    if (rowStatus(s) !== "closed") return;
     const h = (new Date(s.created_at).getUTCHours() + 7) % 24;
     if (!hourMap[h]) hourMap[h] = { sales: 0, orders: 0 };
     hourMap[h].sales += Number(s.phone_close) + Number(s.upsell) + Number(s.crm)
@@ -853,7 +872,7 @@ export async function getDailyAgentSales(monthKey?: string): Promise<{ agents: D
   const agentMap = new Map<string, DailyAgentRow>();
 
   (allSales as { agent_id: string; date: string; phone_close: number; upsell: number; crm: number; hopeful_phone_close: number; hopeful_crm: number; hopeful_upsell: number; note: string }[]).forEach((s) => {
-    if (parseNoteStatus(s.note ?? "") !== "closed") return;
+    if (rowStatus(s) !== "closed") return;
     const parts = (s.date ?? "").split("/");
     if (parts.length < 3) return;
     const day = Number(parts[0]);
@@ -906,6 +925,8 @@ export async function getCustomerHistoryByPhone(phone: string, agentId: string):
     hopefulUpsell: Number(r.hopeful_upsell) || 0,
     note: r.note ?? "",
     channel: r.channel ?? "",
+    status: r.status ?? "",
+    objection: r.objection ?? null,
   }));
 }
 
@@ -967,7 +988,7 @@ export async function getAgentMonthlySales(userId: string, monthKey: string): Pr
     .eq("agent_id", userId);
   if (!data) return 0;
   return (data as { phone_close: number; upsell: number; crm: number; hopeful_phone_close: number; hopeful_crm: number; hopeful_upsell: number; note: string; date: string }[]).reduce((sum, s) => {
-    if (parseNoteStatus(s.note ?? "") !== "closed") return sum;
+    if (rowStatus(s) !== "closed") return sum;
     const parts = (s.date ?? "").split("/");
     if (parts.length < 3) return sum;
     const mon = parts[1].padStart(2, "0");

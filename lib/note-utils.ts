@@ -32,3 +32,17 @@ export function parseNoteObjection(note: string): string | null {
   if (n.includes("กลัว") || n.includes("ไม่เห็นผล") || n.includes("ผลข้างเคียง") || n.includes("ทานไม่ได้")) return "กลัวไม่เห็นผล";
   return null;
 }
+
+// Status/objection now live in real `sales.status` / `sales.objection` columns,
+// kept in sync from the note at write time (see addSale/updateSaleNote/updateSale).
+// These helpers prefer the stored column and fall back to parsing the note for
+// legacy rows where the column is still NULL (not yet backfilled).
+export function rowStatus(row: { status?: string | null; note?: string | null }): NoteStatus {
+  if (row.status) return row.status as NoteStatus;
+  return parseNoteStatus(row.note ?? "");
+}
+
+export function rowObjection(row: { objection?: string | null; note?: string | null }): string | null {
+  if (row.objection) return row.objection;
+  return parseNoteObjection(row.note ?? "");
+}

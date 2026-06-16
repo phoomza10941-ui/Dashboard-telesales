@@ -1,4 +1,4 @@
-import { getMyData, getAgentTarget, getDailyTarget, getAgentMonthlyTarget, getAgentMonthlySales, parseNoteStatus } from "@/lib/db";
+import { getMyData, getAgentTarget, getDailyTarget, getAgentMonthlyTarget, getAgentMonthlySales, rowStatus } from "@/lib/db";
 import { fmtBahtCompact, fmtBaht, fmtPct } from "@/lib/format";
 
 function currentThaiMonthKey() {
@@ -24,7 +24,7 @@ export default async function StickyKpiBar({ userId }: { userId: string }) {
     if (data) {
       sales = data.totalSales;
       orders = data.orderCount;
-      urgentAlerts = data.rows.filter(r => parseNoteStatus(r.note) === "pending_transfer").length;
+      urgentAlerts = data.rows.filter(r => rowStatus(r) === "pending_transfer").length;
     }
     dailyTarget = agentTarget;
     isPersonalTarget = agentTarget !== teamTarget;

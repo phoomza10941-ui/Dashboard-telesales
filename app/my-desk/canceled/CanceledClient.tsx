@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { SaleRow } from "@/lib/db";
-import { parseNoteObjection } from "@/lib/note-utils";
+import { rowObjection } from "@/lib/note-utils";
 import UpdateNotePanel from "@/app/my-desk/components/UpdateNotePanel";
 import EditSaleModal from "@/app/my-desk/components/EditSaleModal";
 
@@ -47,7 +47,7 @@ export default function CanceledClient({ lostRows }: { lostRows: SaleRow[] }) {
   // Objection breakdown for summary
   const objectionCount: Record<string, number> = {};
   lostRows.forEach((r) => {
-    const obj = parseNoteObjection(r.note) ?? cancelReason(r.note);
+    const obj = rowObjection(r) ?? cancelReason(r.note);
     objectionCount[obj] = (objectionCount[obj] ?? 0) + 1;
   });
   const topObjections = Object.entries(objectionCount)
@@ -140,7 +140,7 @@ export default function CanceledClient({ lostRows }: { lostRows: SaleRow[] }) {
             {sorted.map((row, i) => {
               const total = row.phoneClose + row.upsell + row.crm + row.hopefulPhoneClose + row.hopefulCrm + row.hopefulUpsell;
               const days = daysSince(row.date);
-              const objection = parseNoteObjection(row.note);
+              const objection = rowObjection(row);
               const reason = cancelReason(row.note);
 
               return (

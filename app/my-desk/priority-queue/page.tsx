@@ -1,4 +1,4 @@
-import { getMyData, getCurrentUser, parseNoteStatus } from "@/lib/db";
+import { getMyData, getCurrentUser, rowStatus } from "@/lib/db";
 import PriorityQueueClient from "./PriorityQueueClient";
 
 export default async function PriorityQueuePage() {
@@ -7,7 +7,7 @@ export default async function PriorityQueuePage() {
   const allRows = data?.rows ?? [];
 
   const activeRows = allRows.filter((r) => {
-    const s = parseNoteStatus(r.note);
+    const s = rowStatus(r);
     return s !== "closed" && s !== "lost";
   });
 
