@@ -9,12 +9,13 @@ import { CallSummarySection } from "./CallSummarySection";
 
 // Full customer profile modal: stats, products, purchase history (newest first),
 // 7-day call history, and AI call summary.
-export function CustomerProfile({ group, hasOrekaExt, onClose, onAddNew, onEdit }: {
+export function CustomerProfile({ group, hasOrekaExt, onClose, onAddNew, onEdit, showCalls = true }: {
   group: CustomerGroup;
   hasOrekaExt: boolean;
   onClose: () => void;
   onAddNew: () => void;
   onEdit: (r: SaleRow) => void;
+  showCalls?: boolean; // false on add-customer (call log lives in customers-list)
 }) {
   const history = [...group.purchases].sort((a, b) => b.date.localeCompare(a.date));
   const products = [...new Set(history.map((r) => r.product).filter(Boolean))];
@@ -104,10 +105,10 @@ export function CustomerProfile({ group, hasOrekaExt, onClose, onAddNew, onEdit 
             })}
           </div>
 
-          {group.phone && hasOrekaExt && (
+          {showCalls && group.phone && hasOrekaExt && (
             <RecordingsPlayer phone={group.phone} hasOrekaExt={hasOrekaExt} days={7} />
           )}
-          {group.phone && (
+          {showCalls && group.phone && (
             <CallSummarySection phone={group.phone} hasOrekaExt={hasOrekaExt} />
           )}
         </div>

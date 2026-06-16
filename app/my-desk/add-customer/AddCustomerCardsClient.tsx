@@ -8,7 +8,6 @@ import type { CustomerGroup, View } from "@/app/my-desk/components/customer-card
 import { STATUS_LABEL } from "@/app/my-desk/components/customer-cards/types";
 import { groupRows, rowViewTotal, parseStatus } from "@/app/my-desk/components/customer-cards/group";
 import { ChannelBadge } from "@/app/my-desk/components/customer-cards/ChannelBadge";
-import { RecordingsPlayer } from "@/app/my-desk/components/customer-cards/RecordingsPlayer";
 import { CustomerProfile } from "@/app/my-desk/components/customer-cards/CustomerProfile";
 
 // Most recent purchase row for a customer (used as the target for "record a sale").
@@ -57,6 +56,7 @@ export default function AddCustomerCardsClient({
           hasOrekaExt={hasOrekaExt}
           onClose={() => setActiveGroup(null)}
           onEdit={(r) => setEditRow(r)}
+          showCalls={false}
           onAddNew={() => {
             // "บันทึกการขาย" — record a sale by editing the customer's latest row.
             setEditRow(latestRow(activeGroup));
@@ -187,9 +187,6 @@ export default function AddCustomerCardsClient({
                           );
                         })}
                       </div>
-                      {group.phone && hasOrekaExt && (
-                        <RecordingsPlayer phone={group.phone} hasOrekaExt={hasOrekaExt} days={7} />
-                      )}
                     </div>
                   )}
                 </div>
