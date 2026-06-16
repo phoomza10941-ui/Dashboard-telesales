@@ -1104,6 +1104,19 @@ export async function deleteAppointment(id: string, agentId: string): Promise<vo
   if (error) throw new Error(error.message);
 }
 
+export async function updateAppointmentPreSuggestion(
+  id: string,
+  agentId: string,
+  preSuggestion: string
+): Promise<void> {
+  const { error } = await adminClient
+    .from("appointments")
+    .update({ pre_suggestion: preSuggestion })
+    .eq("id", id)
+    .eq("agent_id", agentId);
+  if (error) throw new Error(error.message);
+}
+
 // ── Starred recordings ────────────────────────────────────────────────────────
 
 export interface StarredRecording {

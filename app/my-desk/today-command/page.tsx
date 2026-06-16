@@ -1,5 +1,6 @@
 import { getMyData, filterToday, filterPending, filterFollowUp, getCurrentUser, getAgentTarget, getTodayAppointments } from "@/lib/db";
 import Link from "next/link";
+import AppointmentCards from "./AppointmentCards";
 
 export default async function TodayCommandPage() {
   const user = await getCurrentUser();
@@ -123,22 +124,7 @@ export default async function TodayCommandPage() {
         badgeColor={todayAppointments.length > 0 ? "cyan" : "grey"}
         href="/my-desk/appointments"
       >
-        {todayAppointments.length === 0 ? (
-          <EmptyState text="ไม่มีนัดหมายวันนี้" />
-        ) : (
-          <div className="space-y-2">
-            {todayAppointments.slice(0, 4).map((a) => (
-              <div key={a.id} className="flex items-start gap-3 py-2 border-b border-[#E8E8E8] last:border-0">
-                <span className="w-2 h-2 rounded-full bg-[#58CEE8] shrink-0 mt-1.5" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium text-[#3D3D3D] truncate">{a.customerName}</div>
-                  {a.customerPhone && <div className="text-[11px] text-[#8B8E8F]">{a.customerPhone}</div>}
-                  {a.preSuggestion && <div className="text-[11px] text-[#8B8E8F] truncate">{a.preSuggestion}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <AppointmentCards appointments={todayAppointments} />
       </Card>
 
       {/* AI Next Best Action */}
