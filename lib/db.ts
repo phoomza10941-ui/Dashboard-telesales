@@ -1213,3 +1213,119 @@ export function buildTrend(rows: SaleRow[]): { day: string; sales: number }[] {
   }
   return result;
 }
+
+// ─── Customer profile ────────────────────────────────────────────────────────
+
+export interface Customer {
+  id: string;
+  agentId: string;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  nickname: string | null;
+  diseases: string | null;
+  symptoms: string | null;
+  medications: string | null;
+  consultedDoc: string | null;
+  patientType: string | null;
+  orekaRecId: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function rowToCustomer(r: Record<string, unknown>): Customer {
+  return {
+    id: r.id as string,
+    agentId: r.agent_id as string,
+    phone: (r.phone as string) ?? null,
+    firstName: (r.first_name as string) ?? null,
+    lastName: (r.last_name as string) ?? null,
+    nickname: (r.nickname as string) ?? null,
+    diseases: (r.diseases as string) ?? null,
+    symptoms: (r.symptoms as string) ?? null,
+    medications: (r.medications as string) ?? null,
+    consultedDoc: (r.consulted_doc as string) ?? null,
+    patientType: (r.patient_type as string) ?? null,
+    orekaRecId: (r.oreka_rec_id as string) ?? null,
+    notes: (r.notes as string) ?? null,
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+  };
+}
+
+export async function getCustomers(agentId: string): Promise<Customer[]> {
+  const { data, error } = await adminClient
+    .from("customers")
+    .select("*")
+    .eq("agent_id", agentId)
+    .order("updated_at", { ascending: false });
+  if (error || !data) return [];
+  return data.map(rowToCustomer);
+}
+
+export async function upsertCustomer(
+  agentId: string,
+  fields: Partial<Omit<Customer, "id" | "agentId" | "createdAt" | "updatedAt">> & { id?: string }
+): Promise<Customer> {
+  const payload: Record<string, unknown> = {
+    agent_id: agentId,
+    phone: fields.phone ?? null,
+    first_name: fields.firstName ?? null,
+    last_name: fields.lastName ?? null,
+    nickname: fields.nickname ?? null,
+    diseases: fields.diseases ?? null,
+    symptoms: fields.symptoms ?? null,
+    medications: fields.medications ?? null,
+    consulted_doc: fields.consultedDoc ?? null,
+    patient_type: fields.patientType ?? null,
+    oreka_rec_id: fields.orekaRecId ?? null,
+    notes: fields.notes ?? null,
+    updated_at: new Date().toISOString(),
+  };
+  if (fields.id) payload.id = fields.id;
+
+  const { data, error } = await adminClient
+    .from("customers")
+    .upsert(payload, { onConflict: "id" })
+    .select()
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "upsert failed");
+  return rowToCustomer(data);
+}
+
+// ─── AI extraction field config ───────────────────────────────────────────────
+
+export interface AiExtractionFields {
+  first_name: boolean;
+  last_name: boolean;
+  nickname: boolean;
+  diseases: boolean;
+  symptoms: boolean;
+  medications: boolean;
+  consulted_doc: boolean;
+  patient_type: boolean;
+}
+
+const DEFAULT_AI_FIELDS: AiExtractionFields = {
+  first_name: true, last_name: true, nickname: true,
+  diseases: true, symptoms: true, medications: true,
+  consulted_doc: true, patient_type: true,
+};
+
+export async function getAiExtractionFields(): Promise<AiExtractionFields> {
+  const { data } = await adminClient
+    .from("team_config")
+    .select("value")
+    .eq("key", "ai_extraction_fields")
+    .single();
+  if (!data?.value) return DEFAULT_AI_FIELDS;
+  return { ...DEFAULT_AI_FIELDS, ...(data.value as Partial<AiExtractionFields>) };
+}
+
+export async function setAiExtractionFields(fields: AiExtractionFields): Promise<void> {
+  const { error } = await adminClient
+    .from("team_config")
+    .upsert({ key: "ai_extraction_fields", value: fields }, { onConflict: "key" });
+  if (error) throw new Error(error.message);
+}
