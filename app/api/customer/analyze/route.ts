@@ -57,7 +57,11 @@ export async function POST(req: NextRequest) {
         controller.close();
       } catch (err) {
         console.error("[customer/analyze]", err);
-        send({ type: "error", message: err instanceof Error ? err.message : "Analysis failed" });
+        const raw = err instanceof Error ? err.message : "Analysis failed";
+        const message = raw === "whisper_hallucination"
+          ? "ถอดเสียงไม่สำเร็จ — สายนี้เงียบหรือมีเสียงรบกวน กรุณาเลือกสายอื่น"
+          : raw;
+        send({ type: "error", message });
         controller.close();
       }
     },
