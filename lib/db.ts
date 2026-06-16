@@ -1329,3 +1329,57 @@ export async function setAiExtractionFields(fields: AiExtractionFields): Promise
     .upsert({ key: "ai_extraction_fields", value: fields }, { onConflict: "key" });
   if (error) throw new Error(error.message);
 }
+
+// ─── Agent profile list (id + nickname) for supervisor dropdowns ──────────────
+
+export interface AgentProfile {
+  id: string;
+  nickname: string;
+}
+
+export async function getAgentProfiles(): Promise<AgentProfile[]> {
+  const { data } = await adminClient
+    .from("profiles")
+    .select("id, nickname")
+    .eq("role", "agent")
+    .order("nickname", { ascending: true });
+  return (data ?? []).map((p: { id: string; nickname: string }) => ({ id: p.id, nickname: p.nickname }));
+}
+
+// ─── Customer reassignment ────────────────────────────────────────────────────
+
+export async function getSalesByAgent(agentId: string): Promise<SaleRow[]> {
+  const { data, error } = await adminClient
+    .from("sales")
+    .select("*")
+    .eq("agent_id", agentId)
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return data.map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    date: r.date as string,
+    name: (r.customer_name as string) ?? "",
+    phone: (r.phone as string) ?? "",
+    address: (r.address as string) ?? "",
+    product: (r.product as string) ?? "",
+    quantity: Number(r.quantity) || 1,
+    phoneClose: Number(r.phone_close) || 0,
+    upsell: Number(r.upsell) || 0,
+    crm: Number(r.crm) || 0,
+    hopefulPhoneClose: Number(r.hopeful_phone_close) || 0,
+    hopefulCrm: Number(r.hopeful_crm) || 0,
+    hopefulUpsell: Number(r.hopeful_upsell) || 0,
+    note: (r.note as string) ?? "",
+    channel: (r.channel as "gosell" | "hopeful" | "") ?? "",
+    status: (r.status as NoteStatus | "") ?? "",
+    objection: (r.objection as string | null) ?? null,
+  }));
+}
+
+export async function reassignSales(saleIds: string[], newAgentId: string): Promise<void> {
+  const { error } = await adminClient
+    .from("sales")
+    .update({ agent_id: newAgentId })
+    .in("id", saleIds);
+  if (error) throw new Error(error.message);
+}
