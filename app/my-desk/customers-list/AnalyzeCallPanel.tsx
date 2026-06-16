@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition, useEffect, ReactNode } from "react";
+import { useState, useTransition, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 interface OrekaRecording {
@@ -65,27 +65,9 @@ export default function AnalyzeCallPanel({
   const [search, setSearch] = useState("");
   const [showShort, setShowShort] = useState(false);
   const [loadingPct, setLoadingPct] = useState(0);
+  const [loadingLabel, setLoadingLabel] = useState("");
   const [, startTransition] = useTransition();
   const router = useRouter();
-
-  // Animate a fake progress bar while waiting for the API
-  useEffect(() => {
-    if (step !== "loading") return;
-    setLoadingPct(3);
-    const id = setInterval(() => {
-      setLoadingPct((p) => {
-        const gap = 90 - p;
-        return p + Math.max(0.4, gap * 0.025);
-      });
-    }, 500);
-    return () => clearInterval(id);
-  }, [step]);
-
-  function loadingPhase(pct: number) {
-    if (pct < 25) return "⬇️ ดาวน์โหลดเสียง...";
-    if (pct < 78) return "📝 ถอดเสียงด้วย Whisper...";
-    return "🧠 วิเคราะห์ด้วย AI...";
-  }
 
   function handleOpen() {
     setOpen(true);
@@ -118,6 +100,8 @@ export default function AnalyzeCallPanel({
     if (!selectedRec) return;
     setStep("loading");
     setError("");
+    setLoadingPct(0);
+    setLoadingLabel("⬇️ ดาวน์โหลดเสียง...");
     try {
       const account =
         orekaExtGosell && selectedRec.localParty === orekaExtGosell ? "gosell" : "hopeful";
@@ -126,13 +110,41 @@ export default function AnalyzeCallPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orekaRecordingId: selectedRec.id, account }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "วิเคราะห์ไม่สำเร็จ");
-      setLoadingPct(100);
-      await new Promise((r) => setTimeout(r, 300));
-      setExtracted(data.fields ?? {});
-      setEditedFields(data.fields ?? {});
-      setStep("results");
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "วิเคราะห์ไม่สำเร็จ");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const event = JSON.parse(line) as {
+            type: string; pct?: number; label?: string;
+            fields?: Record<string, string>; message?: string;
+          };
+          if (event.type === "progress") {
+            setLoadingPct(event.pct ?? 0);
+            setLoadingLabel(event.label ?? "");
+          } else if (event.type === "done") {
+            setLoadingPct(100);
+            await new Promise((r) => setTimeout(r, 250));
+            setExtracted(event.fields ?? {});
+            setEditedFields(event.fields ?? {});
+            setStep("results");
+          } else if (event.type === "error") {
+            throw new Error(event.message ?? "เกิดข้อผิดพลาด");
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
       setStep("error");
@@ -301,7 +313,7 @@ export default function AnalyzeCallPanel({
                 <div className="flex flex-col items-center justify-center py-16 gap-5 px-6">
                   <div className="w-full space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-[12px] text-[#8B8E8F]">{loadingPhase(loadingPct)}</span>
+                      <span className="text-[12px] text-[#8B8E8F]">{loadingLabel}</span>
                       <span className="text-[13px] font-semibold text-[#3D3D3D] tabular-nums">
                         {Math.round(loadingPct)}%
                       </span>
