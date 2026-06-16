@@ -69,7 +69,7 @@ function resolveAudioFormat(contentType: string): { ext: string; mime: string } 
 }
 
 // Download audio buffer from Oreka mediastream
-async function downloadAudio(
+export async function downloadAudio(
   recordingId: number | string,
   accountId: AccountId,
 ): Promise<{ buffer: Buffer; format: { ext: string; mime: string } }> {
@@ -221,7 +221,7 @@ function decodeG711Wav(input: Buffer): { buffer: Buffer; converted: boolean } {
   return { buffer: out, converted: true };
 }
 
-async function transcribe(
+export async function transcribeAudio(
   buffer: Buffer,
   format: { ext: string; mime: string },
   recordingId: string,
@@ -369,7 +369,7 @@ export async function generateSummaryForPhone(
 
   // Process new recording
   const { buffer, format } = await downloadAudio(recording.id, recording.accountId);
-  const transcript = await transcribe(buffer, format, String(recording.id));
+  const transcript = await transcribeAudio(buffer, format, String(recording.id));
   const { summary, coaching_tips } = await summarize(transcript);
 
   const { error: insertError } = await adminClient.from("call_summaries").insert({
@@ -418,4 +418,73 @@ export async function getSummariesForPhone(
     createdAt: r.created_at,
     transcript: r.transcript ?? null,
   }));
+}
+
+export interface ExtractedCustomerFields {
+  first_name?: string;
+  last_name?: string;
+  nickname?: string;
+  diseases?: string;
+  symptoms?: string;
+  medications?: string;
+  consulted_doc?: string;
+  patient_type?: string;
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  first_name: "ชื่อ",
+  last_name: "นามสกุล",
+  nickname: "ชื่อเล่น",
+  diseases: "โรคเป็นอยู่",
+  symptoms: "อาการตอนนี้",
+  medications: "ยาที่กำลังทานอยู่",
+  consulted_doc: "ปรึกษาหมอมั้ย",
+  patient_type: "คนที่ทาน",
+};
+
+export async function extractCustomerInfo(
+  transcript: string,
+  enabledFields: Record<string, boolean>,
+  productKnowledge: string
+): Promise<ExtractedCustomerFields> {
+  const activeFields = Object.entries(enabledFields)
+    .filter(([, v]) => v)
+    .map(([k]) => `- ${FIELD_LABELS[k] ?? k} (field: ${k})`);
+
+  if (activeFields.length === 0) return {};
+
+  const systemPrompt = [
+    "คุณเป็น AI ที่ช่วยดึงข้อมูลลูกค้าจากบทสนทนาสายโทรศัพท์ภาษาไทย",
+    productKnowledge
+      ? `\nข้อมูลสินค้า (context เพิ่มเติม):\n${productKnowledge}`
+      : "",
+    "\nดึงเฉพาะข้อมูลที่พูดถึงในสายเท่านั้น ถ้าไม่มีการพูดถึง field ใด ให้ละ field นั้นออก",
+    "\nส่งกลับเป็น JSON object ที่มี key เป็น field name ด้านล่าง:",
+    activeFields.join("\n"),
+    "\nกฎ:",
+    "- first_name/last_name/nickname: ตรงตามที่พูด",
+    "- diseases: คั่นด้วยคอมมา",
+    "- medications: ชื่อยา คั่นด้วยคอมมา",
+    "- consulted_doc: คำตอบสั้น รวมความถี่ถ้ามี (เช่น 'ใช่ — ทุก 3 เดือน')",
+    "- patient_type: 'ตัวเอง' หรือ 'คนในครอบครัว — [ความสัมพันธ์]'",
+    "- symptoms: อธิบายสั้น ๆ",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: transcript },
+    ],
+    temperature: 0,
+  });
+
+  try {
+    return JSON.parse(response.choices[0].message.content ?? "{}") as ExtractedCustomerFields;
+  } catch {
+    return {};
+  }
 }
