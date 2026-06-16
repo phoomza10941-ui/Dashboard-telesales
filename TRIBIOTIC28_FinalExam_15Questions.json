@@ -1,0 +1,174 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "จุดขายหลักของ TRIBIOTIC 28 ที่แตกต่างจาก Probiotic ทั่วไปคืออะไร?",
+      "options": [
+        "มี Probiotic เพียงสายพันธุ์เดียวแต่ปริมาณสูงมาก",
+        "รวม Probiotic, Prebiotic และ Postbiotic ในสูตรเดียว",
+        "เป็นยาระบายที่ช่วยกระตุ้นการขับถ่ายทันที",
+        "เน้นลดน้ำหนักโดยตรงเป็นหลัก"
+      ],
+      "correct_answer": "B",
+      "explanation": "TRIBIOTIC 28 ใช้ Triple Biotic System มีครบ Probiotic, Prebiotic และ Postbiotic ในสูตรเดียว",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "สูตร 22+5+1 ของ TRIBIOTIC 28 หมายถึงข้อใด?",
+      "options": [
+        "Probiotic 22 สายพันธุ์ + Prebiotic 5 ชนิด + Postbiotic 1 ชนิด",
+        "Probiotic 22 ชนิด + วิตามิน 5 ชนิด + แร่ธาตุ 1 ชนิด",
+        "ใยอาหาร 22 ชนิด + จุลินทรีย์ 5 ชนิด + เอนไซม์ 1 ชนิด",
+        "Postbiotic 22 ชนิด + Prebiotic 5 ชนิด + Probiotic 1 ชนิด"
+      ],
+      "correct_answer": "A",
+      "explanation": "ตัวเลข 28 มาจาก 22 Probiotic, 5 Prebiotic และ 1 Postbiotic",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "คำว่า Gut Microbiome ในเนื้อหาหมายถึงอะไร?",
+      "options": [
+        "ระบบนิเวศจุลินทรีย์ภายในลำไส้",
+        "ระบบการไหลเวียนเลือด",
+        "ระบบกล้ามเนื้อหน้าท้อง",
+        "ระบบการทำงานของตับ"
+      ],
+      "correct_answer": "A",
+      "explanation": "Gut Microbiome คือระบบนิเวศจุลินทรีย์ในลำไส้ที่เกี่ยวข้องกับสุขภาพหลายระบบ",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "Gut Microbiome เกี่ยวข้องกับสุขภาพผิว อารมณ์ สมอง ภูมิคุ้มกัน และการเผาผลาญ ไม่ใช่แค่การขับถ่ายเท่านั้น",
+      "correct_answer": "TRUE",
+      "explanation": "เนื้อหาระบุว่าลำไส้เชื่อมโยงกับหลายระบบ เช่น Gut-Skin Axis, Gut-Brain Axis, Gut-Immune Axis และ Gut-Metabolic Axis",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ข้อใดเป็นอาการที่อาจเกิดขึ้นเมื่อลำไส้เสียสมดุล หรือ Gut Dysbiosis?",
+      "options": [
+        "ท้องอืด ถ่ายไม่ปกติ สิวขึ้นง่าย อ่อนเพลีย",
+        "สายตาคมชัดขึ้นทันที",
+        "กล้ามเนื้อโตเร็วขึ้น",
+        "ส่วนสูงเพิ่มขึ้นอย่างรวดเร็ว"
+      ],
+      "correct_answer": "A",
+      "explanation": "Gut Dysbiosis อาจทำให้เกิดท้องอืด ถ่ายไม่ปกติ สิวขึ้นง่าย ภูมิแพ้ อ่อนเพลีย สมองล้า หรือเครียดง่าย",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ข้อใดเป็นปัจจัยที่อาจทำลาย Gut Microbiome ตามเนื้อหา?",
+      "options": [
+        "นอนดึก ความเครียด อาหารแปรรูป และยาปฏิชีวนะ",
+        "นอนพอ ดื่มน้ำสะอาด และออกกำลังกาย",
+        "กินผักผลไม้เป็นประจำ",
+        "พักผ่อนเพียงพอและหลีกเลี่ยงแอลกอฮอล์"
+      ],
+      "correct_answer": "A",
+      "explanation": "เนื้อหาระบุปัจจัยทำลาย Gut Microbiome เช่น นอนดึก ความเครียด อาหารแปรรูป น้ำตาลสูง แอลกอฮอล์ ยาปฏิชีวนะ PM2.5 และพักผ่อนน้อย",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "หน้าที่หลักของ Prebiotic ใน TRIBIOTIC 28 คืออะไร?",
+      "options": [
+        "เป็นอาหารเลี้ยงจุลินทรีย์ดีให้มีชีวิตอยู่รอด เจริญเติบโต และอยู่นานขึ้น",
+        "ทำลายจุลินทรีย์ดีทั้งหมดในลำไส้",
+        "กระตุ้นลำไส้ให้ถ่ายแบบยาระบาย",
+        "ทำหน้าที่แทน Probiotic ทั้งหมด"
+      ],
+      "correct_answer": "A",
+      "explanation": "Prebiotic เป็นอาหารของจุลินทรีย์ดี ช่วยให้จุลินทรีย์ดีอยู่รอดและเจริญเติบโต",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Premium Invisible Fiber จากญี่ปุ่นใน TRIBIOTIC 28 คือใยอาหารชนิดใด?",
+      "options": [
+        "PHGG หรือ Partially Hydrolyzed Guar Gum",
+        "Collagen Peptide",
+        "L-Carnitine",
+        "Vitamin C"
+      ],
+      "correct_answer": "A",
+      "explanation": "Sunfiber เป็น Premium Invisible Fiber ชนิด PHGG จากญี่ปุ่น",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "Postbiotic ใน TRIBIOTIC 28 มีจุดเด่นคือทำงานได้ทันที ไม่ต้องรอให้จุลินทรีย์โต",
+      "correct_answer": "TRUE",
+      "explanation": "Postbiotic มี Core Benefits เช่น Fast Action, Immune Boost, Anti-inflammatory และ Gut Barrier Support",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "TRIBIOTIC 28 แนะนำให้รับประทานอย่างไร?",
+      "options": [
+        "วันละ 1 ซอง หลังอาหารเย็น และดื่มน้ำตาม 1-2 แก้ว",
+        "วันละ 3 ซอง ก่อนอาหารทุกมื้อ",
+        "ทานเฉพาะตอนมีอาการท้องผูกเท่านั้น",
+        "ชงกับน้ำร้อนจัดก่อนนอนทุกคืน"
+      ],
+      "correct_answer": "A",
+      "explanation": "วิธีรับประทานที่แนะนำคือวันละ 1 ซอง หลังอาหารเย็น ดื่มน้ำตาม 1-2 แก้ว",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ข้อใดเป็นข้อควรระวังของกลุ่มที่ควรปรึกษาแพทย์ก่อนรับประทาน?",
+      "options": [
+        "ผู้ที่มีภูมิคุ้มกันต่ำมากหรือกำลังปลูกถ่ายอวัยวะ",
+        "ผู้ที่ดื่มน้ำเยอะเป็นประจำ",
+        "ผู้ที่ออกกำลังกายทุกวัน",
+        "ผู้ที่ไม่มีปัญหาขับถ่าย"
+      ],
+      "correct_answer": "A",
+      "explanation": "กลุ่มที่ควรปรึกษาแพทย์ เช่น คนท้อง 6 เดือนแรก ผู้มีภูมิคุ้มกันต่ำมาก เม็ดเลือดขาวต่ำ กำลังปลูกถ่ายอวัยวะ HIV ระยะภูมิต่ำมาก หรือมีภาวะผ่าตัดลำไส้/ลำไส้อุดตัน",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "TRIBIOTIC 28 เป็นยาระบาย จึงมีฤทธิ์กระตุ้นลำไส้โดยตรงให้ปวดบิดและถ่ายเหลว",
+      "correct_answer": "FALSE",
+      "explanation": "เนื้อหาระบุว่า TRIBIOTIC 28 ไม่ใช่ยาระบาย แต่เน้นการปรับสมดุลลำไส้",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ผลลัพธ์ที่คาดหวังประมาณ 7 วันแรกตามเนื้อหาคือข้อใด?",
+      "options": [
+        "ขับถ่ายง่ายขึ้น กลิ่นไม่เหม็นเน่า และท้องอืดลดลง",
+        "ผิวขาวขึ้นทันที",
+        "น้ำหนักลดลงหลายกิโลทันที",
+        "ภูมิแพ้หายขาดทันที"
+      ],
+      "correct_answer": "A",
+      "explanation": "ในช่วงประมาณ 7 วัน เนื้อหาระบุว่าขับถ่ายง่ายขึ้น กลิ่นไม่เหม็นเน่า และท้องอืดลดลง",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "1 แพ็กของ TRIBIOTIC 28 บรรจุกี่ซอง?",
+      "options": [
+        "7 ซอง",
+        "10 ซอง",
+        "15 ซอง",
+        "30 ซอง"
+      ],
+      "correct_answer": "C",
+      "explanation": "1 แพ็ก บรรจุ 15 ซอง",
+      "points": 1
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายว่าเหตุใด TRIBIOTIC 28 จึงถูกสื่อสารว่าเป็น The Beyond Probiotic และเกี่ยวข้องกับการดูแล Gut Microbiome อย่างไร",
+      "model_answer": "TRIBIOTIC 28 ถูกสื่อสารว่าเป็น The Beyond Probiotic เพราะไม่ได้มีเพียง Probiotic อย่างเดียว แต่ใช้แนวคิด Triple Biotic System หรือการดูแลแบบ เติม เลี้ยง เสริม โดยเติม Probiotic 22 สายพันธุ์เพื่อเพิ่มความหลากหลายของจุลินทรีย์ดี เลี้ยงด้วย Prebiotic 5 ชนิดเพื่อเป็นอาหารให้จุลินทรีย์ดีอยู่รอดและเจริญเติบโต และเสริมด้วย Postbiotic 1 ชนิดที่ช่วยสนับสนุนสมดุลลำไส้ได้ทันที แนวคิดนี้มุ่งดูแล Gut Microbiome แบบครบระบบ เพราะลำไส้ไม่ได้เกี่ยวข้องแค่การขับถ่าย แต่ยังเชื่อมโยงกับภูมิคุ้มกัน สุขภาพผิว อารมณ์ สมอง การอักเสบ และการเผาผลาญของร่างกาย",
+      "points": 5
+    }
+  ]
+}

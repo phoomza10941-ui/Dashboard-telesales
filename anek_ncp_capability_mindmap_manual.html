@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ผังความรู้คู่มือ Anek NCP - ความสามารถที่ช่วยงานคุณได้</title>
+  <style>
+    :root{
+      --bg:#f6f3ee;
+      --paper:#fffaf2;
+      --ink:#2c241c;
+      --muted:#6e6255;
+      --brand:#8b5a2b;
+      --brand2:#c28b47;
+      --green:#426b4f;
+      --blue:#3d6175;
+      --red:#8b3f3f;
+      --purple:#67507a;
+      --card:#ffffff;
+      --line:#d9c7ae;
+      --shadow:0 14px 35px rgba(80,55,30,.13);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Tahoma","Noto Sans Thai",system-ui,sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(194,139,71,.18), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(66,107,79,.16), transparent 35%),
+        var(--bg);
+      color:var(--ink);
+      line-height:1.65;
+    }
+    header{
+      padding:38px 18px 18px;
+      text-align:center;
+    }
+    .badge{
+      display:inline-block;
+      padding:7px 14px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(255,250,242,.75);
+      color:var(--brand);
+      font-weight:700;
+      font-size:14px;
+    }
+    h1{
+      margin:18px auto 10px;
+      max-width:980px;
+      font-size:clamp(30px,5vw,58px);
+      line-height:1.15;
+      letter-spacing:-.5px;
+    }
+    .subtitle{
+      max-width:850px;
+      margin:0 auto;
+      color:var(--muted);
+      font-size:18px;
+    }
+    .wrap{
+      max-width:1180px;
+      margin:0 auto;
+      padding:18px;
+    }
+    .hero{
+      background:linear-gradient(135deg, rgba(255,250,242,.96), rgba(255,255,255,.88));
+      border:1px solid var(--line);
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      padding:24px;
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:22px;
+      align-items:center;
+    }
+    .hero h2{font-size:28px;margin:0 0 10px}
+    .hero p{margin:0 0 12px;color:var(--muted)}
+    .principles{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin-top:16px;
+    }
+    .principle{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+      font-weight:700;
+      text-align:center;
+    }
+    .mindmap{
+      position:relative;
+      min-height:540px;
+      background:
+        linear-gradient(90deg, rgba(217,199,174,.28) 1px, transparent 1px),
+        linear-gradient(rgba(217,199,174,.28) 1px, transparent 1px),
+        rgba(255,250,242,.58);
+      background-size:32px 32px;
+      border:1px solid var(--line);
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      padding:24px;
+    }
+    .center-node{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:230px;
+      min-height:150px;
+      border-radius:50%;
+      background:linear-gradient(135deg, var(--brand), var(--brand2));
+      color:#fff;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:24px;
+      box-shadow:0 18px 40px rgba(139,90,43,.28);
+      z-index:5;
+    }
+    .center-node strong{font-size:25px;line-height:1.2}
+    .center-node span{font-size:14px;opacity:.92;margin-top:8px}
+    .node{
+      position:absolute;
+      width:220px;
+      border-radius:22px;
+      background:#fff;
+      border:1px solid var(--line);
+      box-shadow:0 10px 25px rgba(80,55,30,.11);
+      padding:14px 15px;
+      cursor:pointer;
+      transition:.2s ease;
+      z-index:6;
+    }
+    .node:hover{transform:translateY(-4px);box-shadow:0 16px 30px rgba(80,55,30,.18)}
+    .node h3{margin:0 0 6px;font-size:17px}
+    .node p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
+    .node small{
+      display:inline-block;
+      margin-top:8px;
+      padding:3px 9px;
+      border-radius:999px;
+      background:#f4ede3;
+      color:var(--brand);
+      font-weight:700;
+    }
+    .n1{left:7%;top:7%;border-top:6px solid var(--green)}
+    .n2{left:39%;top:4%;border-top:6px solid var(--blue)}
+    .n3{right:7%;top:7%;border-top:6px solid var(--red)}
+    .n4{left:3%;top:40%;border-top:6px solid var(--purple)}
+    .n5{right:3%;top:40%;border-top:6px solid var(--green)}
+    .n6{left:9%;bottom:7%;border-top:6px solid var(--blue)}
+    .n7{left:39%;bottom:4%;border-top:6px solid var(--red)}
+    .n8{right:9%;bottom:7%;border-top:6px solid var(--purple)}
+    svg.lines{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:1;
+      pointer-events:none;
+    }
+    .section-title{
+      margin:34px 0 14px;
+      font-size:28px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:16px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 10px 26px rgba(80,55,30,.09);
+      padding:20px;
+    }
+    .card h3{margin:0 0 8px;font-size:22px}
+    .card ul{margin:10px 0 0;padding-left:22px}
+    .card li{margin:6px 0}
+    .tag{
+      display:inline-block;
+      margin:3px 5px 3px 0;
+      padding:5px 10px;
+      border-radius:999px;
+      background:#f4ede3;
+      color:var(--brand);
+      font-weight:700;
+      font-size:13px;
+    }
+    .prompt-box{
+      background:#2b241d;
+      color:#fff8ed;
+      border-radius:18px;
+      padding:16px;
+      margin-top:12px;
+      font-family: "Tahoma","Noto Sans Thai",system-ui,sans-serif;
+    }
+    .prompt-box code{
+      display:block;
+      white-space:pre-wrap;
+      font-family:inherit;
+      color:#fff8ed;
+    }
+    details{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px 16px;
+      margin:10px 0;
+    }
+    summary{
+      cursor:pointer;
+      font-weight:800;
+      color:var(--brand);
+    }
+    .flow{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:10px;
+      margin-top:14px;
+    }
+    .step{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      text-align:center;
+      min-height:115px;
+    }
+    .step b{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      background:var(--brand);
+      color:white;
+      margin-bottom:8px;
+    }
+    .table-wrap{overflow:auto}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid var(--line);
+    }
+    th,td{
+      padding:12px 14px;
+      border-bottom:1px solid #eadcc8;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#f0e2cf;
+      color:#3b2b1e;
+    }
+    .footer{
+      text-align:center;
+      color:var(--muted);
+      padding:28px 16px 44px;
+    }
+    .print-btn{
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      z-index:20;
+      border:0;
+      padding:13px 18px;
+      border-radius:999px;
+      background:var(--brand);
+      color:white;
+      font-weight:800;
+      box-shadow:0 12px 26px rgba(80,55,30,.25);
+      cursor:pointer;
+    }
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(30,24,18,.58);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:50;
+    }
+    .modal.open{display:flex}
+    .modal-content{
+      width:min(760px,96vw);
+      max-height:88vh;
+      overflow:auto;
+      background:#fffaf2;
+      border-radius:26px;
+      border:1px solid var(--line);
+      box-shadow:0 28px 60px rgba(0,0,0,.28);
+      padding:24px;
+      position:relative;
+    }
+    .close{
+      position:absolute;
+      top:14px;
+      right:14px;
+      border:0;
+      width:38px;
+      height:38px;
+      border-radius:50%;
+      background:#efe0cc;
+      cursor:pointer;
+      font-weight:900;
+    }
+    .modal h2{margin-top:4px}
+    .modal li{margin:7px 0}
+    @media(max-width:980px){
+      .hero{grid-template-columns:1fr}
+      .mindmap{min-height:auto;display:grid;grid-template-columns:1fr;gap:12px}
+      .center-node,.node{position:static;transform:none;width:auto;border-radius:22px}
+      .center-node{min-height:auto}
+      svg.lines{display:none}
+      .grid{grid-template-columns:1fr}
+      .flow{grid-template-columns:1fr}
+      .principles{grid-template-columns:1fr}
+    }
+    @media print{
+      .print-btn,.modal{display:none!important}
+      body{background:#fff}
+      .hero,.mindmap,.card{box-shadow:none}
+      .node,.center-node{position:static;transform:none;width:auto;margin:8px 0;border-radius:16px}
+      .mindmap{min-height:auto}
+      svg.lines{display:none}
+    }
+  </style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">พิมพ์ / บันทึก PDF</button>
+
+  <header>
+    <div class="badge">คู่มือใช้งาน Anek NCP</div>
+    <h1>ผังความรู้: ความสามารถที่ผมช่วยคุณทำได้</h1>
+    <p class="subtitle">
+      ใช้หน้านี้เป็นคู่มือถามงาน วางแผน สร้างคอนเทนต์ วิเคราะห์ธุรกิจ สร้างสคริปต์ Telesales/CRM และทำเอกสารให้เป็นระบบ
+    </p>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <h2>ผมเหมาะกับงานแบบไหน?</h2>
+        <p>
+          ผมคือผู้ช่วยเชิงกลยุทธ์ที่ช่วยคิด ช่วยวิเคราะห์ ช่วยจัดระบบ และช่วยสร้างงานเขียน/คู่มือ/สคริปต์/แผนงาน โดยเฉพาะสาย Telesales, CRM, Sales Operation, Marketing และการบริหารทีมครับ
+        </p>
+        <div class="principles">
+          <div class="principle">จริงใจ</div>
+          <div class="principle">เป็นระบบ</div>
+          <div class="principle">ลงมือใช้ได้จริง</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>วิธีถามให้ได้คำตอบดี</h3>
+        <p>ใช้สูตรนี้: <b>เป้าหมาย + บริบท + ข้อจำกัด + รูปแบบผลลัพธ์</b></p>
+        <div class="prompt-box"><code>ตัวอย่าง:
+ช่วยทำสคริปต์โทรติดตามลูกค้าเก่าอาหารเสริม
+เป้าหมายคือให้ซื้อซ้ำ
+ลูกค้าเคยซื้อ 1 ครั้งเมื่อ 30 วันก่อน
+ขอเป็นสคริปต์ 5 นาที พร้อมคำตอบข้อโต้แย้ง 5 ข้อ</code></div>
+      </div>
+    </section>
+
+    <h2 class="section-title">Mind Map ความสามารถหลัก</h2>
+    <section class="mindmap" aria-label="ผังความรู้ความสามารถ">
+      <svg class="lines" viewBox="0 0 1180 540" preserveAspectRatio="none">
+        <line x1="590" y1="270" x2="210" y2="85" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+        <line x1="590" y1="270" x2="590" y2="75" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+        <line x1="590" y1="270" x2="970" y2="85" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+        <line x1="590" y1="270" x2="145" y2="270" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+        <line x1="590" y1="270" x2="1035" y2="270" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+        <line x1="590" y1="270" x2="230" y2="465" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+        <line x1="590" y1="270" x2="590" y2="470" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+        <line x1="590" y1="270" x2="950" y2="465" stroke="#d1b992" stroke-width="3" stroke-dasharray="7 8"/>
+      </svg>
+
+      <div class="center-node">
+        <strong>Anek NCP</strong>
+        <span>ผู้ช่วยคิด วางระบบ และสร้างงานเชิงธุรกิจ</span>
+      </div>
+
+      <div class="node n1" data-key="tele">
+        <h3>1. Telesales & CRM</h3>
+        <p>สคริปต์ โทรติดตาม ปิดการขาย Upsell Cross-sell</p>
+        <small>คลิกดู</small>
+      </div>
+      <div class="node n2" data-key="strategy">
+        <h3>2. Strategy & Operation</h3>
+        <p>วางแผนยอดขาย KPI Process Dashboard</p>
+        <small>คลิกดู</small>
+      </div>
+      <div class="node n3" data-key="content">
+        <h3>3. Content & Training</h3>
+        <p>คำคม นิทาน บทพูด เทรนนิ่งทีม</p>
+        <small>คลิกดู</small>
+      </div>
+      <div class="node n4" data-key="data">
+        <h3>4. Data & Analysis</h3>
+        <p>วิเคราะห์ลูกค้า รายงาน ยอดขาย LTV</p>
+        <small>คลิกดู</small>
+      </div>
+      <div class="node n5" data-key="docs">
+        <h3>5. Document & File</h3>
+        <p>สรุป PDF ทำคู่มือ Word Excel Slides HTML</p>
+        <small>คลิกดู</small>
+      </div>
+      <div class="node n6" data-key="research">
+        <h3>6. Research & Web</h3>
+        <p>ค้นข้อมูลล่าสุด อ้างอิง ตรวจสอบข้อเท็จจริง</p>
+        <small>คลิกดู</small>
+      </div>
+      <div class="node n7" data-key="creative">
+        <h3>7. Creative & Image</h3>
+        <p>ไอเดียภาพ โปสเตอร์ Visual Concept</p>
+        <small>คลิกดู</small>
+      </div>
+      <div class="node n8" data-key="decision">
+        <h3>8. Decision Support</h3>
+        <p>ช่วยตัดสินใจ เปรียบเทียบ ทางเลือก ความเสี่ยง</p>
+        <small>คลิกดู</small>
+      </div>
+    </section>
+
+    <h2 class="section-title">คู่มือใช้งานตามหมวด</h2>
+    <section class="grid">
+      <article class="card">
+        <h3>Telesales / CRM / Sales</h3>
+        <span class="tag">Script</span><span class="tag">Objection</span><span class="tag">Follow up</span><span class="tag">Upsell</span>
+        <ul>
+          <li>สร้างสคริปต์โทรออก โทรปิดการขาย โทรติดตามผล และโทรซื้อซ้ำ</li>
+          <li>วิเคราะห์จุดดี/จุดด้อยของบทสนทนา Telesales</li>
+          <li>ออกแบบคำถามเพื่อค้นหา Pain Point ลูกค้า</li>
+          <li>ทำคู่มือโค้ชทีมและแบบประเมินคุณภาพสาย</li>
+        </ul>
+        <div class="prompt-box"><code>ช่วยทำสคริปต์ Telesales สำหรับลูกค้าเก่าที่เคยซื้อแล้วไม่กลับมาซื้อซ้ำ 60 วัน ขอแบบสุภาพ ไม่กดดัน และมีแนวทางปิดการขาย 3 แบบ</code></div>
+      </article>
+
+      <article class="card">
+        <h3>กลยุทธ์ธุรกิจและ Operation</h3>
+        <span class="tag">KPI</span><span class="tag">Process</span><span class="tag">Team</span><span class="tag">CRM System</span>
+        <ul>
+          <li>วางโครงสร้างทีม Sales, Admin, Supervisor, Manager</li>
+          <li>ออกแบบ KPI รายวัน รายสัปดาห์ รายเดือน</li>
+          <li>ทำ Flow การทำงานตั้งแต่ Lead → Call → Order → Delivery → Repurchase</li>
+          <li>วิเคราะห์คอขวดในระบบขายและบริการลูกค้า</li>
+        </ul>
+        <div class="prompt-box"><code>ช่วยออกแบบ KPI ทีม Telesales 10 คน เป้าหมายยอดขายเดือนละ 3 ล้านบาท แยก KPI โทรออก โทรเจอ Talk time ปิดการขาย และซื้อซ้ำ</code></div>
+      </article>
+
+      <article class="card">
+        <h3>คอนเทนต์ เทรนนิ่ง และ Motivation</h3>
+        <span class="tag">Morning Talk</span><span class="tag">Storytelling</span><span class="tag">Training</span>
+        <ul>
+          <li>สร้างคำคม นิทาน เรื่องเล่า สำหรับปลุกทีมขายตอนเช้า</li>
+          <li>ทำบทพูดหัวหน้าทีมสำหรับประชุมเช้า</li>
+          <li>ออกแบบหลักสูตรอบรม Telesales / CRM / Service Mind</li>
+          <li>ทำแบบฝึกหัด Role Play พร้อมเฉลย</li>
+        </ul>
+        <div class="prompt-box"><code>ช่วยแต่งเรื่องเล่า 3 นาที เพื่อปลุกใจทีม Telesales เรื่องการไม่กลัวคำปฏิเสธ และให้มีประโยคปิดประชุมที่ทรงพลัง</code></div>
+      </article>
+
+      <article class="card">
+        <h3>วิเคราะห์ข้อมูลและรายงาน</h3>
+        <span class="tag">Excel</span><span class="tag">Dashboard</span><span class="tag">LTV</span><span class="tag">Conversion</span>
+        <ul>
+          <li>ช่วยจัดโครงสร้างตารางข้อมูลลูกค้าและยอดขาย</li>
+          <li>คำนวณ Conversion, AOV, Repurchase, LTV, GP</li>
+          <li>สรุปรายงานสำหรับผู้บริหารให้เข้าใจง่าย</li>
+          <li>แนะนำตัวชี้วัดที่ควรเก็บเพื่อพัฒนาทีม</li>
+        </ul>
+        <div class="prompt-box"><code>ฉันมีข้อมูลยอดขายรายวัน ช่วยวิเคราะห์ Conversion, ยอดเฉลี่ยต่อออเดอร์, สินค้าขายดี และข้อเสนอแนะสำหรับเพิ่มยอดขาย</code></div>
+      </article>
+
+      <article class="card">
+        <h3>เอกสาร ไฟล์ และสื่อประกอบ</h3>
+        <span class="tag">PDF</span><span class="tag">DOCX</span><span class="tag">PPTX</span><span class="tag">HTML</span>
+        <ul>
+          <li>สรุปเอกสารยาวให้เป็นประเด็นสำคัญ</li>
+          <li>ทำคู่มือ SOP, Checklist, Training Manual</li>
+          <li>สร้างตาราง แผนงาน Presentation หรือ HTML แบบหน้านี้</li>
+          <li>ปรับภาษาให้สุภาพ มืออาชีพ และใช้งานจริง</li>
+        </ul>
+        <div class="prompt-box"><code>ช่วยแปลงเนื้อหานี้เป็นคู่มือ SOP สำหรับทีมขาย มีหัวข้อ ขั้นตอน Checklist และคำเตือนที่ควรระวัง</code></div>
+      </article>
+
+      <article class="card">
+        <h3>ค้นคว้าและตรวจสอบข้อมูลล่าสุด</h3>
+        <span class="tag">Web Research</span><span class="tag">Citation</span><span class="tag">Fact Check</span>
+        <ul>
+          <li>ค้นข้อมูลล่าสุดเมื่อเป็นเรื่องที่อาจเปลี่ยนแปลง เช่น กฎหมาย ราคา ข่าว แนวโน้มตลาด</li>
+          <li>เปรียบเทียบข้อมูลจากหลายแหล่ง</li>
+          <li>สรุปพร้อมแหล่งอ้างอิง</li>
+          <li>ช่วยตรวจความถูกต้องก่อนนำไปใช้ประกอบการตัดสินใจ</li>
+        </ul>
+        <div class="prompt-box"><code>ช่วยค้นแนวโน้มตลาด Call Center และ Telesales ล่าสุดในไทย พร้อมสรุปโอกาสและความเสี่ยงสำหรับธุรกิจ SME</code></div>
+      </article>
+    </section>
+
+    <h2 class="section-title">ขั้นตอนทำงานร่วมกันให้ได้ผลลัพธ์ดีที่สุด</h2>
+    <section class="card">
+      <div class="flow">
+        <div class="step"><b>1</b><br><strong>บอกเป้าหมาย</strong><br>ต้องการขาย อบรม วิเคราะห์ หรือทำเอกสาร</div>
+        <div class="step"><b>2</b><br><strong>ให้บริบท</strong><br>สินค้า ลูกค้า ทีม งบ เวลา ปัญหา</div>
+        <div class="step"><b>3</b><br><strong>กำหนดผลลัพธ์</strong><br>ขอสคริปต์ ตาราง คู่มือ แผน หรือไฟล์</div>
+        <div class="step"><b>4</b><br><strong>ตรวจรอบแรก</strong><br>บอกสิ่งที่ชอบ ไม่ชอบ หรืออยากปรับ</div>
+        <div class="step"><b>5</b><br><strong>นำไปใช้จริง</strong><br>ทดสอบ เก็บผล แล้วพัฒนาเวอร์ชันถัดไป</div>
+      </div>
+    </section>
+
+    <h2 class="section-title">ตัวอย่างคำสั่งพร้อมใช้</h2>
+    <section class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>งานที่ต้องการ</th>
+            <th>ตัวอย่างคำสั่ง</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>สร้างสคริปต์ขาย</td>
+            <td>ช่วยทำสคริปต์โทรขายสินค้า [ชื่อสินค้า] ให้ลูกค้า [กลุ่มลูกค้า] เป้าหมายคือ [ซื้อใหม่/ซื้อซ้ำ/Upsell] ขอแบบเปิดสาย ถามปัญหา เสนอสินค้า ตอบข้อโต้แย้ง และปิดการขาย</td>
+          </tr>
+          <tr>
+            <td>วิเคราะห์บทสนทนา</td>
+            <td>ช่วยวิเคราะห์บทสนทนานี้ว่าพนักงานขายทำดีตรงไหน ควรแก้ตรงไหน และเขียนเวอร์ชันที่ดีขึ้นให้ด้วย</td>
+          </tr>
+          <tr>
+            <td>ทำคู่มือทีม</td>
+            <td>ช่วยทำคู่มืออบรมทีม Telesales มือใหม่ 7 วัน มีหัวข้อเรียน แบบฝึกหัด Role Play และเกณฑ์ประเมิน</td>
+          </tr>
+          <tr>
+            <td>วาง KPI</td>
+            <td>ช่วยวาง KPI ทีม CRM 15 คน เป้าหมายคือเพิ่มยอดซื้อซ้ำ แยก KPI โทรออก โทรเจอ ปิดการขาย ยอดขาย และคุณภาพการบริการ</td>
+          </tr>
+          <tr>
+            <td>ทำ Motivation เช้า</td>
+            <td>ช่วยแต่งคำพูดประชุมเช้า 5 นาที ให้ทีมขายมีกำลังใจเรื่องการเจอคำปฏิเสธ พร้อมคำคม 5 ประโยค</td>
+          </tr>
+          <tr>
+            <td>ทำไฟล์ HTML</td>
+            <td>ช่วยสร้างหน้า HTML คู่มือ [หัวข้อ] มีผังความรู้ ตาราง Checklist และตัวอย่างคำสั่ง พร้อมออกแบบให้สวยงาม</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <h2 class="section-title">ข้อควรรู้และข้อจำกัด</h2>
+    <section class="card">
+      <details open>
+        <summary>เรื่องข้อมูลล่าสุด</summary>
+        <p>ถ้าเป็นข่าว กฎหมาย ราคา เทรนด์ตลาด หรือข้อมูลที่เปลี่ยนแปลงได้ ผมควรตรวจสอบจากแหล่งข้อมูลล่าสุดก่อนสรุปให้คุณครับ</p>
+      </details>
+      <details>
+        <summary>เรื่องไฟล์และเอกสาร</summary>
+        <p>ถ้าคุณอัปโหลดไฟล์ ผมสามารถช่วยอ่าน สรุป วิเคราะห์ หรือแปลงเป็นคู่มือ/ตาราง/สไลด์/HTML ได้ตามประเภทงานครับ</p>
+      </details>
+      <details>
+        <summary>เรื่องการขายและสุขภาพ</summary>
+        <p>งาน Telesales ที่เกี่ยวข้องกับสุขภาพควรใช้ถ้อยคำระมัดระวัง ไม่กล่าวอ้างเกินจริง และควรแนะนำให้ลูกค้าปรึกษาผู้เชี่ยวชาญเมื่อเป็นประเด็นสุขภาพเฉพาะบุคคลครับ</p>
+      </details>
+      <details>
+        <summary>เรื่อง PDPA และข้อมูลลูกค้า</summary>
+        <p>ควรหลีกเลี่ยงการเปิดเผยข้อมูลส่วนบุคคลที่ไม่จำเป็น และควรใช้ข้อมูลลูกค้าเท่าที่จำเป็นต่อการให้บริการหรือวิเคราะห์งานครับ</p>
+      </details>
+    </section>
+
+    <section class="footer">
+      <p>จัดทำเป็นคู่มือ HTML สำหรับใช้งานร่วมกับ Anek NCP | สร้างเมื่อ <span id="date"></span></p>
+      <p><strong>หลักคิด:</strong> งานที่ดีต้องมีเกียรติ จริงใจ เป็นธรรม และช่วยให้คนทำงานพัฒนาขึ้นครับ</p>
+    </section>
+  </main>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <button class="close" onclick="closeModal()">×</button>
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const data = {
+      tele:{
+        title:"Telesales & CRM",
+        body:`<p>ช่วยออกแบบงานขายทางโทรศัพท์ตั้งแต่ต้นน้ำถึงปลายน้ำ</p>
+        <ul>
+          <li>สคริปต์เปิดสาย ติดตามผล ปิดการขาย ซื้อซ้ำ Upsell Cross-sell</li>
+          <li>คำตอบข้อโต้แย้ง เช่น แพงไป คิดดูก่อน ไม่สะดวก ไม่มั่นใจ</li>
+          <li>Role Play สำหรับฝึกทีม</li>
+          <li>Checklist คุณภาพสายและแนวทาง Coaching</li>
+        </ul>`
+      },
+      strategy:{
+        title:"Strategy & Operation",
+        body:`<p>ช่วยจัดระบบธุรกิจและทีมขายให้วัดผลได้จริง</p>
+        <ul>
+          <li>วาง Process ทีมขาย / CRM / Fulfillment</li>
+          <li>ออกแบบ KPI และรายงานผู้บริหาร</li>
+          <li>หาจุดรั่วของยอดขายตั้งแต่ Lead ถึง Repurchase</li>
+          <li>ออกแบบแผนเพิ่มยอดระยะสั้นและระยะยาว</li>
+        </ul>`
+      },
+      content:{
+        title:"Content & Training",
+        body:`<p>ช่วยสร้างเนื้อหาที่ใช้สื่อสารกับทีม ลูกค้า และผู้บริหาร</p>
+        <ul>
+          <li>คำคม นิทาน เรื่องเล่า Motivation</li>
+          <li>บทพูดประชุมเช้าและ Training Script</li>
+          <li>บทความ โพสต์ แคปชัน ข้อความ LINE</li>
+          <li>หลักสูตรอบรมพร้อมแบบฝึกหัด</li>
+        </ul>`
+      },
+      data:{
+        title:"Data & Analysis",
+        body:`<p>ช่วยเปลี่ยนข้อมูลให้กลายเป็นการตัดสินใจ</p>
+        <ul>
+          <li>วิเคราะห์ Conversion, AOV, LTV, Repurchase, GP</li>
+          <li>จัดกลุ่มลูกค้าตามพฤติกรรมและมูลค่า</li>
+          <li>สรุปรายงานขายและข้อเสนอแนะ</li>
+          <li>ออกแบบ Dashboard และโครงสร้างข้อมูลที่ควรเก็บ</li>
+        </ul>`
+      },
+      docs:{
+        title:"Document & File",
+        body:`<p>ช่วยสร้างและปรับเอกสารให้เป็นมืออาชีพ</p>
+        <ul>
+          <li>คู่มือ SOP, Training Manual, Checklist</li>
+          <li>สรุป PDF/Word/ไฟล์ที่อัปโหลด</li>
+          <li>สร้าง HTML, ตาราง, สไลด์, โครงเอกสาร</li>
+          <li>จัดภาษาให้อ่านง่ายและนำไปใช้จริง</li>
+        </ul>`
+      },
+      research:{
+        title:"Research & Web",
+        body:`<p>ช่วยค้นคว้าข้อมูลที่ต้องการความสดใหม่และความน่าเชื่อถือ</p>
+        <ul>
+          <li>ข่าว เทรนด์ ตลาด กฎหมาย ราคา และข้อมูลอัปเดต</li>
+          <li>เทียบข้อมูลหลายแหล่ง</li>
+          <li>สรุปพร้อมอ้างอิง</li>
+          <li>ตรวจสอบข้อเท็จจริงก่อนใช้ตัดสินใจ</li>
+        </ul>`
+      },
+      creative:{
+        title:"Creative & Image",
+        body:`<p>ช่วยคิดงานภาพและคอนเซปต์สร้างสรรค์</p>
+        <ul>
+          <li>ไอเดียโปสเตอร์ Banner Infographic</li>
+          <li>Concept ภาพสำหรับทีมขายหรือการตลาด</li>
+          <li>คำอธิบายภาพสำหรับใช้สร้างงาน Visual</li>
+          <li>ช่วยปรับ Mood & Tone ให้ตรงแบรนด์</li>
+        </ul>`
+      },
+      decision:{
+        title:"Decision Support",
+        body:`<p>ช่วยคิดก่อนตัดสินใจด้วยมุมมองที่รอบด้าน</p>
+        <ul>
+          <li>เปรียบเทียบทางเลือก ข้อดี ข้อเสีย ความเสี่ยง</li>
+          <li>ทำ Decision Matrix</li>
+          <li>วางแผนแก้ปัญหาเฉพาะหน้า</li>
+          <li>ช่วยตั้งคำถามสำคัญก่อนลงทุนหรือปรับระบบ</li>
+        </ul>`
+      }
+    };
+
+    document.querySelectorAll(".node").forEach(node=>{
+      node.addEventListener("click",()=>{
+        const key = node.dataset.key;
+        document.getElementById("modalTitle").innerHTML = data[key].title;
+        document.getElementById("modalBody").innerHTML = data[key].body;
+        document.getElementById("modal").classList.add("open");
+      });
+    });
+
+    function closeModal(){
+      document.getElementById("modal").classList.remove("open");
+    }
+    document.getElementById("modal").addEventListener("click", (e)=>{
+      if(e.target.id === "modal") closeModal();
+    });
+    document.getElementById("date").textContent = new Date().toLocaleDateString("th-TH", {
+      year:"numeric", month:"long", day:"numeric"
+    });
+  </script>
+</body>
+</html>

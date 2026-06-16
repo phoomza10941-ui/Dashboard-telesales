@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>How We Connected dtac OneCall → Dashboard (Talk Time)</title>
+<style>
+  :root{
+    --white:#FFFFFF; --green:#87DE81; --cyan:#58CEE8; --text:#8B8E8F;
+    --dark:#3D3D3D; --border:#E8E8E8; --surface:#F7F7F7;
+    --ink:#2b2b2b; --warn:#E8A158; --good:#87DE81;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,
+      "Helvetica Neue",Arial,"Noto Sans Thai",sans-serif;
+    color:var(--ink); background:#fbfdfd; line-height:1.65;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:0 22px 80px}
+
+  header{
+    background:linear-gradient(135deg,var(--cyan),var(--green));
+    color:#fff; padding:46px 22px 38px; text-align:center;
+  }
+  header .inner{max-width:920px;margin:0 auto}
+  header h1{margin:0 0 8px; font-size:30px; letter-spacing:-.5px}
+  header p{margin:0; opacity:.95; font-size:16px}
+  .pill{display:inline-block; background:rgba(255,255,255,.25);
+    padding:4px 12px; border-radius:999px; font-size:12.5px; margin-top:14px}
+
+  h2{font-size:22px; margin:42px 0 10px; color:var(--dark);
+    border-left:5px solid var(--green); padding-left:12px}
+  h3{font-size:16.5px; margin:24px 0 6px; color:var(--dark)}
+  p{margin:10px 0}
+  .lead{font-size:17px; color:#444}
+
+  .card{background:var(--white); border:1px solid var(--border);
+    border-radius:14px; padding:20px 22px; margin:16px 0;
+    box-shadow:0 1px 2px rgba(0,0,0,.03)}
+
+  .tldr{background:#f3fbf2; border:1px solid #cdeccb}
+  .tldr b{color:#3a7a36}
+
+  /* Plain-English analogy */
+  .analogy{background:#f2fafd; border:1px solid #cbe9f3}
+
+  /* Flow steps */
+  .steps{counter-reset:step; list-style:none; padding:0; margin:18px 0}
+  .steps li{position:relative; padding:14px 16px 14px 58px; margin:10px 0;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px}
+  .steps li::before{counter-increment:step; content:counter(step);
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:30px; height:30px; border-radius:50%;
+    background:var(--cyan); color:#fff; font-weight:700;
+    display:flex; align-items:center; justify-content:center; font-size:14px}
+  .steps li b{color:var(--dark)}
+
+  code,kbd{font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13px}
+  code{background:#eef6f6; color:#256; padding:1.5px 6px; border-radius:5px}
+  pre{background:#1f2730; color:#e6edf3; padding:16px 18px; border-radius:12px;
+    overflow:auto; font-size:13px; line-height:1.55}
+  pre code{background:none; color:inherit; padding:0}
+
+  .ascii{background:#1f2730;color:#cfe;border-radius:12px;padding:18px;
+    font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;
+    white-space:pre;overflow:auto;line-height:1.5;margin:16px 0}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:14px}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border)}
+  th{background:var(--surface); color:var(--dark); font-weight:600}
+  td code{font-size:12.5px}
+
+  .note{border-left:4px solid var(--warn); background:#fff8f0;
+    padding:12px 16px; border-radius:0 10px 10px 0; margin:14px 0}
+  .ok{border-left:4px solid var(--good); background:#f3fbf2;
+    padding:12px 16px; border-radius:0 10px 10px 0; margin:14px 0}
+
+  .qa{margin:10px 0}
+  .qa summary{cursor:pointer; font-weight:600; color:var(--dark);
+    padding:12px 16px; background:var(--surface);
+    border:1px solid var(--border); border-radius:10px; list-style:none}
+  .qa summary::-webkit-details-marker{display:none}
+  .qa summary::before{content:"▸ "; color:var(--cyan)}
+  .qa[open] summary::before{content:"▾ "}
+  .qa .body{padding:6px 16px 4px}
+
+  .footer{margin-top:50px; text-align:center; color:var(--text); font-size:13px}
+  .tag{display:inline-block;background:#eef6f6;color:#357;border-radius:6px;
+    padding:2px 9px;font-size:12px;margin:2px 4px 2px 0}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <h1>How We Connected dtac OneCall → the Dashboard</h1>
+    <p>Pulling each agent's <b>Talk Time</b> into the Supervisor page — explained simply</p>
+    <span class="pill">Topic: <code style="background:rgba(255,255,255,.2);color:#fff">lib/oreka.ts</code> · Talk Time integration</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card tldr">
+    <b>TL;DR (the one-sentence version)</b><br/>
+    dtac OneCall's call-recording website is secretly running software called
+    <b>Oreka</b>, which has a hidden <b>REST API</b>. Our server logs into that API,
+    downloads the list of today's calls, adds up the seconds per phone number, and
+    shows it as <b>Talk Time per agent</b> on <code>/supervisor</code>. No CSV exports,
+    no manual work — it updates live.
+  </div>
+
+  <div class="card analogy">
+    <h3 style="margin-top:4px">🧠 The plain-English analogy</h3>
+    <p style="margin-bottom:6px">Think of dtac OneCall like a <b>library of phone calls</b>:</p>
+    <ul style="margin:0">
+      <li>The <b>website</b> you normally click around in = the front desk.</li>
+      <li>The <b>API</b> we found = a staff-only back door that hands you the raw catalog.</li>
+      <li>Our server walks in the back door with a <b>username + password</b>, gets a
+          <b>visitor badge (token)</b>, then asks: <i>"give me every call from today."</i></li>
+      <li>We match each call's <b>phone number</b> to an agent, and sum the
+          <b>seconds talked</b>. That total is the Talk Time.</li>
+    </ul>
+  </div>
+
+  <h2>1 · What we discovered</h2>
+  <p class="lead">The key breakthrough that made all of this possible:</p>
+  <div class="card">
+    <p>The voice-record portal at <code>onecallvoicerecord.dtac.co.th/orkui/</code>
+       is not a custom dtac system — it's an off-the-shelf product called
+       <b>Oreka (OrecX)</b>. Oreka ships with a documented REST API called
+       <b>OrkTrack</b>, sitting at:</p>
+    <pre><code>https://onecallvoicerecord.dtac.co.th/orktrack/rest/</code></pre>
+    <p>That means instead of a human logging in and exporting spreadsheets, our
+       <b>server can fetch the data directly and live</b>. This is the whole reason the
+       integration is clean.</p>
+  </div>
+
+  <h2>2 · How the connection works (the flow)</h2>
+  <p>Everything runs <b>on the server only</b> (never in the user's browser), so the
+     password is never exposed. Here is the journey of one page load:</p>
+
+  <div class="ascii">  Supervisor opens /supervisor/talk-time
+            │
+            ▼
+  ┌───────────────────────┐     1. LOGIN (username + password)
+  │   Our Next.js server   │ ───────────────────────────────────▶  Oreka OrkTrack API
+  │   (lib/oreka.ts)       │ ◀───────────────────────────────────  returns "accesstoken"
+  └───────────────────────┘
+            │  2. GET /recordings  (with token, page by page)
+            │  ────────────────────────────────────────────▶  Oreka
+            │  ◀────────────────────────────────────────────  list of today's calls
+            │
+            │  3. Add up duration (seconds) grouped by phone number
+            │  4. Match phone number → agent nickname (Supabase profiles)
+            ▼
+  ┌───────────────────────┐
+  │  Talk Time per agent   │  →  shown on the Supervisor page
+  └───────────────────────┘</div>
+
+  <ol class="steps">
+    <li><b>Log in.</b> The server sends a <code>POST</code> to
+        <code>/orktrack/rest/user/login</code> with an
+        <code>Authorization: Basic base64(user:password)</code> header.
+        Oreka replies with a <b>token</b> in the JSON field <code>accesstoken</code>.</li>
+    <li><b>Ask for the calls.</b> Using that token, the server calls
+        <code>GET /orktrack/rest/recordings</code> for today's date range.
+        Big days have thousands of calls, so we read them in <b>pages of 1000</b>,
+        five pages at a time (in parallel) for speed.</li>
+    <li><b>Add up the seconds.</b> Each call record has a <code>duration</code> (in
+        seconds) and a <code>localParty</code> (the agent's phone number).
+        We group by phone number and sum the durations → that's Talk Time.</li>
+    <li><b>Put a name to the number.</b> We look up the phone number in our Supabase
+        <code>profiles</code> table (column <code>oreka_ext</code>) to turn
+        <code>+66…</code> into a human <b>nickname</b>.</li>
+    <li><b>Cache &amp; show.</b> The result is cached for ~90 seconds (so refreshing the
+        page doesn't hammer Oreka) and rendered on <code>/supervisor</code>.</li>
+  </ol>
+
+  <h2>3 · The important details (so it's correct)</h2>
+
+  <h3>📞 Matching a call to an agent</h3>
+  <p>Each agent has a fixed phone number. We store it on their profile and join on it —
+     numbers are unique and stable, far more reliable than matching by name.</p>
+  <table>
+    <tr><th>Oreka field</th><th>Meaning</th><th>Matches to</th></tr>
+    <tr><td><code>localParty</code></td><td>The agent's number (<code>+66…</code>)</td><td><code>profiles.oreka_ext</code> → <code>nickname</code></td></tr>
+    <tr><td><code>remoteParty</code></td><td>The customer's number</td><td>—</td></tr>
+    <tr><td><code>duration</code></td><td>Talk time in <b>seconds</b></td><td>summed per agent</td></tr>
+    <tr><td><code>direction</code></td><td><code>IN</code> / <code>OUT</code></td><td>counted as in/out calls</td></tr>
+  </table>
+  <div class="note">⚠️ <b>Get this right:</b> <code>localParty</code> is the <b>full number</b>
+     in <code>+66…</code> form — not a short extension. Numbers are auto-normalized
+     (<code>0…</code> / <code>66…</code> → <code>+66…</code>) when a supervisor enters them in
+     <b>Supervisor → Settings → "Talk Time — จับคู่เบอร์ Oreka"</b>.</div>
+
+  <h3>🕐 Timezone (a classic gotcha)</h3>
+  <p>Oreka stores every <code>timestamp</code> and <code>startdate</code> in <b>UTC</b>.
+     Thailand is <b>UTC+7</b>. So to ask for "today in Thailand", we shift the Thai day
+     boundaries back <b>7 hours</b> before sending the query, then display the totals back
+     in Thai time. If we skipped this, the numbers would be off by up to a day.</p>
+
+  <h3>👥 Two call-center accounts</h3>
+  <p>There are two Oreka logins — <b>Gosell</b> and <b>Hopeful</b> — same API, different
+     credentials. The server fetches both and merges the results. If one account's
+     credentials are missing or it fails, the other <b>still works</b>.</p>
+
+  <h3>🛟 It never breaks the page</h3>
+  <div class="ok">If Oreka is down, slow, or times out, the function
+     <code>getTalkTimeByAgentSafe()</code> catches the error and returns empty data with a
+     message — so <code>/supervisor</code> <b>still loads fine</b>, it just shows
+     "talk time unavailable" instead of crashing.</div>
+
+  <h2>4 · The login call, concretely</h2>
+  <pre><code>POST /orktrack/rest/user/login?version=orktrack&accesspolicy=all&licenseinfo=true
+Header:  Authorization: Basic base64("+66xxxxxxxxx:password")
+Body:    (empty)
+
+→ Response JSON:
+   { "accesstoken": "a1b2c3d4-....", ... }     ← this token is reused for every request</code></pre>
+  <p>The token is cached in memory. If a later request returns <code>401</code> or
+     <code>403</code> (token expired), the server <b>automatically logs in again</b> and
+     retries — no human involved.</p>
+
+  <h2>5 · Where it lives in the code</h2>
+  <table>
+    <tr><th>File / place</th><th>Role</th></tr>
+    <tr><td><code>lib/oreka.ts</code></td><td>The whole integration: login, fetch, aggregate, cache</td></tr>
+    <tr><td><code>lib/oreka-format.ts</code></td><td>Pure date/timezone helpers (Thai ↔ UTC, formatting)</td></tr>
+    <tr><td><code>app/supervisor/talk-time/</code></td><td>The page that displays it</td></tr>
+    <tr><td><code>profiles.oreka_ext</code></td><td>DB column linking a phone number to an agent</td></tr>
+    <tr><td><code>.env.local</code></td><td><code>OREKA_BASE_URL / OREKA_USER / OREKA_PASSWORD</code> (+ Hopeful pair)</td></tr>
+    <tr><td><code>scripts/test-oreka.mjs</code></td><td>Standalone probe to debug the API directly</td></tr>
+  </table>
+
+  <h2>6 · Did we get it right? ✅</h2>
+  <p>Each of these was actually confirmed against the live API, not assumed:</p>
+  <div class="ok" style="border-color:var(--good)">
+    <span class="tag">✓ Response array is <code>objects[]</code> (not <code>recordings</code>)</span>
+    <span class="tag">✓ <code>duration</code> is in seconds</span>
+    <span class="tag">✓ Login token field = <code>accesstoken</code></span>
+    <span class="tag">✓ Timestamps are UTC</span>
+    <span class="tag">✓ <code>localParty</code> = full <code>+66…</code> number</span>
+    <span class="tag">✓ Pagination via <code>nextPageUri</code></span>
+    <span class="tag">✓ Graceful fallback if Oreka is down</span>
+  </div>
+
+  <h2>7 · Common questions</h2>
+
+  <details class="qa"><summary>Is the dtac password safe?</summary>
+    <div class="body">Yes. Credentials live only in <code>.env.local</code> (never committed to git),
+    and Oreka is only ever called from the <b>server</b>. The browser never sees the
+    password or the token.</div></details>
+
+  <details class="qa"><summary>Why do we cache for ~90 seconds?</summary>
+    <div class="body">Supervisors refresh the page often. Without a cache, every refresh
+    would re-download thousands of call records and hammer the dtac API. 90 seconds keeps
+    the data feeling "live" while staying gentle on Oreka. Past days are cached longer
+    (5–10 minutes) because they no longer change.</div></details>
+
+  <details class="qa"><summary>What if a new agent's talk time shows as a bare number?</summary>
+    <div class="body">That agent's phone number isn't mapped yet. Go to
+    <b>Supervisor → Settings → "Talk Time — จับคู่เบอร์ Oreka"</b> and enter their number.
+    It auto-converts to <code>+66…</code> and the next refresh shows their nickname.</div></details>
+
+  <details class="qa"><summary>Does this touch War Room or My-Desk?</summary>
+    <div class="body">No — by design, Talk Time appears <b>only on the Supervisor page</b>.</div></details>
+
+  <details class="qa"><summary>How do I debug it if numbers look wrong?</summary>
+    <div class="body">Run <code>node scripts/test-oreka.mjs</code> — it reads your
+    <code>.env.local</code> and hits the Oreka API directly, so you can see the raw records
+    without going through the dashboard.</div></details>
+
+  <div class="footer">
+    Source of truth: <code>lib/oreka.ts</code> ·
+    Design doc: <code>docs/plans/2026-06-02-oreka-talktime-supervisor-design.md</code><br/>
+    Dashboard for Telesales — Talk Time integration summary
+  </div>
+
+</div>
+</body>
+</html>

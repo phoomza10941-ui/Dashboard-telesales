@@ -1,0 +1,16 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "TRIBIOTIC 28 มีแนวคิดหลักมาจากสูตร 22+5+1 ซึ่งหมายถึงอะไร?",
+      "options": [
+        "Probiotic 22 สายพันธุ์ + Prebiotic 5 ชนิด + Postbiotic 1 ชนิด",
+        "Probiotic 22 ชนิด + วิตามิน 5 ชนิด + แร่ธาตุ 1 ชนิด",
+        "Probiotic 22 สายพันธุ์ + เอนไซม์ 5 ชนิด + ใยอาหาร 1 ชนิด",
+        "จุลินทรีย์ดี 22 สายพันธุ์ + สมุนไพร 5 ชนิด + วิตามิน 1 ชนิด"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    }
+  ]
+}

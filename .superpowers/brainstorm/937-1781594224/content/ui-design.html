@@ -1,0 +1,130 @@
+<h2>UI Design — Customer List + AI Extraction</h2>
+<p class="subtitle">Two screens. Does this match your vision?</p>
+
+<div style="display:flex;gap:20px;margin-top:8px">
+
+  <!-- Screen 1: Customer List -->
+  <div style="flex:1">
+    <div class="label" style="margin-bottom:8px">Screen 1 · my-desk/customer-list</div>
+    <div class="mockup">
+      <div class="mockup-header">👤 รายชื่อลูกค้า</div>
+      <div class="mockup-body" style="padding:0">
+
+        <!-- Search bar -->
+        <div style="padding:10px 12px;border-bottom:1px solid #E8E8E8;background:#F7F7F7">
+          <div class="mock-input" style="font-size:12px">🔍 ค้นหาชื่อหรือเบอร์โทร...</div>
+        </div>
+
+        <!-- Customer row 1 -->
+        <div style="padding:10px 12px;border-bottom:1px solid #E8E8E8;display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#87DE81;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0">ส</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:#3D3D3D">สมหญิง วงศ์ใหญ่ <span style="font-size:11px;color:#8B8E8F;font-weight:400">(หน่อย)</span></div>
+            <div style="font-size:11px;color:#8B8E8F;display:flex;gap:8px;margin-top:2px">
+              <span>💊 เบาหวาน, ความดัน</span>
+              <span>·</span>
+              <span>📞 086-xxx-xxxx</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="mock-button" style="font-size:11px;padding:4px 8px;background:#f0f8ff;color:#58CEE8;border:1px solid #58CEE8">🎙 วิเคราะห์สาย</button>
+            <button class="mock-button" style="font-size:11px;padding:4px 8px">แก้ไข</button>
+          </div>
+        </div>
+
+        <!-- Customer row 2 - no AI data yet -->
+        <div style="padding:10px 12px;border-bottom:1px solid #E8E8E8;display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#E8E8E8;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#8B8E8F;flex-shrink:0">ม</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:#3D3D3D">มานะ ชื่นชม <span style="font-size:11px;color:#C0C0C0;font-weight:400">ยังไม่มีข้อมูล AI</span></div>
+            <div style="font-size:11px;color:#8B8E8F">📞 091-xxx-xxxx</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="mock-button" style="font-size:11px;padding:4px 8px;background:#f0f8ff;color:#58CEE8;border:1px solid #58CEE8">🎙 วิเคราะห์สาย</button>
+            <button class="mock-button" style="font-size:11px;padding:4px 8px">แก้ไข</button>
+          </div>
+        </div>
+
+        <div style="padding:8px 12px;font-size:11px;color:#C0C0C0;text-align:center">+ 12 รายชื่ออื่น ๆ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 2: AI Extraction Panel -->
+  <div style="flex:1.1">
+    <div class="label" style="margin-bottom:8px">Screen 2 · Panel หลังกด "วิเคราะห์สาย"</div>
+    <div class="mockup">
+      <div class="mockup-header">🎙 วิเคราะห์สายโทร — สมหญิง วงศ์ใหญ่</div>
+      <div class="mockup-body" style="padding:12px">
+
+        <!-- Step 1: Pick recording -->
+        <div style="font-size:11px;font-weight:700;color:#8B8E8F;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">เลือกการโทร (Oreka)</div>
+        <div style="background:#F7F7F7;border:1px solid #E8E8E8;border-radius:8px;padding:8px 10px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span>📞 วันนี้ 10:23 — 8 นาที 42 วินาที (IN)</span>
+            <span style="color:#87DE81;font-weight:600">✓ เลือก</span>
+          </div>
+          <div style="font-size:11px;color:#8B8E8F;margin-top:2px">+66 81-xxx-xxxx → +66 86-xxx-xxxx</div>
+        </div>
+
+        <!-- Step 2: Running -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="flex:1;height:4px;background:#E8E8E8;border-radius:2px">
+            <div style="width:70%;height:100%;background:#87DE81;border-radius:2px"></div>
+          </div>
+          <span style="font-size:11px;color:#8B8E8F">Whisper กำลังถอดเสียง...</span>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div style="font-size:11px;font-weight:700;color:#8B8E8F;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">ข้อมูลที่ดึงได้จาก AI</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:#F7F7F7;border-radius:6px;padding:8px">
+            <div style="font-size:10px;color:#8B8E8F">ชื่อ</div>
+            <div style="font-size:12px;color:#3D3D3D;font-weight:500">สมหญิง</div>
+          </div>
+          <div style="background:#F7F7F7;border-radius:6px;padding:8px">
+            <div style="font-size:10px;color:#8B8E8F">นามสกุล</div>
+            <div style="font-size:12px;color:#3D3D3D;font-weight:500">วงศ์ใหญ่</div>
+          </div>
+          <div style="background:#F7F7F7;border-radius:6px;padding:8px">
+            <div style="font-size:10px;color:#8B8E8F">ชื่อเล่น</div>
+            <div style="font-size:12px;color:#3D3D3D;font-weight:500">หน่อย</div>
+          </div>
+          <div style="background:#F7F7F7;border-radius:6px;padding:8px">
+            <div style="font-size:10px;color:#8B8E8F">คนที่ทาน</div>
+            <div style="font-size:12px;color:#3D3D3D;font-weight:500">ตัวเอง</div>
+          </div>
+          <div style="background:#F7F7F7;border-radius:6px;padding:8px;grid-column:1/-1">
+            <div style="font-size:10px;color:#8B8E8F">โรคเป็นอยู่</div>
+            <div style="font-size:12px;color:#3D3D3D;font-weight:500">เบาหวาน, ความดันโลหิตสูง</div>
+          </div>
+          <div style="background:#F7F7F7;border-radius:6px;padding:8px;grid-column:1/-1">
+            <div style="font-size:10px;color:#8B8E8F">ยาที่กำลังทานอยู่</div>
+            <div style="font-size:12px;color:#3D3D3D;font-weight:500">เมทฟอร์มิน, แอมโลดิปีน</div>
+          </div>
+          <div style="background:#fff8e1;border:1px solid #f0c040;border-radius:6px;padding:8px">
+            <div style="font-size:10px;color:#8B8E8F">อาการตอนนี้</div>
+            <div style="font-size:11px;color:#856404;font-style:italic">ไม่ได้พูดถึงในสาย</div>
+          </div>
+          <div style="background:#F7F7F7;border-radius:6px;padding:8px">
+            <div style="font-size:10px;color:#8B8E8F">ปรึกษาหมอมั้ย</div>
+            <div style="font-size:12px;color:#3D3D3D;font-weight:500">ใช่ — ทุก 3 เดือน</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="mock-button" style="flex:1;background:#87DE81;color:white;border:none;font-size:12px">✓ บันทึกข้อมูลลูกค้า</button>
+          <button class="mock-button" style="font-size:12px">แก้ไขก่อน</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:16px;background:#f8fffe;border:1px solid #87DE81;border-radius:10px;padding:12px;font-size:12px;color:#3D3D3D;display:flex;gap:16px">
+  <div><strong>Supervisor config</strong> (in /supervisor/settings): checkboxes to enable/disable which fields to extract + Notion sync status</div>
+  <div style="color:#8B8E8F">Yellow = not found in call · Greyed avatar = no AI data yet</div>
+</div>

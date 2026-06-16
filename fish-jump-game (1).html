@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เกมปลากระโดด</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(#87ceeb, #2f9ed8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .game-wrap {
+      width: min(900px, 95vw);
+      text-align: center;
+      color: white;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      text-shadow: 0 3px 6px rgba(0,0,0,.25);
+    }
+
+    .game {
+      position: relative;
+      width: 100%;
+      height: 430px;
+      background: linear-gradient(#9ee7ff 0%, #50bde8 45%, #087cb5 46%, #00699b 100%);
+      border: 6px solid white;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0,0,0,.25);
+    }
+
+    .score {
+      position: absolute;
+      left: 18px;
+      top: 14px;
+      z-index: 5;
+      font-size: 22px;
+      font-weight: bold;
+      text-shadow: 0 2px 4px rgba(0,0,0,.35);
+    }
+
+    .hint {
+      position: absolute;
+      right: 18px;
+      top: 16px;
+      z-index: 5;
+      font-size: 14px;
+      opacity: .95;
+    }
+
+    .fish {
+      position: absolute;
+      width: 70px;
+      height: 42px;
+      left: 90px;
+      bottom: 80px;
+      z-index: 3;
+      transition: transform .08s linear;
+    }
+
+    .fish-body {
+      position: absolute;
+      width: 52px;
+      height: 34px;
+      background: #ffb703;
+      border-radius: 50%;
+      right: 0;
+      top: 4px;
+      box-shadow: inset -8px -5px 0 rgba(255, 140, 0, .35);
+    }
+
+    .fish-tail {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-top: 17px solid transparent;
+      border-bottom: 17px solid transparent;
+      border-right: 25px solid #fb8500;
+      left: 0;
+      top: 4px;
+    }
+
+    .fish-eye {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      right: 13px;
+      top: 10px;
+    }
+
+    .fish-eye::after {
+      content: "";
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #111;
+      border-radius: 50%;
+      right: 1px;
+      top: 2px;
+    }
+
+    .water-line {
+      position: absolute;
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,.55);
+      top: 45%;
+      left: 0;
+      z-index: 2;
+    }
+
+    .wave {
+      position: absolute;
+      width: 180%;
+      height: 50px;
+      left: -40%;
+      top: 42%;
+      background: radial-gradient(circle at 50% 100%, rgba(255,255,255,.7) 0 18px, transparent 19px);
+      background-size: 70px 35px;
+      opacity: .45;
+      animation: waveMove 3s linear infinite;
+    }
+
+    @keyframes waveMove {
+      from { transform: translateX(0); }
+      to { transform: translateX(70px); }
+    }
+
+    .obstacle {
+      position: absolute;
+      width: 55px;
+      background: #075985;
+      right: -70px;
+      border-radius: 16px 16px 0 0;
+      box-shadow: inset 7px 0 0 rgba(255,255,255,.12);
+    }
+
+    .obstacle.top {
+      top: 0;
+      border-radius: 0 0 16px 16px;
+    }
+
+    .obstacle.bottom {
+      bottom: 0;
+    }
+
+    .bubble {
+      position: absolute;
+      bottom: -30px;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,.7);
+      border-radius: 50%;
+      animation: bubbleUp 5s linear infinite;
+      opacity: .7;
+    }
+
+    @keyframes bubbleUp {
+      from { transform: translateY(0); opacity: .7; }
+      to { transform: translateY(-460px); opacity: 0; }
+    }
+
+    .game-over {
+      position: absolute;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background: rgba(0, 40, 70, .7);
+      color: white;
+      z-index: 10;
+      text-align: center;
+    }
+
+    .game-over h2 {
+      font-size: 42px;
+      margin: 0 0 10px;
+    }
+
+    .game-over button {
+      border: none;
+      padding: 13px 24px;
+      border-radius: 999px;
+      background: #ffb703;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #c77700;
+    }
+
+    .game-over button:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #c77700;
+    }
+
+    .controls {
+      margin-top: 12px;
+      font-size: 15px;
+      opacity: .95;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap">
+    <h1>🐟 เกมปลากระโดด</h1>
+
+    <div class="game" id="game">
+      <div class="score" id="score">คะแนน: 0</div>
+      <div class="hint">กด Space / คลิก / แตะ เพื่อกระโดด</div>
+
+      <div class="wave"></div>
+      <div class="water-line"></div>
+
+      <div class="fish" id="fish">
+        <div class="fish-tail"></div>
+        <div class="fish-body">
+          <div class="fish-eye"></div>
+        </div>
+      </div>
+
+      <div class="game-over" id="gameOver">
+        <h2>จบเกม!</h2>
+        <p id="finalScore">คะแนนของคุณ: 0</p>
+        <button onclick="restartGame()">เล่นใหม่</button>
+      </div>
+    </div>
+
+    <div class="controls">วิธีเล่น: พาปลากระโดดหลบเสาหินให้ได้มากที่สุด</div>
+  </div>
+
+  <script>
+    const game = document.getElementById("game");
+    const fish = document.getElementById("fish");
+    const scoreEl = document.getElementById("score");
+    const gameOverEl = document.getElementById("gameOver");
+    const finalScoreEl = document.getElementById("finalScore");
+
+    let fishY = 80;
+    let velocity = 0;
+    let gravity = 0.55;
+    let jumpPower = 9;
+    let score = 0;
+    let playing = true;
+    let obstacles = [];
+    let frame = 0;
+
+    function jump() {
+      if (!playing) return;
+      velocity = jumpPower;
+      fish.style.transform = "rotate(-18deg)";
+      setTimeout(() => {
+        fish.style.transform = "rotate(6deg)";
+      }, 120);
+    }
+
+    function createObstacle() {
+      const gap = 140;
+      const minHeight = 70;
+      const maxTopHeight = 220;
+      const topHeight = Math.floor(Math.random() * (maxTopHeight - minHeight)) + minHeight;
+      const bottomHeight = game.clientHeight - topHeight - gap;
+
+      const top = document.createElement("div");
+      top.className = "obstacle top";
+      top.style.height = topHeight + "px";
+      top.style.left = game.clientWidth + "px";
+
+      const bottom = document.createElement("div");
+      bottom.className = "obstacle bottom";
+      bottom.style.height = bottomHeight + "px";
+      bottom.style.left = game.clientWidth + "px";
+
+      game.appendChild(top);
+      game.appendChild(bottom);
+
+      obstacles.push({
+        top,
+        bottom,
+        x: game.clientWidth,
+        passed: false
+      });
+    }
+
+    function createBubble() {
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.style.left = Math.random() * game.clientWidth + "px";
+      bubble.style.animationDuration = (3 + Math.random() * 4) + "s";
+      game.appendChild(bubble);
+
+      setTimeout(() => bubble.remove(), 7000);
+    }
+
+    function isColliding(a, b) {
+      const r1 = a.getBoundingClientRect();
+      const r2 = b.getBoundingClientRect();
+
+      return !(
+        r1.right < r2.left ||
+        r1.left > r2.right ||
+        r1.bottom < r2.top ||
+        r1.top > r2.bottom
+      );
+    }
+
+    function endGame() {
+      playing = false;
+      gameOverEl.style.display = "flex";
+      finalScoreEl.textContent = "คะแนนของคุณ: " + score;
+    }
+
+    function update() {
+      if (!playing) return;
+
+      frame++;
+
+      velocity -= gravity;
+      fishY += velocity;
+
+      if (fishY < 0) {
+        fishY = 0;
+        velocity = 0;
+      }
+
+      if (fishY > game.clientHeight - 42) {
+        fishY = game.clientHeight - 42;
+        endGame();
+      }
+
+      fish.style.bottom = fishY + "px";
+
+      if (frame % 100 === 0) createObstacle();
+      if (frame % 35 === 0) createBubble();
+
+      obstacles.forEach((obs) => {
+        obs.x -= 3.5;
+        obs.top.style.left = obs.x + "px";
+        obs.bottom.style.left = obs.x + "px";
+
+        if (!obs.passed && obs.x + 55 < 90) {
+          obs.passed = true;
+          score++;
+          scoreEl.textContent = "คะแนน: " + score;
+        }
+
+        if (isColliding(fish, obs.top) || isColliding(fish, obs.bottom)) {
+          endGame();
+        }
+      });
+
+      obstacles = obstacles.filter((obs) => {
+        if (obs.x < -80) {
+          obs.top.remove();
+          obs.bottom.remove();
+          return false;
+        }
+        return true;
+      });
+
+      requestAnimationFrame(update);
+    }
+
+    function restartGame() {
+      obstacles.forEach(obs => {
+        obs.top.remove();
+        obs.bottom.remove();
+      });
+
+      obstacles = [];
+      fishY = 80;
+      velocity = 0;
+      score = 0;
+      frame = 0;
+      playing = true;
+
+      scoreEl.textContent = "คะแนน: 0";
+      gameOverEl.style.display = "none";
+      fish.style.bottom = fishY + "px";
+
+      update();
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") jump();
+    });
+
+    game.addEventListener("click", jump);
+    game.addEventListener("touchstart", jump);
+
+    update();
+  </script>
+</body>
+</html>

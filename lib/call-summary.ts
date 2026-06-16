@@ -6,6 +6,7 @@ import type { AccountId } from "./oreka";
 import { toOrekaStamp } from "./oreka-format";
 import { alaw as alawCodec, mulaw as mulawCodec } from "alawmulaw";
 import { getProductKnowledge } from "./notion";
+import { getCoachingPromptOverride } from "./db";
 
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -265,13 +266,14 @@ export async function transcribeAudio(
 }
 
 // Summarize transcript with gpt-4o-mini (simple JSON extraction — ~15× cheaper than gpt-4o)
-async function summarize(transcript: string, productKnowledge?: string): Promise<{ summary: string; coaching_tips: string[] }> {
+async function summarize(transcript: string, productKnowledge?: string, coachingOverride?: string): Promise<{ summary: string; coaching_tips: string[] }> {
   if (!transcript.trim()) {
     return { summary: "ไม่พบเนื้อหาการสนทนา", coaching_tips: [] };
   }
-  const systemContent = productKnowledge
-    ? `${SUMMARY_PROMPT}\n\nข้อมูลสินค้าของบริษัท (ใช้ชื่อสินค้าจากนี้เสมอ):\n${productKnowledge}`
-    : SUMMARY_PROMPT;
+  const parts = [SUMMARY_PROMPT];
+  if (productKnowledge) parts.push(`\nข้อมูลสินค้าของบริษัท (ใช้ชื่อสินค้าจากนี้เสมอ):\n${productKnowledge}`);
+  if (coachingOverride) parts.push(`\nคำแนะนำพิเศษจาก Supervisor:\n${coachingOverride}`);
+  const systemContent = parts.join("");
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -374,8 +376,11 @@ export async function generateSummaryForPhone(
   // Process new recording
   const { buffer, format } = await downloadAudio(recording.id, recording.accountId);
   const transcript = await transcribeAudio(buffer, format, String(recording.id));
-  const productKnowledge = await getProductKnowledge();
-  const { summary, coaching_tips } = await summarize(transcript, productKnowledge || undefined);
+  const [productKnowledge, coachingOverride] = await Promise.all([
+    getProductKnowledge(),
+    getCoachingPromptOverride(),
+  ]);
+  const { summary, coaching_tips } = await summarize(transcript, productKnowledge || undefined, coachingOverride || undefined);
 
   const { error: insertError } = await adminClient.from("call_summaries").insert({
     agent_id: agentId,

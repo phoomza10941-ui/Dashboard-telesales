@@ -1,0 +1,50 @@
+<h2>How should we sync Notion → AI?</h2>
+<p class="subtitle">3 approaches. I recommend A — here's why.</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Live fetch + cache (Recommended)</h3>
+      <p>On every AI call (coaching, call summary), we call the Notion API, extract plain text from all 3 product sections, and cache it for 30 min. No extra storage needed — Notion is always the source of truth. Supervisor can force-refresh anytime.</p>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <span style="background:#e8fdf0;color:#1a7f3c;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Always fresh</span>
+        <span style="background:#e8fdf0;color:#1a7f3c;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">No DB changes</span>
+        <span style="background:#e8fdf0;color:#1a7f3c;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Simple</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Manual sync → stored in DB</h3>
+      <p>Supervisor clicks "Sync Now" in settings. We pull the Notion page, extract text, and save it to a <code>knowledge_cache</code> table in Supabase. AI always reads from DB. Supervisor sees "last synced: 2 hrs ago" and the extracted preview.</p>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <span style="background:#e8fdf0;color:#1a7f3c;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Full control</span>
+        <span style="background:#e8fdf0;color:#1a7f3c;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Preview what AI sees</span>
+        <span style="background:#fff3cd;color:#856404;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Needs DB table</span>
+        <span style="background:#fff3cd;color:#856404;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Can go stale</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid: auto-sync every X hours</h3>
+      <p>Like B but with auto-refresh on a cron schedule (e.g. every 6h). Needs a Supabase Edge Function or cron job. Overkill for a page that's manually edited a few times a week.</p>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <span style="background:#fff3cd;color:#856404;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Most complex</span>
+        <span style="background:#fff3cd;color:#856404;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">Needs cron setup</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;background:#f0f8ff;border:1px solid #58CEE8;border-radius:10px;padding:14px;font-size:13px;color:#3D3D3D">
+  <strong>My recommendation → A</strong><br>
+  Your Notion page is already small (3 products, ~3KB of text). A fresh fetch adds ~200ms per AI call and avoids any DB migration. The 30-min cache means it won't hammer Notion. When you update a product script in Notion, the next AI call picks it up automatically.
+</div>

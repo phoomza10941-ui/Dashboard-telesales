@@ -1,0 +1,107 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "TRIBIOTIC 28 มีแนวคิดหลักแบบใด?",
+      "options": [
+        "ดูแลลำไส้ด้วย Probiotic อย่างเดียว",
+        "ดูแลลำไส้แบบ เติม เลี้ยง เสริม",
+        "เน้นการขับถ่ายแบบยาระบาย",
+        "เน้นการลดน้ำหนักเป็นหลัก"
+      ],
+      "correct_answer": "B",
+      "explanation": "TRIBIOTIC 28 ใช้แนวคิด เติม Probiotic เลี้ยงด้วย Prebiotic และเสริมด้วย Postbiotic",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ตัวเลข 28 ใน TRIBIOTIC 28 มาจากอะไร?",
+      "options": [
+        "Probiotic 28 สายพันธุ์",
+        "Prebiotic 28 ชนิด",
+        "22 Probiotic + 5 Prebiotic + 1 Postbiotic",
+        "วิตามินและแร่ธาตุรวม 28 ชนิด"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Gut Microbiome คืออะไร?",
+      "options": [
+        "ระบบนิเวศจุลินทรีย์ภายในลำไส้",
+        "ระบบการทำงานของหัวใจ",
+        "ระบบกล้ามเนื้อและกระดูก",
+        "ระบบการมองเห็น"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "ลำไส้เกี่ยวข้องเฉพาะกับการขับถ่ายเท่านั้น",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ภาวะ Gut Dysbiosis หมายถึงอะไร?",
+      "options": [
+        "ภาวะลำไส้มีจุลินทรีย์สมดุลดี",
+        "ภาวะสมดุลจุลินทรีย์ในลำไส้เสีย",
+        "ภาวะร่างกายขาดน้ำ",
+        "ภาวะนอนหลับไม่เพียงพอ"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ข้อใดเป็นสัญญาณที่อาจเกิดขึ้นเมื่อลำไส้เสียสมดุล?",
+      "options": [
+        "ท้องอืด ถ่ายไม่ปกติ อ่อนเพลีย",
+        "สายตาดีขึ้นทันที",
+        "กระดูกแข็งแรงขึ้นทันที",
+        "ผมยาวเร็วขึ้นทันที"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Prebiotic มีหน้าที่หลักอย่างไร?",
+      "options": [
+        "เป็นอาหารของจุลินทรีย์ดี",
+        "ฆ่าจุลินทรีย์ทุกชนิดในลำไส้",
+        "เป็นยาระบายโดยตรง",
+        "ทำหน้าที่แทนภูมิคุ้มกันทั้งหมด"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "TRIBIOTIC 28 เป็นยาระบายที่กระตุ้นลำไส้ให้ถ่ายทันที",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "วิธีรับประทาน TRIBIOTIC 28 ที่แนะนำคือข้อใด?",
+      "options": [
+        "วันละ 1 ซอง หลังอาหารเย็น ดื่มน้ำตาม 1-2 แก้ว",
+        "วันละ 3 ซอง ก่อนอาหารทุกมื้อ",
+        "ทานเฉพาะเวลาท้องผูกเท่านั้น",
+        "ชงกับน้ำร้อนจัดทุกครั้ง"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายสั้น ๆ ว่าทำไมบางคนกิน Probiotic แล้วอาจยังไม่เห็นผล และ TRIBIOTIC 28 แก้ปัญหานี้ด้วยแนวคิดใด",
+      "model_answer": "เพราะการดูแลลำไส้ไม่ได้ขึ้นอยู่กับจำนวนจุลินทรีย์ดีเพียงอย่างเดียว แต่ต้องมีทั้งความหลากหลาย อาหารของจุลินทรีย์ และการเสริมสมดุลลำไส้ จึงใช้แนวคิด เติม เลี้ยง เสริม ได้แก่ Probiotic 22 สายพันธุ์ Prebiotic 5 ชนิด และ Postbiotic 1 ชนิด",
+      "points": 5
+    }
+  ]
+}

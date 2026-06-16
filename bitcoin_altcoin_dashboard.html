@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bitcoin & Altcoin Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #11182b;
+      --panel-2: #151f38;
+      --text: #eef3ff;
+      --muted: #8b97b5;
+      --green: #28c76f;
+      --red: #ea5455;
+      --yellow: #f5b342;
+      --line: rgba(255,255,255,.08);
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(245, 179, 66, .14), transparent 35%),
+        radial-gradient(circle at top right, rgba(54, 162, 235, .12), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .title h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: -1px;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button, select, input {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    button {
+      cursor: pointer;
+      background: linear-gradient(135deg, #f5b342, #ff7a59);
+      color: #111;
+      border: none;
+      font-weight: 700;
+      box-shadow: 0 12px 30px rgba(245, 179, 66, .18);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .cards {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .card, .panel {
+      background: rgba(17, 24, 43, .78);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .card {
+      padding: 18px;
+      min-height: 150px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(245, 179, 66, .08);
+      right: -42px;
+      top: -42px;
+    }
+
+    .coin-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .coin-head img {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+    }
+
+    .coin-name {
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .coin-symbol {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .price {
+      font-size: 25px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .change {
+      font-size: 14px;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+    }
+
+    .up { color: var(--green); }
+    .down { color: var(--red); }
+
+    .layout {
+      grid-template-columns: 1.1fr .9fr;
+      align-items: stretch;
+    }
+
+    .panel {
+      padding: 20px;
+    }
+
+    .panel h2 {
+      margin: 0 0 16px;
+      font-size: 20px;
+    }
+
+    .summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .mini {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .mini .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .mini .value {
+      font-size: 21px;
+      font-weight: 800;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar input {
+      min-width: 220px;
+      flex: 1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 13px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    td {
+      font-size: 14px;
+    }
+
+    tr:hover {
+      background: rgba(255,255,255,.03);
+    }
+
+    .coin-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .coin-cell img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    .bar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 64px 1fr 70px;
+      gap: 10px;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .bar-bg {
+      height: 12px;
+      background: rgba(255,255,255,.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #28c76f, #7be495);
+      min-width: 3px;
+    }
+
+    .fear-box {
+      margin-top: 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .loading {
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 960px) {
+      .cards, .layout, .summary {
+        grid-template-columns: 1fr 1fr;
+      }
+      .hero {
+        flex-direction: column;
+      }
+      .actions, .status {
+        justify-content: flex-start;
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .cards, .layout, .summary {
+        grid-template-columns: 1fr;
+      }
+      .wrap {
+        width: min(100% - 20px, 1180px);
+        padding-top: 20px;
+      }
+      .card, .panel {
+        border-radius: 18px;
+      }
+      th, td {
+        padding: 11px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="title">
+        <h1>Bitcoin & Altcoin Dashboard</h1>
+        <p>แดชบอร์ดคริปโตแบบง่าย ดูราคา, Market Cap, Volume และการเปลี่ยนแปลง 24 ชม.</p>
+      </div>
+      <div>
+        <div class="actions">
+          <select id="currency">
+            <option value="usd">USD</option>
+            <option value="thb">THB</option>
+          </select>
+          <button id="refreshBtn">Refresh Data</button>
+        </div>
+        <div id="status" class="status">กำลังโหลดข้อมูล...</div>
+      </div>
+    </section>
+
+    <section id="cards" class="grid cards">
+      <div class="loading">Loading cards...</div>
+    </section>
+
+    <section class="grid layout">
+      <div class="panel">
+        <h2>Market Overview</h2>
+        <div id="summary" class="grid summary">
+          <div class="mini">
+            <div class="label">รวม Market Cap</div>
+            <div class="value">-</div>
+          </div>
+          <div class="mini">
+            <div class="label">รวม Volume 24h</div>
+            <div class="value">-</div>
+          </div>
+          <div class="mini">
+            <div class="label">เหรียญที่บวก 24h</div>
+            <div class="value">-</div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input id="search" placeholder="ค้นหาเหรียญ เช่น BTC, ETH, SOL" />
+          <select id="sortBy">
+            <option value="market_cap_rank">เรียงตาม Rank</option>
+            <option value="price_change_percentage_24h">เรียงตาม % 24h</option>
+            <option value="current_price">เรียงตามราคา</option>
+            <option value="market_cap">เรียงตาม Market Cap</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Coin</th>
+                <th>Price</th>
+                <th>24h</th>
+                <th>Market Cap</th>
+                <th>Volume</th>
+              </tr>
+            </thead>
+            <tbody id="coinTable">
+              <tr><td colspan="6" class="loading">Loading data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Top Movers 24h</h2>
+        <div id="topMovers" class="bar-list">
+          <div class="loading">Loading movers...</div>
+        </div>
+
+        <div class="fear-box">
+          <strong>วิธีอ่านแบบเร็ว</strong><br />
+          สีเขียว = ราคา 24 ชม. เพิ่มขึ้น<br />
+          สีแดง = ราคา 24 ชม. ลดลง<br />
+          Market Cap สูง = เหรียญมีขนาดตลาดใหญ่กว่า<br />
+          Volume สูง = มีการซื้อขายหนาแน่นกว่า
+        </div>
+
+        <div class="note">
+          หมายเหตุ: ข้อมูลดึงจาก CoinGecko API และอาจมีข้อจำกัดด้าน Rate Limit หากกด Refresh ถี่เกินไป
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const COINS = [
+      "bitcoin",
+      "ethereum",
+      "binancecoin",
+      "solana",
+      "ripple",
+      "cardano",
+      "dogecoin",
+      "avalanche-2",
+      "chainlink",
+      "tron",
+      "polkadot",
+      "litecoin"
+    ];
+
+    let marketData = [];
+    let currentCurrency = "usd";
+
+    const cardsEl = document.getElementById("cards");
+    const tableEl = document.getElementById("coinTable");
+    const summaryEl = document.getElementById("summary");
+    const moversEl = document.getElementById("topMovers");
+    const statusEl = document.getElementById("status");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const currencyEl = document.getElementById("currency");
+    const searchEl = document.getElementById("search");
+    const sortEl = document.getElementById("sortBy");
+
+    const fallbackData = [
+      { market_cap_rank: 1, id: "bitcoin", name: "Bitcoin", symbol: "btc", current_price: 65000, price_change_percentage_24h: 2.4, market_cap: 1280000000000, total_volume: 33000000000, image: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png" },
+      { market_cap_rank: 2, id: "ethereum", name: "Ethereum", symbol: "eth", current_price: 3400, price_change_percentage_24h: 1.2, market_cap: 410000000000, total_volume: 18000000000, image: "https://assets.coingecko.com/coins/images/279/large/ethereum.png" },
+      { market_cap_rank: 3, id: "binancecoin", name: "BNB", symbol: "bnb", current_price: 590, price_change_percentage_24h: -0.8, market_cap: 87000000000, total_volume: 1600000000, image: "https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png" },
+      { market_cap_rank: 4, id: "solana", name: "Solana", symbol: "sol", current_price: 145, price_change_percentage_24h: 3.7, market_cap: 67000000000, total_volume: 4200000000, image: "https://assets.coingecko.com/coins/images/4128/large/solana.png" },
+      { market_cap_rank: 5, id: "ripple", name: "XRP", symbol: "xrp", current_price: 0.52, price_change_percentage_24h: -1.1, market_cap: 29000000000, total_volume: 1200000000, image: "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png" }
+    ];
+
+    function formatMoney(value) {
+      const currency = currentCurrency.toUpperCase();
+      if (value === null || value === undefined || Number.isNaN(value)) return "-";
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        notation: value >= 1000000 ? "compact" : "standard",
+        maximumFractionDigits: value < 1 ? 6 : 2
+      }).format(value);
+    }
+
+    function formatCompact(value) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "-";
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currentCurrency.toUpperCase(),
+        notation: "compact",
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+
+    function pct(value) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "-";
+      return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+    }
+
+    function changeClass(value) {
+      return value >= 0 ? "up" : "down";
+    }
+
+    function renderCards(data) {
+      const featured = ["bitcoin", "ethereum", "solana", "binancecoin"]
+        .map(id => data.find(c => c.id === id))
+        .filter(Boolean);
+
+      cardsEl.innerHTML = featured.map(coin => `
+        <article class="card">
+          <div class="coin-head">
+            <img src="${coin.image}" alt="${coin.name}">
+            <div>
+              <div class="coin-name">${coin.name}</div>
+              <div class="coin-symbol">${coin.symbol}</div>
+            </div>
+          </div>
+          <div class="price">${formatMoney(coin.current_price)}</div>
+          <div class="change ${changeClass(coin.price_change_percentage_24h)}">
+            ${pct(coin.price_change_percentage_24h)} / 24h
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderSummary(data) {
+      const totalMarketCap = data.reduce((sum, c) => sum + (c.market_cap || 0), 0);
+      const totalVolume = data.reduce((sum, c) => sum + (c.total_volume || 0), 0);
+      const positiveCoins = data.filter(c => (c.price_change_percentage_24h || 0) > 0).length;
+
+      summaryEl.innerHTML = `
+        <div class="mini">
+          <div class="label">รวม Market Cap</div>
+          <div class="value">${formatCompact(totalMarketCap)}</div>
+        </div>
+        <div class="mini">
+          <div class="label">รวม Volume 24h</div>
+          <div class="value">${formatCompact(totalVolume)}</div>
+        </div>
+        <div class="mini">
+          <div class="label">เหรียญที่บวก 24h</div>
+          <div class="value">${positiveCoins}/${data.length}</div>
+        </div>
+      `;
+    }
+
+    function getFilteredData() {
+      const keyword = searchEl.value.trim().toLowerCase();
+      const sortBy = sortEl.value;
+
+      let rows = [...marketData];
+
+      if (keyword) {
+        rows = rows.filter(c =>
+          c.name.toLowerCase().includes(keyword) ||
+          c.symbol.toLowerCase().includes(keyword)
+        );
+      }
+
+      rows.sort((a, b) => {
+        const av = a[sortBy] ?? 0;
+        const bv = b[sortBy] ?? 0;
+
+        if (sortBy === "market_cap_rank") return av - bv;
+        return bv - av;
+      });
+
+      return rows;
+    }
+
+    function renderTable() {
+      const rows = getFilteredData();
+
+      if (!rows.length) {
+        tableEl.innerHTML = `<tr><td colspan="6" class="loading">ไม่พบเหรียญที่ค้นหา</td></tr>`;
+        return;
+      }
+
+      tableEl.innerHTML = rows.map(coin => `
+        <tr>
+          <td>#${coin.market_cap_rank || "-"}</td>
+          <td>
+            <div class="coin-cell">
+              <img src="${coin.image}" alt="${coin.name}">
+              <div>
+                <strong>${coin.name}</strong><br>
+                <span class="coin-symbol">${coin.symbol}</span>
+              </div>
+            </div>
+          </td>
+          <td>${formatMoney(coin.current_price)}</td>
+          <td class="${changeClass(coin.price_change_percentage_24h)}">
+            ${pct(coin.price_change_percentage_24h)}
+          </td>
+          <td>${formatCompact(coin.market_cap)}</td>
+          <td>${formatCompact(coin.total_volume)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderMovers(data) {
+      const movers = [...data]
+        .filter(c => typeof c.price_change_percentage_24h === "number")
+        .sort((a, b) => Math.abs(b.price_change_percentage_24h) - Math.abs(a.price_change_percentage_24h))
+        .slice(0, 6);
+
+      const maxAbs = Math.max(...movers.map(c => Math.abs(c.price_change_percentage_24h)), 1);
+
+      moversEl.innerHTML = movers.map(coin => {
+        const width = Math.max(5, Math.abs(coin.price_change_percentage_24h) / maxAbs * 100);
+        return `
+          <div class="bar-row">
+            <strong>${coin.symbol.toUpperCase()}</strong>
+            <div class="bar-bg">
+              <div class="bar" style="width:${width}%; background:${coin.price_change_percentage_24h >= 0 ? "linear-gradient(90deg, #28c76f, #7be495)" : "linear-gradient(90deg, #ea5455, #ff9f9f)"}"></div>
+            </div>
+            <span class="${changeClass(coin.price_change_percentage_24h)}">${pct(coin.price_change_percentage_24h)}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderAll(data) {
+      renderCards(data);
+      renderSummary(data);
+      renderTable();
+      renderMovers(data);
+    }
+
+    async function loadMarketData() {
+      refreshBtn.disabled = true;
+      statusEl.textContent = "กำลังโหลดข้อมูล...";
+      const ids = COINS.join(",");
+      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currentCurrency}&ids=${ids}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`API Error: ${res.status}`);
+        const data = await res.json();
+
+        marketData = Array.isArray(data) && data.length ? data : fallbackData;
+        renderAll(marketData);
+        statusEl.textContent = `อัปเดตล่าสุด: ${new Date().toLocaleString("th-TH")}`;
+      } catch (error) {
+        console.warn(error);
+        marketData = fallbackData;
+        renderAll(marketData);
+        statusEl.textContent = "โหลด API ไม่สำเร็จ แสดงข้อมูลตัวอย่างแทน";
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
+    refreshBtn.addEventListener("click", loadMarketData);
+    currencyEl.addEventListener("change", () => {
+      currentCurrency = currencyEl.value;
+      loadMarketData();
+    });
+    searchEl.addEventListener("input", renderTable);
+    sortEl.addEventListener("change", renderTable);
+
+    loadMarketData();
+  </script>
+</body>
+</html>

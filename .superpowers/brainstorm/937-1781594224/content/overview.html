@@ -1,0 +1,57 @@
+<h2>AI Agent — Feature Overview</h2>
+<p class="subtitle">Two connected pieces we're designing. Does this match what you have in mind?</p>
+
+<div class="section" style="display:flex;gap:24px;margin-top:8px">
+
+  <!-- Piece 1 -->
+  <div style="flex:1;background:#f8fffe;border:1.5px solid #87DE81;border-radius:12px;padding:20px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#87DE81;text-transform:uppercase;margin-bottom:8px">Part 1 · Product Knowledge</div>
+    <h3 style="margin:0 0 10px;font-size:15px">Notion → AI Context</h3>
+    <div style="font-size:13px;color:#555;line-height:1.6">
+      Supervisor/Admin connects their Notion workspace.<br><br>
+      The system pulls product pages automatically and injects them as context whenever the AI agent runs (coaching, script suggestions, call summaries).
+    </div>
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#3D3D3D">
+        <span style="width:24px;height:24px;background:#87DE81;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">1</span>
+        Connect Notion API key + select pages/database
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#3D3D3D">
+        <span style="width:24px;height:24px;background:#87DE81;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">2</span>
+        Sync runs on demand or on schedule
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#3D3D3D">
+        <span style="width:24px;height:24px;background:#87DE81;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">3</span>
+        Product context auto-injected into every AI call
+      </div>
+    </div>
+  </div>
+
+  <!-- Piece 2 -->
+  <div style="flex:1;background:#f5fdff;border:1.5px solid #58CEE8;border-radius:12px;padding:20px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#58CEE8;text-transform:uppercase;margin-bottom:8px">Part 2 · Auto-Context from Calls</div>
+    <h3 style="margin:0 0 10px;font-size:15px">Voice Recording → Agent Info</h3>
+    <div style="font-size:13px;color:#555;line-height:1.6">
+      When a call recording is processed (Oreka), the AI automatically knows who made the call — agent name, team, targets, performance context — without anyone typing it in.
+    </div>
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#3D3D3D">
+        <span style="width:24px;height:24px;background:#58CEE8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">1</span>
+        Oreka localParty → matched to agent profile
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#3D3D3D">
+        <span style="width:24px;height:24px;background:#58CEE8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">2</span>
+        Name, team, today's sales, daily target injected
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#3D3D3D">
+        <span style="width:24px;height:24px;background:#58CEE8;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">3</span>
+        AI coaching becomes personalized per agent
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;background:#fffbf0;border:1.5px solid #f0c040;border-radius:10px;padding:16px;font-size:13px;color:#3D3D3D">
+  <strong>Config page location:</strong> We'll add an <strong>"AI Agent"</strong> card inside <code>/supervisor/settings</code> (where Oreka ext config already lives) — no new top-level page needed. Supervisors control everything from one settings hub.
+</div>

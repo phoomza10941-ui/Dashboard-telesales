@@ -1,0 +1,130 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "AIRPODS PRO 3: จุดขายหลักของผลิตภัณฑ์คืออะไร?",
+      "options": [
+        "ประสิทธิภาพและประสบการณ์ใช้งาน",
+        "เครื่องใช้ไฟฟ้าภายในบ้าน",
+        "อุปกรณ์ทางการแพทย์",
+        "เฟอร์นิเจอร์"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "AIRPODS PRO 3: กลุ่มเป้าหมายหลักคือใคร?",
+      "options": [
+        "ผู้ใช้เทคโนโลยีทั่วไป",
+        "เกษตรกรเท่านั้น",
+        "นักกีฬาอาชีพเท่านั้น",
+        "เด็กเล็กเท่านั้น"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "AIRPODS PRO 3: เป็นผลิตภัณฑ์ใน Ecosystem ของ Apple",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "AIRPODS PRO 3: ไม่สามารถเชื่อมต่อกับบริการดิจิทัลของ Apple ได้",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายจุดเด่นและแนวทางการตลาดของ AIRPODS PRO 3",
+      "model_answer": "อธิบายคุณสมบัติเด่น กลุ่มเป้าหมาย ประโยชน์ และแนวทางสื่อสารการตลาดของ AIRPODS PRO 3",
+      "points": 5
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "MACBOOK NEO: จุดขายหลักของผลิตภัณฑ์คืออะไร?",
+      "options": [
+        "ประสิทธิภาพและประสบการณ์ใช้งาน",
+        "เครื่องใช้ไฟฟ้าภายในบ้าน",
+        "อุปกรณ์ทางการแพทย์",
+        "เฟอร์นิเจอร์"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "MACBOOK NEO: กลุ่มเป้าหมายหลักคือใคร?",
+      "options": [
+        "ผู้ใช้เทคโนโลยีทั่วไป",
+        "เกษตรกรเท่านั้น",
+        "นักกีฬาอาชีพเท่านั้น",
+        "เด็กเล็กเท่านั้น"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "MACBOOK NEO: เป็นผลิตภัณฑ์ใน Ecosystem ของ Apple",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "MACBOOK NEO: ไม่สามารถเชื่อมต่อกับบริการดิจิทัลของ Apple ได้",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายจุดเด่นและแนวทางการตลาดของ MACBOOK NEO",
+      "model_answer": "อธิบายคุณสมบัติเด่น กลุ่มเป้าหมาย ประโยชน์ และแนวทางสื่อสารการตลาดของ MACBOOK NEO",
+      "points": 5
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "IPHONE AIR: จุดขายหลักของผลิตภัณฑ์คืออะไร?",
+      "options": [
+        "ประสิทธิภาพและประสบการณ์ใช้งาน",
+        "เครื่องใช้ไฟฟ้าภายในบ้าน",
+        "อุปกรณ์ทางการแพทย์",
+        "เฟอร์นิเจอร์"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "IPHONE AIR: กลุ่มเป้าหมายหลักคือใคร?",
+      "options": [
+        "ผู้ใช้เทคโนโลยีทั่วไป",
+        "เกษตรกรเท่านั้น",
+        "นักกีฬาอาชีพเท่านั้น",
+        "เด็กเล็กเท่านั้น"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "IPHONE AIR: เป็นผลิตภัณฑ์ใน Ecosystem ของ Apple",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "IPHONE AIR: ไม่สามารถเชื่อมต่อกับบริการดิจิทัลของ Apple ได้",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายจุดเด่นและแนวทางการตลาดของ IPHONE AIR",
+      "model_answer": "อธิบายคุณสมบัติเด่น กลุ่มเป้าหมาย ประโยชน์ และแนวทางสื่อสารการตลาดของ IPHONE AIR",
+      "points": 5
+    }
+  ]
+}

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>วิธีเชื่อม dtac OneCall เข้าระบบ Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #87DE81;
+    --cyan: #58CEE8;
+    --dark: #1A1A1A;
+    --darker: #111111;
+    --card: #222222;
+    --border: #2E2E2E;
+    --text: #C8C8C8;
+    --muted: #666666;
+    --white: #F5F5F5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--darker);
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(135,222,129,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(135,222,129,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 24px 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .header {
+    margin-bottom: 64px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  .label-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .label-tag::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  h1 {
+    font-family: 'Sarabun', sans-serif;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  h1 span { color: var(--green); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 520px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--green) 0%, transparent 60%);
+    margin: 40px 0;
+    opacity: 0.3;
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 0 24px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .step:nth-child(1) { animation-delay: 0.15s; }
+  .step:nth-child(2) { animation-delay: 0.25s; }
+  .step:nth-child(3) { animation-delay: 0.35s; }
+  .step:nth-child(4) { animation-delay: 0.45s; }
+  .step:nth-child(5) { animation-delay: 0.55s; }
+
+  .step-spine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .step-num {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--card);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step:hover .step-num {
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 20px rgba(135,222,129,0.15);
+  }
+
+  .step-line {
+    width: 2px;
+    flex: 1;
+    background: var(--border);
+    margin: 8px 0;
+    min-height: 40px;
+  }
+
+  .step:last-child .step-line { display: none; }
+
+  .step-body { padding-bottom: 48px; }
+  .step:last-child .step-body { padding-bottom: 0; }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0 2px;
+    margin-bottom: 16px;
+  }
+
+  .step-icon { font-size: 20px; line-height: 1; }
+
+  .step-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  .step-title-en {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-left: auto;
+  }
+
+  .step-desc {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.75;
+  }
+
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9em;
+  }
+
+  .code-block {
+    background: #151515;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .code-header {
+    background: #1E1E1E;
+    padding: 8px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .code-header::before {
+    content: '● ● ●';
+    color: #333;
+    letter-spacing: 2px;
+    font-size: 8px;
+  }
+
+  .code-body {
+    padding: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .tok-key  { color: var(--cyan); }
+  .tok-val  { color: #CE9178; }
+  .tok-str  { color: #6A9955; }
+  .tok-url  { color: #569CD6; }
+  .tok-hl   { color: var(--green); font-weight: 600; }
+  .tok-mut  { color: var(--muted); }
+
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .pill.green { border-color: rgba(135,222,129,0.3); color: var(--green); background: rgba(135,222,129,0.05); }
+  .pill.cyan  { border-color: rgba(88,206,232,0.3);  color: var(--cyan);  background: rgba(88,206,232,0.05); }
+  .pill.amber { border-color: rgba(251,191,36,0.3);  color: #FBBF24; background: rgba(251,191,36,0.05); }
+
+  .step-body-card {
+    background: transparent;
+    border-radius: 10px;
+    padding: 20px;
+    margin-left: -20px;
+    transition: background 0.25s ease;
+  }
+
+  .step:hover .step-body-card {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .summary {
+    margin-top: 64px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 28px 32px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.7s forwards;
+  }
+
+  .summary h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .summary-row {
+    display: flex;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    align-items: flex-start;
+  }
+
+  .summary-row:last-child { border-bottom: none; }
+
+  .summary-label {
+    width: 160px;
+    flex-shrink: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    padding-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .summary-val { color: var(--text); line-height: 1.5; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.8); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="label-tag">Architecture Guide · 2026</div>
+    <h1>เชื่อม <span>dtac OneCall</span><br>เข้าระบบ Dashboard</h1>
+    <p class="subtitle">// lib/oreka.ts · /supervisor/talk-time</p>
+    <div class="divider"></div>
+  </div>
+
+  <div class="steps">
+
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-spine">
+        <div class="step-num">01</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-body-card">
+          <div class="step-header">
+            <span class="step-icon">🔑</span>
+            <span class="step-title">ตั้งค่า Credential ใน .env</span>
+            <span class="step-title-en">Configuration</span>
+          </div>
+          <p class="step-desc">
+            เก็บ Username และ Password ของบัญชี dtac OneCall ไว้ใน Environment Variable
+            เพื่อให้ server อ่านได้ฝั่งเดียว — ไม่โผล่ฝั่ง browser เด็ดขาด
+          </p>
+          <div class="code-block">
+            <div class="code-header">.env.local</div>
+            <div class="code-body">
+<span class="tok-key">OREKA_BASE_URL</span>=<span class="tok-val">https://onecallvoicerecord.dtac.co.th</span><br>
+<span class="tok-key">OREKA_USER</span>=<span class="tok-val">+66xxxxxxxxx</span>   <span class="tok-mut"># เบอร์มือถือที่ใช้ login</span><br>
+<span class="tok-key">OREKA_PASSWORD</span>=<span class="tok-val">••••••••</span><br>
+<br>
+<span class="tok-mut"># ถ้ามีหลายทีม ก็เพิ่ม account ที่ 2 ได้</span><br>
+<span class="tok-key">OREKA_HOPEFUL_USER</span>=<span class="tok-val">+66xxxxxxxxx</span><br>
+<span class="tok-key">OREKA_HOPEFUL_PASSWORD</span>=<span class="tok-val">••••••••</span>
+            </div>
+          </div>
+          <div class="pills">
+            <span class="pill green">✓ ไม่ commit ขึ้น git</span>
+            <span class="pill">server-side only</span>
+            <span class="pill cyan">รองรับหลาย account</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-spine">
+        <div class="step-num">02</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-body-card">
+          <div class="step-header">
+            <span class="step-icon">🔐</span>
+            <span class="step-title">Server Login ขอ Token</span>
+            <span class="step-title-en">Authentication</span>
+          </div>
+          <p class="step-desc">
+            ตอนมีคนเปิดหน้า /supervisor/talk-time, server จะ POST ไปหา Oreka API
+            โดยใส่ Basic Auth ใน Header → Oreka ตอบกลับด้วย <code style="color:var(--green)">accesstoken</code> (GUID)
+            Token นี้ถูก cache ไว้ใน memory — ไม่ต้อง login ซ้ำทุก request
+          </p>
+          <div class="code-block">
+            <div class="code-header">HTTP Request → Oreka</div>
+            <div class="code-body">
+<span class="tok-key">POST</span> <span class="tok-url">/orktrack/rest/user/login</span><br>
+     <span class="tok-mut">?version=orktrack&accesspolicy=all</span><br>
+<br>
+<span class="tok-key">Authorization:</span> <span class="tok-val">Basic base64(user:password)</span><br>
+<br>
+<span class="tok-mut">─── Response ────────────────────────────</span><br>
+{<br>
+&nbsp;&nbsp;<span class="tok-hl">"accesstoken"</span>: <span class="tok-str">"a1b2c3d4-xxxx-xxxx-xxxx-..."</span>,<br>
+&nbsp;&nbsp;<span class="tok-mut">"scope": "VIEW_RECORDINGS", ...</span><br>
+}
+            </div>
+          </div>
+          <div class="pills">
+            <span class="pill">cache ใน memory</span>
+            <span class="pill amber">re-login อัตโนมัติถ้า 401/403</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-spine">
+        <div class="step-num">03</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-body-card">
+          <div class="step-header">
+            <span class="step-icon">📞</span>
+            <span class="step-title">ดึง Recording ของวันนี้</span>
+            <span class="step-title-en">Fetch Recordings</span>
+          </div>
+          <p class="step-desc">
+            เอา Token ไปยิง GET recordings โดยกำหนดช่วงเวลา "วันนี้ตามเวลาไทย" (UTC+7 → แปลงเป็น UTC ก่อนส่ง)
+            Oreka จะส่ง list สายทั้งหมดกลับมา — แต่ละสายมี เบอร์คนโทร, ระยะเวลา, ทิศทาง
+            ถ้ามีหลายหน้าก็ paginate จนหมด
+          </p>
+          <div class="code-block">
+            <div class="code-header">HTTP Request → Oreka</div>
+            <div class="code-body">
+<span class="tok-key">GET</span> <span class="tok-url">/orktrack/rest/recordings</span><br>
+    <span class="tok-mut">?range=custom</span><br>
+    <span class="tok-mut">&amp;startdate=</span><span class="tok-val">20260615_170000</span>  <span class="tok-mut"># 00:00 ไทย = 17:00 UTC วันก่อน</span><br>
+    <span class="tok-mut">&amp;enddate=</span><span class="tok-val">20260616_165959</span>  <span class="tok-mut"># 23:59 ไทย = 16:59 UTC</span><br>
+    <span class="tok-mut">&amp;pagesize=1000</span><br>
+<br>
+<span class="tok-key">Authorization:</span> <span class="tok-val">a1b2c3d4-xxxx-xxxx-xxxx-...</span><br>
+<br>
+<span class="tok-mut">─── Response ────────────────────────────</span><br>
+{<br>
+&nbsp;&nbsp;<span class="tok-hl">"objects"</span>: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="tok-key">"id"</span>: 100659220,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-key">"localParty"</span>: <span class="tok-str">"+66812345678"</span>,  <span class="tok-mut">&larr; เบอร์ agent</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-key">"duration"</span>: <span class="tok-val">183</span>,             <span class="tok-mut">&larr; วินาที</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-key">"direction"</span>: <span class="tok-str">"OUT"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-key">"timestamp"</span>: <span class="tok-str">"2026-06-15 10:23:27"</span> }, <span class="tok-mut">&larr; UTC</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;<span class="tok-key">"nextPageUri"</span>: <span class="tok-str">"...&amp;page=2"</span>  <span class="tok-mut">&larr; มีหน้าต่อ</span><br>
+}
+            </div>
+          </div>
+          <div class="pills">
+            <span class="pill">1,000 records/page</span>
+            <span class="pill cyan">fetch 5 pages พร้อมกัน</span>
+            <span class="pill">cache 90 วินาที</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step">
+      <div class="step-spine">
+        <div class="step-num">04</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-body-card">
+          <div class="step-header">
+            <span class="step-icon">🔗</span>
+            <span class="step-title">จับคู่เบอร์โทรกับชื่อ Agent</span>
+            <span class="step-title-en">Match Agents</span>
+          </div>
+          <p class="step-desc">
+            ใน Supabase มีคอลัมน์ <code style="color:var(--cyan)">profiles.oreka_ext</code>
+            เก็บเบอร์ dtac ของแต่ละ agent ไว้ (รูปแบบ <code style="color:var(--green)">+66...</code>)
+            เราเอา <code style="color:var(--cyan)">localParty</code> จาก Oreka มา join กับค่านี้
+            → รู้ว่าสายนี้เป็นของ "เก้า", "ออย", "มิ้น" ฯลฯ
+          </p>
+          <div class="code-block">
+            <div class="code-header">Supabase · profiles table</div>
+            <div class="code-body">
+<span class="tok-mut">┌──────────────┬──────────────┬──────────────────┐</span><br>
+<span class="tok-mut">│</span> <span class="tok-key">nickname</span>     <span class="tok-mut">│</span> <span class="tok-key">agent_code</span>   <span class="tok-mut">│</span> <span class="tok-hl">oreka_ext</span>        <span class="tok-mut">│</span><br>
+<span class="tok-mut">├──────────────┼──────────────┼──────────────────┤</span><br>
+<span class="tok-mut">│</span> เก้า         <span class="tok-mut">│</span> A001         <span class="tok-mut">│</span> <span class="tok-str">+66812345678</span>     <span class="tok-mut">│</span><br>
+<span class="tok-mut">│</span> ออย          <span class="tok-mut">│</span> A002         <span class="tok-mut">│</span> <span class="tok-str">+66823456789</span>     <span class="tok-mut">│</span><br>
+<span class="tok-mut">│</span> มิ้น         <span class="tok-mut">│</span> A003         <span class="tok-mut">│</span> <span class="tok-str">+66834567890</span>     <span class="tok-mut">│</span><br>
+<span class="tok-mut">└──────────────┴──────────────┴──────────────────┘</span><br>
+<br>
+<span class="tok-mut"># Oreka.localParty "+66812345678" &rarr; nickname "เก้า"</span><br>
+<span class="tok-mut"># รวม duration ทุกสายของ "+66812345678" = total talk time ของ "เก้า"</span>
+            </div>
+          </div>
+          <div class="pills">
+            <span class="pill green">ตั้งค่าได้ใน Supervisor → Settings</span>
+            <span class="pill">auto-normalize 0xx → +66xx</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step">
+      <div class="step-spine">
+        <div class="step-num">05</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-body">
+        <div class="step-body-card">
+          <div class="step-header">
+            <span class="step-icon">📊</span>
+            <span class="step-title">แสดงผลใน Dashboard</span>
+            <span class="step-title-en">Display &amp; Fallback</span>
+          </div>
+          <p class="step-desc">
+            รวม duration ทุกสาย group by ชื่อ agent → ได้ยอดรวม Talk Time (วินาที → HH:MM:SS)
+            แสดงใน <code style="color:var(--cyan)">/supervisor/talk-time</code>
+            ถ้า Oreka ล่มหรือ timeout ระบบแสดงข้อความแจ้งเตือนแทน — หน้า Supervisor ยังโหลดได้ปกติ
+          </p>
+          <div class="code-block">
+            <div class="code-header">ผลลัพธ์ที่ได้ · AgentTalkTime[]</div>
+            <div class="code-body">
+[<br>
+&nbsp;&nbsp;{ <span class="tok-key">nickname</span>: <span class="tok-str">"เก้า"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-hl">totalSeconds</span>: <span class="tok-val">12480</span>,  <span class="tok-mut">&larr; 3 ชม. 28 นาที</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-key">callCount</span>: <span class="tok-val">47</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-key">outCount</span>: <span class="tok-val">39</span>, <span class="tok-key">inCount</span>: <span class="tok-val">8</span> },<br>
+&nbsp;&nbsp;{ <span class="tok-key">nickname</span>: <span class="tok-str">"ออย"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-hl">totalSeconds</span>: <span class="tok-val">9840</span>, ... },<br>
+&nbsp;&nbsp;...<br>
+]<br>
+<br>
+<span class="tok-mut"># ถ้า Oreka ล่ม &rarr; graceful fallback</span><br>
+{ <span class="tok-key">data</span>: [], <span class="tok-hl">error</span>: <span class="tok-str">"Oreka ไม่พร้อมใช้งาน"</span> }
+            </div>
+          </div>
+          <div class="pills">
+            <span class="pill green">✓ graceful fallback</span>
+            <span class="pill">เรียงตาม talk time มากสุด</span>
+            <span class="pill cyan">cache 90s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <h2>// สรุปภาพรวม Flow</h2>
+    <div class="summary-row">
+      <span class="summary-label">ใครเรียก API</span>
+      <span class="summary-val">Server เท่านั้น (Next.js Server Component) — browser ไม่รู้จัก Oreka เลย</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Token จัดการ</span>
+      <span class="summary-val">Cache ใน server memory, auto re-login เมื่อหมดอายุ (401/403)</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Timezone</span>
+      <span class="summary-val">Oreka เก็บเป็น UTC → แปลงขอบวันไทย (UTC+7) ก่อนส่ง query</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">จับคู่ Agent</span>
+      <span class="summary-val"><code style="font-family:IBM Plex Mono,monospace;color:var(--cyan)">Oreka.localParty</code> → <code style="font-family:IBM Plex Mono,monospace;color:var(--cyan)">profiles.oreka_ext</code> → nickname</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Performance</span>
+      <span class="summary-val">Cache 90 วินาที + ดึง 5 หน้าพร้อมกัน (parallel fetch)</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">ถ้า Oreka ล่ม</span>
+      <span class="summary-val">หน้า /supervisor ยังโหลดได้ แสดงข้อความแจ้งแทน (graceful fallback)</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

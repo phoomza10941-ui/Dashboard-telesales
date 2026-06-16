@@ -1,0 +1,545 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ปรัชญาการขายของ HOPEFUL คือข้อใด",
+      "options": [
+        "ขายให้ได้เร็วที่สุด",
+        "เข้าใจก่อนเสนอ ให้ความรู้ก่อนขาย สร้างความเชื่อมั่นก่อนปิด",
+        "ส่งราคาให้ก่อนเสมอ",
+        "เน้นโปรโมชั่นเป็นหลัก"
+      ],
+      "correct_answer": "B",
+      "explanation": "หลักการทองของ HOPEFUL คือ เข้าใจก่อนเสนอ ให้ความรู้ก่อนขาย สร้างความเชื่อมั่นก่อนปิด",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "การนำเสนอ BETA LIFE ควรเริ่มจากอะไร",
+      "options": [
+        "ส่งราคา",
+        "ส่งรีวิว",
+        "Empathy",
+        "ขอเบอร์โทร"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ในสื่อสาธารณะ ห้ามใช้คำใด",
+      "options": [
+        "ตัวช่วยฟื้นฟู",
+        "เสริมการทำงานของไต",
+        "รักษา",
+        "ดูแลสุขภาพไต"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ห้ามใช้คำใดเด็ดขาดแม้ในแชทส่วนตัว",
+      "options": [
+        "ฟื้นฟู",
+        "หายดี",
+        "หายขาด",
+        "ดูแล"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Customer Persona หลักมีอายุประมาณเท่าใด",
+      "options": [
+        "20-35 ปี",
+        "30-45 ปี",
+        "40-65 ปี",
+        "60-80 ปี"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ความกลัวสูงสุดของลูกค้าส่วนใหญ่คืออะไร",
+      "options": [
+        "กลัวกินยา",
+        "กลัวฟอกไต",
+        "กลัวตรวจเลือด",
+        "กลัวออกกำลังกาย"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ค่าใช้จ่ายฟอกไตโดยประมาณต่อเดือนคือเท่าใด",
+      "options": [
+        "10,000-20,000 บาท",
+        "30,000-50,000 บาท",
+        "72,000-96,000 บาท",
+        "100,000-150,000 บาท"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "BETA LIFE เป็นผลิตภัณฑ์ประเภทใด",
+      "options": [
+        "ยา",
+        "อาหารเสริมบำรุงไต",
+        "เครื่องดื่ม",
+        "เวชสำอาง"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "นวัตกรรมหลักของ BETA LIFE คืออะไร",
+      "options": [
+        "BIOMAX",
+        "RENERGY",
+        "KIDNEY PLUS",
+        "ALPHA CARE"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "BETA LIFE บรรจุกี่แคปซูลต่อกล่อง",
+      "options": [
+        "5",
+        "10",
+        "15",
+        "30"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "วิธีรับประทาน BETA LIFE คือข้อใด",
+      "options": [
+        "ก่อนนอน",
+        "ก่อนอาหาร",
+        "วันละ 1-2 แคปซูล หลังอาหารเช้า",
+        "หลังอาหารเย็น"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ส่วนผสมใดช่วยปกป้องเซลล์ไตจากความเสียหาย",
+      "options": [
+        "เห็ดหลินจือ",
+        "วิตามินบี",
+        "ALA",
+        "วิตามินดี"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "โปรโมชัน 1 กล่อง ราคาเท่าไร",
+      "options": [
+        "490 บาท",
+        "590 บาท",
+        "690 บาท",
+        "790 บาท"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "แพ็กเกจที่แนะนำสำหรับการทาน 1 เดือนคือข้อใด",
+      "options": [
+        "1 กล่อง",
+        "2 กล่อง",
+        "4 กล่อง",
+        "8 กล่อง"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "เป้าหมาย Response Time คือเท่าใด",
+      "options": [
+        "ภายใน 1 นาที",
+        "ภายใน 3 นาที",
+        "ภายใน 5 นาที",
+        "ภายใน 10 นาที"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Qualification Rate เป้าหมายคือเท่าใด",
+      "options": [
+        "50%",
+        "60%",
+        "70%",
+        "80%+"
+      ],
+      "correct_answer": "D",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Phone Number Rate เป้าหมายคือเท่าใด",
+      "options": [
+        "40%+",
+        "50%+",
+        "60%+",
+        "70%+"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ขั้นตอนแรกของ Sales Process LINE OA คืออะไร",
+      "options": [
+        "ปิดการขาย",
+        "Social Proof",
+        "ต้อนรับและสร้าง Rapport",
+        "ส่งราคา"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "การ Qualify ควรถามอย่างไร",
+      "options": [
+        "ถามทีละข้อ",
+        "ถามรวดเดียว",
+        "ถามเฉพาะอาการ",
+        "ไม่ต้องถาม"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ข้อใดไม่ใช่คำถาม Qualify",
+      "options": [
+        "อาการปัจจุบัน",
+        "โรคประจำตัว",
+        "ยาที่ทาน",
+        "รายได้ต่อเดือน"
+      ],
+      "correct_answer": "D",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "หลังจาก Qualify แล้วควรทำอะไร",
+      "options": [
+        "ส่งราคา",
+        "Empathy + Educate",
+        "ขอเบอร์",
+        "ส่งรีวิว"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Social Proof ที่ดีควรเป็นอย่างไร",
+      "options": [
+        "รีวิวอะไรก็ได้",
+        "ตรงกับเคสลูกค้า",
+        "ส่งหลายรีวิวพร้อมกัน",
+        "ส่งเฉพาะภาพสินค้า"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "BETA LIFE ควรถูกนำเสนอเป็นอะไร",
+      "options": [
+        "ยารักษา",
+        "ตัวช่วย",
+        "อาหารหลัก",
+        "วัคซีน"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "เส้นทางหลักของ Admin Sales คืออะไร",
+      "options": [
+        "ปิดแชทอย่างเดียว",
+        "ส่งต่อคลังสินค้า",
+        "ขอเบอร์โทรส่งต่อ Telesales",
+        "ส่งโปรโมชั่น"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "เหตุใดจึงควรขอเบอร์โทรลูกค้า",
+      "options": [
+        "ลดงานแอดมิน",
+        "Conversion สูงกว่า",
+        "เก็บข้อมูล",
+        "ทำรายงาน"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ลูกค้า Facebook ถามราคาทันที ควรทำอย่างไร",
+      "options": [
+        "ส่งราคาเลย",
+        "ถามอาการก่อน",
+        "ไม่ตอบ",
+        "ส่งรีวิว"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Follow-up ครั้งแรกควรทำเมื่อใด",
+      "options": [
+        "30 นาที",
+        "1 ชั่วโมง",
+        "2 ชั่วโมง",
+        "12 ชั่วโมง"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Tag ใดใช้เมื่อลูกค้าได้รับสินค้าแล้ว",
+      "options": [
+        "Qualified",
+        "Intake",
+        "ได้รับสินค้า",
+        "Follow-up"
+      ],
+      "correct_answer": "C",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "Tag ใดใช้เมื่อลูกค้าเพิ่งทักมา",
+      "options": [
+        "มาใหม่",
+        "Qualified",
+        "Intake",
+        "Re-order"
+      ],
+      "correct_answer": "A",
+      "points": 1
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "question_text": "ข้อผิดพลาดร้ายแรงที่สุดที่พบจากแชทจริงคืออะไร",
+      "options": [
+        "ส่งราคาเร็ว",
+        "ลูกค้าทักแล้วไม่มีใครตอบหลายวัน",
+        "ขอเบอร์โทร",
+        "ใช้ Social Proof"
+      ],
+      "correct_answer": "B",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "สามารถส่งราคาก่อนสร้างความเชื่อมั่นได้",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "ในสื่อสาธารณะสามารถใช้คำว่ารักษาได้",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "ลูกค้าส่วนใหญ่กลัวการฟอกไต",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "BETA LIFE เป็นยา",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "Response Time เป้าหมายคือภายใน 5 นาที",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "ควรถามลูกค้าทีละคำถามในการ Qualify",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "Social Proof ควรตรงกับเคสลูกค้า",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "การขอเบอร์โทรเป็นเป้าหมายหลักของ Admin Sales",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "Follow-up ครั้งแรกทำหลัง 2 ชั่วโมง",
+      "correct_answer": "TRUE",
+      "points": 1
+    },
+    {
+      "type": "TRUE_FALSE",
+      "question_text": "Tag ทักแต่ไม่ซื้อควรใช้ต่อไป",
+      "correct_answer": "FALSE",
+      "points": 1
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายปรัชญาการขายของ HOPEFUL และหลักการทองในการขาย",
+      "model_answer": "การขายของ HOPEFUL คือการเป็นที่ปรึกษาสุขภาพที่น่าเชื่อถือ เข้าใจปัญหาของลูกค้าก่อนเสนอสินค้า โดยยึดหลัก เข้าใจก่อนเสนอ ให้ความรู้ก่อนขาย และสร้างความเชื่อมั่นก่อนปิดการขาย",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายความแตกต่างระหว่างการใช้คำเคลมในแชทส่วนตัวและสื่อสาธารณะ",
+      "model_answer": "แชทส่วนตัวสามารถใช้คำว่ารักษาและหายดีได้ตามแนวทางบริษัท แต่สื่อสาธารณะห้ามใช้คำว่ารักษา หาย หรือหายขาด ต้องใช้คำว่าตัวช่วยฟื้นฟูหรือเสริมการทำงานของไตเท่านั้น",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Deep Hope ของลูกค้า BETA LIFE",
+      "model_answer": "ลูกค้าหวังกลับมาใช้ชีวิตปกติ ไม่ต้องกังวลค่าไต ไม่เป็นภาระครอบครัว และต้องการคนที่เข้าใจปัญหาของตนจริง ๆ",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Deep Fear ที่มีผลต่อการตัดสินใจซื้อ",
+      "model_answer": "ลูกค้ากลัวฟอกไต กลัวค่าใช้จ่ายสูง กลัวเป็นภาระลูกหลาน กลัวสูญเสียอิสรภาพ และกลัวค่าไตลดลงเรื่อย ๆ",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Product Fact Sheet ของ BETA LIFE",
+      "model_answer": "BETA LIFE เป็นอาหารเสริมบำรุงไต ใช้นวัตกรรม RENERGY บรรจุ 10 แคปซูลต่อกล่อง มี อย. GMP HACCP และรางวัลนวัตกรรมระดับนานาชาติ",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายส่วนผสมสำคัญของ BETA LIFE และประโยชน์",
+      "model_answer": "ประกอบด้วยผงไข่ขาว เห็ดหลินจือ ALA วิตามินอี และวิตามินกลุ่ม B+D3 ซึ่งช่วยสนับสนุนการทำงานของไตและร่างกายโดยรวม",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย KPI สำคัญของ Admin Sales",
+      "model_answer": "ประกอบด้วย Response Time, Qualification Rate, Phone Number Rate, Direct Close Rate และ Follow-up Rate เพื่อวัดประสิทธิภาพการขาย",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Sales Process 7 ขั้นตอนของ LINE OA",
+      "model_answer": "ต้อนรับและสร้าง Rapport, Qualify, Empathy+Educate, Social Proof, นำเสนอสินค้า, ปิดการขายหรือขอเบอร์โทร และสรุป Order/ส่งต่อ Telesales",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายวิธี Qualify ลูกค้าอย่างถูกต้อง",
+      "model_answer": "ถามทีละข้อเกี่ยวกับอาการ ระยะไต โรคประจำตัว ยาที่ทาน และสอบถามว่าซื้อให้ใคร พร้อมรอคำตอบก่อนถามข้อถัดไป",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายความสำคัญของ Empathy + Educate",
+      "model_answer": "เป็นขั้นตอนสร้างความเชื่อมั่น แสดงความเข้าใจลูกค้า และให้ความรู้เพื่อพิสูจน์ความเชี่ยวชาญก่อนนำเสนอสินค้า",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายหลักการใช้ Social Proof ให้ได้ผล",
+      "model_answer": "ต้องเลือกเคสที่ตรงกับปัญหาของลูกค้า เล่าเรื่องก่อนส่งรีวิว และเชื่อมโยงผลลัพธ์กับสถานการณ์ของลูกค้า",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายวิธีนำเสนอ BETA LIFE แบบผู้เชี่ยวชาญ",
+      "model_answer": "เชื่อมโยงอาการของลูกค้ากับการทำงานของไต อธิบายบทบาทของส่วนผสมและนวัตกรรม RENERGY โดยไม่เน้นขายตรง",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "เหตุใดการขอเบอร์โทรจึงเป็นเป้าหมายหลักของ Admin Sales",
+      "model_answer": "เพราะช่วยเพิ่ม Conversion Rate, Basket Size, Retention และสร้างความเชื่อมั่นผ่านการพูดคุยกับผู้เชี่ยวชาญ",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายความแตกต่างของ LINE OA และ Facebook Messenger",
+      "model_answer": "Facebook มักเริ่มจากการถามราคาและไม่มี Auto Reply แบบเลือกอาการ จึงต้อง Redirect ไปถามอาการและ Qualify เอง",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Objection Handling เมื่อลูกค้าบอกว่าแพง",
+      "model_answer": "เปรียบเทียบกับค่าใช้จ่ายการฟอกไต อธิบายความคุ้มค่า และเสนอให้เริ่มจากชุดเล็กก่อน",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Follow-up Timeline ทั้งระบบ",
+      "model_answer": "ติดตามที่ 2 ชั่วโมง, 24 ชั่วโมง, 3 วัน, 7 วัน และ 14 วัน พร้อมใช้ข้อความและ Social Proof ที่เหมาะสม",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Closing Techniques ทั้ง 5 รูปแบบ",
+      "model_answer": "ประกอบด้วย Assumptive Close, Urgency Close, Trial Close, Expert Close และ Social Proof Close",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบาย Tag System และความสำคัญ",
+      "model_answer": "ใช้จัดการสถานะลูกค้าอย่างชัดเจน เช่น มาใหม่ Qualified ให้เบอร์ Intake Follow-up เพื่อการติดตามที่มีประสิทธิภาพ",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "อธิบายข้อมูลที่ต้องบันทึกใน Note Template",
+      "model_answer": "ชื่อ เบอร์ ช่องทาง อาการ ระยะไต โรคประจำตัว ยาที่ทาน เวลาสะดวก ข้อกังวล สถานะ และหมายเหตุ",
+      "points": 5
+    },
+    {
+      "type": "ESSAY",
+      "question_text": "สรุปข้อผิดพลาดสำคัญที่พบจากแชทจริงและแนวทางแก้ไข",
+      "model_answer": "เช่น ตอบช้า ไม่มี Empathy ส่งข้อความรัว ไม่ใช้ Social Proof ไม่ขอเบอร์โทร และไม่อัปเดต Tag โดยต้องแก้ตาม Playbook ที่กำหนด",
+      "points": 5
+    }
+  ]
+}

@@ -1383,3 +1383,21 @@ export async function reassignSales(saleIds: string[], newAgentId: string): Prom
     .in("id", saleIds);
   if (error) throw new Error(error.message);
 }
+
+// ─── Bot coaching prompt override ────────────────────────────────────────────
+
+export async function getCoachingPromptOverride(): Promise<string> {
+  const { data } = await adminClient
+    .from("team_config")
+    .select("value")
+    .eq("key", "coaching_prompt_override")
+    .single();
+  return (data?.value as string) ?? "";
+}
+
+export async function setCoachingPromptOverride(text: string): Promise<void> {
+  const { error } = await adminClient
+    .from("team_config")
+    .upsert({ key: "coaching_prompt_override", value: text }, { onConflict: "key" });
+  if (error) throw new Error(error.message);
+}
