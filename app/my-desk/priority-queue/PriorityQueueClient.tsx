@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { SaleRow } from "@/lib/db";
-import { parseNoteStatus, parseNoteObjection } from "@/lib/note-utils";
+import { parseNoteStatus, parseNoteObjection, saleTotal } from "@/lib/note-utils";
 import UpdateNotePanel from "@/app/my-desk/components/UpdateNotePanel";
 import EditSaleModal from "@/app/my-desk/components/EditSaleModal";
 
@@ -33,7 +33,7 @@ function scoreRow(row: SaleRow): ScoredRow {
   const status = parseNoteStatus(row.note);
   const objection = parseNoteObjection(row.note);
   const note = row.note.toLowerCase();
-  const total = row.phoneClose + row.upsell + row.crm;
+  const total = saleTotal(row);
   const days = daysSince(row.date);
 
   let score = 0;
@@ -171,7 +171,7 @@ export default function PriorityQueueClient({ activeRows }: { activeRows: SaleRo
 
               <div className="space-y-3">
                 {items.map(({ row, score, reason, accentColor }) => {
-                  const total = row.phoneClose + row.upsell + row.crm;
+                  const total = saleTotal(row);
                   const days = daysSince(row.date);
                   return (
                     <div key={row.id} className="bg-white border border-[#E8E8E8] rounded-xl overflow-hidden flex">

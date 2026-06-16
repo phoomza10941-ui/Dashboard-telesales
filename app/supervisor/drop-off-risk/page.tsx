@@ -1,4 +1,4 @@
-import { getAllAgentsAnalysis, SaleRow } from "@/lib/db";
+import { getAllAgentsAnalysis, SaleRow, saleTotal } from "@/lib/db";
 
 interface RiskCase {
   customer: string;
@@ -10,7 +10,7 @@ interface RiskCase {
 
 function classifyRisk(row: SaleRow, agentName: string): RiskCase | null {
   const n = row.note.toLowerCase();
-  const value = row.phoneClose + row.upsell + row.crm;
+  const value = saleTotal(row);
 
   const isPendingLong  = n.includes("รอโอน") || n.includes("รอสลิป");
   const isSilent       = n.includes("อ่านไม่ตอบ") || n.includes("ไม่ตอบ") || n.includes("เงียบ");

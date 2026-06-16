@@ -1,5 +1,19 @@
 export type NoteStatus = "closed" | "pending_transfer" | "follow_up" | "lost" | "in_progress";
 
+export function saleTotal(row: {
+  phoneClose: number;
+  upsell: number;
+  crm: number;
+  hopefulPhoneClose: number;
+  hopefulCrm: number;
+  hopefulUpsell: number;
+}): number {
+  return (
+    row.phoneClose + row.upsell + row.crm +
+    row.hopefulPhoneClose + row.hopefulCrm + row.hopefulUpsell
+  );
+}
+
 export function parseNoteStatus(note: string): NoteStatus {
   const n = note.toLowerCase();
   if ((n.includes("ปิด") || n.includes("โอนแล้ว") || n.includes("ของแถม")) && !n.includes("ปิดไม่ได้")) return "closed";

@@ -1,4 +1,4 @@
-import { getAllAgentsAnalysis, SaleRow } from "@/lib/db";
+import { getAllAgentsAnalysis, SaleRow, saleTotal } from "@/lib/db";
 
 interface HotCase {
   customer: string;
@@ -12,7 +12,7 @@ interface HotCase {
 
 function classifyHotCase(row: SaleRow, agentName: string): HotCase | null {
   const n = row.note.toLowerCase();
-  const value = row.phoneClose + row.upsell + row.crm;
+  const value = saleTotal(row);
   if (value === 0) return null;
 
   const isPending = n.includes("รอโอน") || n.includes("รอสลิป") || n.includes("รอชำระ");

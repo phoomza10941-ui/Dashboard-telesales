@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { adminClient } from "./supabase/admin";
 import { createClient } from "./supabase/server";
-export { parseNoteStatus, parseNoteObjection, type NoteStatus } from "./note-utils";
+export { parseNoteStatus, parseNoteObjection, saleTotal, type NoteStatus } from "./note-utils";
 import { parseNoteStatus, parseNoteObjection } from "./note-utils";
 
 export interface SaleRow {
