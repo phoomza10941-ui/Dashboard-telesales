@@ -166,24 +166,22 @@ function CustomerCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-          <AnalyzeCallPanel
-            agentId={agentId}
-            customerId={c.id}
-            orekaExtGosell={orekaExtGosell}
-            orekaExtHopeful={orekaExtHopeful}
-            initialRecordings={initialRecordings}
-            trigger={
-              <button className={`text-[11px] px-3 py-1.5 rounded-lg transition-colors border ${
-                showDetails
-                  ? "border-[#87DE81] text-[#3D9B3A] hover:bg-[#f0fdf4]"
-                  : "border-[#58CEE8] text-[#58CEE8] hover:bg-[#f0fbff]"
-              }`}>
-                🎙 {showDetails ? "วิเคราะห์ใหม่" : "วิเคราะห์สาย"}
-              </button>
-            }
-          />
-        </div>
+        {!showDetails && (
+          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <AnalyzeCallPanel
+              agentId={agentId}
+              customerId={c.id}
+              orekaExtGosell={orekaExtGosell}
+              orekaExtHopeful={orekaExtHopeful}
+              initialRecordings={initialRecordings}
+              trigger={
+                <button className="text-[11px] px-3 py-1.5 rounded-lg transition-colors border border-[#58CEE8] text-[#58CEE8] hover:bg-[#f0fbff]">
+                  🎙 วิเคราะห์สาย
+                </button>
+              }
+            />
+          </div>
+        )}
 
         {/* Chevron — only show if expandable */}
         <svg
