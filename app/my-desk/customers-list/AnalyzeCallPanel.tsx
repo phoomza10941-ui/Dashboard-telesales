@@ -56,7 +56,7 @@ export default function AnalyzeCallPanel({
   trigger: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"pick" | "loading" | "results">("pick");
+  const [step, setStep] = useState<"pick" | "loading" | "results" | "error">("pick");
   const [selectedRec, setSelectedRec] = useState<OrekaRecording | null>(null);
   const [extracted, setExtracted] = useState<ExtractedFields>({});
   const [editedFields, setEditedFields] = useState<ExtractedFields>({});
@@ -135,7 +135,7 @@ export default function AnalyzeCallPanel({
       setStep("results");
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-      setStep("pick");
+      setStep("error");
     }
   }
 
@@ -314,6 +314,22 @@ export default function AnalyzeCallPanel({
                     </div>
                     <div className="text-[11px] text-[#C0C0C0] text-center">ใช้เวลาประมาณ 30–60 วินาที</div>
                   </div>
+                </div>
+              )}
+
+              {step === "error" && (
+                <div className="flex flex-col items-center justify-center py-16 gap-4 px-6 text-center">
+                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-[22px]">⚠️</div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#3D3D3D] mb-1">วิเคราะห์ไม่สำเร็จ</div>
+                    <div className="text-[12px] text-red-500 break-words">{error}</div>
+                  </div>
+                  <button
+                    onClick={() => { setStep("pick"); setError(""); }}
+                    className="mt-2 px-5 py-2.5 bg-[#F7F7F7] border border-[#E8E8E8] text-[13px] text-[#3D3D3D] rounded-xl hover:bg-[#EFEFEF] transition-colors"
+                  >
+                    ← ลองใหม่
+                  </button>
                 </div>
               )}
 
