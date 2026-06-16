@@ -1104,6 +1104,58 @@ export async function deleteAppointment(id: string, agentId: string): Promise<vo
   if (error) throw new Error(error.message);
 }
 
+// ── Starred recordings ────────────────────────────────────────────────────────
+
+export interface StarredRecording {
+  recordingId: string;
+  phone: string;
+  duration: number;
+  direction: string;
+  calledAt: string;
+}
+
+export async function getStarredRecordings(agentId: string, phone?: string): Promise<StarredRecording[]> {
+  let query = adminClient
+    .from("starred_recordings")
+    .select("recording_id, phone, duration, direction, called_at")
+    .eq("agent_id", agentId);
+  if (phone) query = query.eq("phone", phone);
+  const { data } = await query.order("called_at", { ascending: false });
+  return (data ?? []).map((r: { recording_id: string; phone: string; duration: number; direction: string; called_at: string }) => ({
+    recordingId: r.recording_id,
+    phone: r.phone ?? "",
+    duration: Number(r.duration) || 0,
+    direction: r.direction ?? "",
+    calledAt: r.called_at ?? "",
+  }));
+}
+
+export async function addStar(agentId: string, rec: StarredRecording): Promise<void> {
+  const { error } = await adminClient
+    .from("starred_recordings")
+    .upsert(
+      {
+        agent_id: agentId,
+        recording_id: rec.recordingId,
+        phone: rec.phone,
+        duration: rec.duration,
+        direction: rec.direction,
+        called_at: rec.calledAt,
+      },
+      { onConflict: "agent_id,recording_id" }
+    );
+  if (error) throw new Error(error.message);
+}
+
+export async function removeStar(agentId: string, recordingId: string): Promise<void> {
+  const { error } = await adminClient
+    .from("starred_recordings")
+    .delete()
+    .eq("agent_id", agentId)
+    .eq("recording_id", recordingId);
+  if (error) throw new Error(error.message);
+}
+
 // ── สร้าง trend ยอดขายรายวัน (28 วันล่าสุด)
 export function buildTrend(rows: SaleRow[]): { day: string; sales: number }[] {
   const map = new Map<string, number>();
