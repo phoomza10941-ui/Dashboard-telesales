@@ -12,13 +12,46 @@ interface CallRecording {
   remoteParty: string;
 }
 
-// Normalised shape used internally for rendering a single recording row.
 interface RecRow {
-  id: string;        // String(rec.id) or StarredRecording.recordingId
+  id: string;
   timestamp: string; // UTC "YYYY-MM-DD HH:MM:SS"
   duration: number;
   direction: string;
   showDate: boolean; // true for multi-day or starred-only view
+}
+
+function RecordingRow({
+  row,
+  isStarred,
+  onToggleStar,
+}: {
+  row: RecRow;
+  isStarred: boolean;
+  onToggleStar: (rec: { id: string; timestamp: string; duration: number; direction: string }) => void;
+}) {
+  const { hh, mm, dateStr } = toThaiTime(row.timestamp);
+  return (
+    <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-[#E8E8E8] px-3 py-2">
+      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${row.direction === "OUT" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-emerald-50 text-emerald-600 border border-emerald-200"}`}>
+        {row.direction === "OUT" ? "โทรออก" : "รับสาย"}
+      </span>
+      {row.showDate && (
+        <span className="text-[10px] text-[#C0C0C0] shrink-0">{dateStr}</span>
+      )}
+      <span className="text-[11px] font-medium text-[#3D3D3D] font-mono shrink-0">{hh}:{mm}</span>
+      <span className="text-[11px] text-[#8B8E8F] shrink-0">{formatTalkTime(row.duration)}</span>
+      <audio controls preload="none" className="h-7 flex-1 min-w-[120px]" src={`/api/oreka/audio/${row.id}?account=gosell`} />
+      <button
+        onClick={() => onToggleStar({ id: row.id, timestamp: row.timestamp, duration: row.duration, direction: row.direction })}
+        title={isStarred ? "เอาออกจากดาว" : "ติดดาว"}
+        className="shrink-0 p-1 rounded-lg hover:bg-amber-50 transition-colors"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill={isStarred ? "#F5A623" : "none"} stroke={isStarred ? "#F5A623" : "#C0C0C0"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      </button>
+    </div>
+  );
 }
 
 function toThaiTime(utcTimestamp: string): { hh: string; mm: string; dateStr: string } {
@@ -240,87 +273,64 @@ export function RecordingsPlayer({
         )}
       </div>
 
-      {/* Single-day mode: inline month calendar */}
-      {!multiDay && !starredOnly && (
-        <div className="mb-2">
-          <CallCalendar
-            phone={phone}
-            selectedDate={date}
-            onSelectDate={(d) => {
-              setDate(d);
-              setStarredOnly(false);
-            }}
-          />
-        </div>
-      )}
+      {/* Single-day: calendar left + recordings right, side by side */}
+      {!multiDay && (
+        <div className="flex gap-3 items-start">
+          {!starredOnly && (
+            <CallCalendar
+              phone={phone}
+              selectedDate={date}
+              onSelectDate={(d) => {
+                setDate(d);
+                setStarredOnly(false);
+              }}
+            />
+          )}
 
-      {/* Loading spinner */}
-      {isLoadingView && (
-        <div className="flex items-center gap-2 text-[11px] text-[#8B8E8F]">
-          <svg className="animate-spin w-3 h-3 text-[#58CEE8]" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
-          </svg>
-          กำลังโหลด…
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoadingView && isEmpty && (
-        <p className="text-[11px] text-[#C0C0C0]">
-          {!multiDay && starredOnly
-            ? "ยังไม่มีบันทึกเสียงที่ติดดาว"
-            : multiDay
-            ? "ไม่มีบันทึกเสียงในช่วงนี้"
-            : "ไม่มีบันทึกเสียงวันนี้"}
-        </p>
-      )}
-
-      {/* Recording rows */}
-      {!isLoadingView && rows.length > 0 && (
-        <div className="space-y-2">
-          {rows.map((row) => {
-            const { hh, mm, dateStr } = toThaiTime(row.timestamp);
-            const isStarred = starredIds.has(row.id);
-            const account = "gosell";
-            return (
-              <div key={row.id} className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-[#E8E8E8] px-3 py-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${row.direction === "OUT" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-emerald-50 text-emerald-600 border border-emerald-200"}`}>
-                  {row.direction === "OUT" ? "โทรออก" : "รับสาย"}
-                </span>
-                {row.showDate && (
-                  <span className="text-[10px] text-[#C0C0C0] shrink-0">{dateStr}</span>
-                )}
-                <span className="text-[11px] font-medium text-[#3D3D3D] font-mono shrink-0">{hh}:{mm}</span>
-                <span className="text-[11px] text-[#8B8E8F] shrink-0">{formatTalkTime(row.duration)}</span>
-                <audio
-                  controls
-                  preload="none"
-                  className="h-7 flex-1 min-w-[160px]"
-                  src={`/api/oreka/audio/${row.id}?account=${account}`}
-                />
-                {/* Star toggle button */}
-                <button
-                  onClick={() => toggleStar({ id: row.id, timestamp: row.timestamp, duration: row.duration, direction: row.direction })}
-                  title={isStarred ? "เอาออกจากดาว" : "ติดดาว"}
-                  className="shrink-0 p-1 rounded-lg hover:bg-amber-50 transition-colors"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill={isStarred ? "#F5A623" : "none"}
-                    stroke={isStarred ? "#F5A623" : "#C0C0C0"}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                </button>
+          {/* Recordings column */}
+          <div className="flex-1 min-w-0">
+            {isLoadingView && (
+              <div className="flex items-center gap-2 text-[11px] text-[#8B8E8F] pt-1">
+                <svg className="animate-spin w-3 h-3 text-[#58CEE8]" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+                </svg>
+                กำลังโหลด…
               </div>
-            );
-          })}
+            )}
+            {!isLoadingView && isEmpty && (
+              <p className="text-[11px] text-[#C0C0C0] pt-1">
+                {starredOnly ? "ยังไม่มีบันทึกเสียงที่ติดดาว" : "ไม่มีบันทึกเสียงวันนี้"}
+              </p>
+            )}
+            {!isLoadingView && rows.length > 0 && (
+              <div className="space-y-2">
+                {rows.map((row) => <RecordingRow key={row.id} row={row} isStarred={starredIds.has(row.id)} onToggleStar={toggleStar} />)}
+              </div>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* Multi-day: full-width list */}
+      {multiDay && (
+        <>
+          {isLoadingView && (
+            <div className="flex items-center gap-2 text-[11px] text-[#8B8E8F]">
+              <svg className="animate-spin w-3 h-3 text-[#58CEE8]" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+              </svg>
+              กำลังโหลด…
+            </div>
+          )}
+          {!isLoadingView && isEmpty && (
+            <p className="text-[11px] text-[#C0C0C0]">ไม่มีบันทึกเสียงในช่วงนี้</p>
+          )}
+          {!isLoadingView && rows.length > 0 && (
+            <div className="space-y-2">
+              {rows.map((row) => <RecordingRow key={row.id} row={row} isStarred={starredIds.has(row.id)} onToggleStar={toggleStar} />)}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -44,12 +44,10 @@ function nextMonth(monthKey: string): string {
   return `${y}-${pad2(m + 1)}`;
 }
 
-// Build days array for a month grid (Mon–Sun week start, pad with nulls)
 function buildMonthGrid(monthKey: string): (string | null)[] {
   const [y, m] = monthKey.split("-").map(Number);
   const firstDay = new Date(Date.UTC(y, m - 1, 1));
-  // 0=Sun,1=Mon,...,6=Sat → convert to Mon=0..Sun=6
-  let startDow = firstDay.getUTCDay(); // 0=Sun
+  let startDow = firstDay.getUTCDay();
   startDow = (startDow + 6) % 7; // Mon=0
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
 
@@ -61,13 +59,39 @@ function buildMonthGrid(monthKey: string): (string | null)[] {
   return cells;
 }
 
+function loadStarredDays(phone: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(`starred-days:${phone}`);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveStarredDays(phone: string, days: Set<string>) {
+  try {
+    localStorage.setItem(`starred-days:${phone}`, JSON.stringify([...days]));
+  } catch { /* ignore */ }
+}
+
 const WEEKDAY_LABELS = ["จ", "อ", "พ", "พฤ", "ศ", "ส", "อา"];
 
 export function CallCalendar({ phone, selectedDate, onSelectDate }: CallCalendarProps) {
   const [visibleMonth, setVisibleMonth] = useState<string>(() => thaiMonthKey(selectedDate));
   const [daysMap, setDaysMap] = useState<Record<string, DaySummary>>({});
   const [loadingMonth, setLoadingMonth] = useState<string>("");
+  const [starredDays, setStarredDays] = useState<Set<string>>(new Set());
   const today = todayISOThai();
+
+  // Load starred days from localStorage after mount
+  useEffect(() => {
+    setStarredDays(loadStarredDays(phone));
+  }, [phone]);
+
+  // Sync visible month when selected date changes externally
+  useEffect(() => {
+    setVisibleMonth(thaiMonthKey(selectedDate));
+  }, [selectedDate]);
 
   // Fetch call-days whenever phone or visibleMonth changes
   useEffect(() => {
@@ -78,15 +102,26 @@ export function CallCalendar({ phone, selectedDate, onSelectDate }: CallCalendar
       .then((d) => {
         if (d.days) setDaysMap(d.days as Record<string, DaySummary>);
       })
-      .catch(() => {/* silently fail */})
+      .catch(() => { /* silently fail */ })
       .finally(() => setLoadingMonth(""));
   }, [phone, visibleMonth]);
+
+  const toggleStarDay = (e: React.MouseEvent, dateStr: string) => {
+    e.stopPropagation();
+    setStarredDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(dateStr)) next.delete(dateStr);
+      else next.add(dateStr);
+      saveStarredDays(phone, next);
+      return next;
+    });
+  };
 
   const cells = buildMonthGrid(visibleMonth);
   const isLoading = loadingMonth === visibleMonth;
 
   return (
-    <div className="rounded-xl border border-[#E8E8E8] bg-white p-2 select-none w-full max-w-[216px]">
+    <div className="rounded-xl border border-[#E8E8E8] bg-white p-2 select-none w-[196px] shrink-0">
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-1.5 px-0.5">
         <button
@@ -116,45 +151,76 @@ export function CallCalendar({ phone, selectedDate, onSelectDate }: CallCalendar
         ))}
       </div>
 
-      {/* Day grid */}
+      {/* Day grid — fixed 26px cells so calendar is always 196px wide */}
       <div className="grid grid-cols-7 gap-y-0.5">
         {cells.map((dateStr, idx) => {
           if (!dateStr) {
-            return <div key={`empty-${idx}`} />;
+            return <div key={`empty-${idx}`} className="w-[26px] h-[26px]" />;
           }
           const summary = daysMap[dateStr];
           const hasCalls = !!summary;
           const isSelected = dateStr === selectedDate;
           const isToday = dateStr === today;
+          const isStarred = starredDays.has(dateStr);
 
-          let tooltipText = "";
-          if (hasCalls) {
-            tooltipText = `${summary.count} สาย • รวม ${formatTalkTime(summary.duration)}`;
-          }
+          const tooltip = hasCalls
+            ? `${summary.count} สาย • รวม ${formatTalkTime(summary.duration)}${isStarred ? " ★" : ""}`
+            : isStarred ? "★ วันที่บันทึกไว้" : undefined;
 
           return (
             <button
               key={dateStr}
               onClick={() => onSelectDate(dateStr)}
-              title={tooltipText || undefined}
+              title={tooltip}
               className={[
-                "relative flex items-center justify-center w-full aspect-square rounded-md text-[10px] font-medium transition-all",
-                hasCalls
+                "group relative w-[26px] h-[26px] flex items-center justify-center rounded-md text-[10px] font-medium transition-all",
+                isStarred
+                  ? "bg-amber-100 text-amber-700 hover:brightness-95"
+                  : hasCalls
                   ? "bg-[#87DE81] text-[#2a6e28] hover:brightness-95"
                   : "text-[#8B8E8F] hover:bg-[#F7F7F7]",
-                isSelected
-                  ? "ring-2 ring-[#3D3D3D] ring-offset-0"
-                  : "",
-                isToday && !isSelected
-                  ? "ring-1 ring-[#58CEE8]"
-                  : "",
+                isSelected ? "ring-2 ring-[#3D3D3D] ring-offset-0" : "",
+                isToday && !isSelected ? "ring-1 ring-[#58CEE8]" : "",
               ].filter(Boolean).join(" ")}
             >
               {dateStr.slice(-2).replace(/^0/, "")}
+              {/* Star overlay — visible on hover (any day) or always when starred */}
+              {(hasCalls || isStarred) && (
+                <span
+                  onClick={(e) => toggleStarDay(e, dateStr)}
+                  title={isStarred ? "เอาออกจากดาว" : "ติดดาววันนี้"}
+                  className={[
+                    "absolute top-0 right-0 leading-none transition-opacity",
+                    isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60",
+                  ].join(" ")}
+                  style={{ fontSize: 7, lineHeight: 1 }}
+                >
+                  {isStarred ? "★" : "☆"}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+
+      {/* Starred days quick-jump */}
+      {starredDays.size > 0 && (
+        <div className="mt-2 pt-1.5 border-t border-[#F0F0F0] flex flex-wrap gap-1">
+          {[...starredDays].sort().reverse().slice(0, 4).map((d) => (
+            <button
+              key={d}
+              onClick={() => onSelectDate(d)}
+              className={`text-[9px] px-1.5 py-0.5 rounded-md font-medium transition-colors ${
+                d === selectedDate
+                  ? "bg-amber-400 text-white"
+                  : "bg-amber-50 text-amber-600 hover:bg-amber-100"
+              }`}
+            >
+              ★ {d.slice(5).replace("-", "/")}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
