@@ -1,4 +1,4 @@
-import { getDailyTarget, getAgentsWithTargets, getProducts, getAgentsWithMonthlyTargets, getAgentsWithOrekaExt, getCurrentUser } from "@/lib/db";
+import { getDailyTarget, getAgentsWithTargets, getProducts, getAgentsWithMonthlyTargets, getAgentsWithOrekaExt, getCurrentUser, getAiExtractionFields } from "@/lib/db";
 import { redirect } from "next/navigation";
 import TargetConfigForm from "./TargetConfigForm";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
@@ -6,6 +6,7 @@ import AgentTargetForm from "./AgentTargetForm";
 import AgentMonthlyTargetForm from "./AgentMonthlyTargetForm";
 import AgentOrekaExtForm from "./AgentOrekaExtForm";
 import ProductsForm from "./ProductsForm";
+import AiAgentConfigCard from "./AiAgentConfigCard";
 import { Suspense } from "react";
 
 function SectionLabel({ label }: { label: string }) {
@@ -31,13 +32,14 @@ export default async function SettingsPage({
   const currentMonthKey = currentThaiMonthKey();
   const selectedMonth = month ?? currentMonthKey;
 
-  const [currentUser, currentTarget, agents, products, monthlyAgents, orekaAgents] = await Promise.all([
+  const [currentUser, currentTarget, agents, products, monthlyAgents, orekaAgents, aiFields] = await Promise.all([
     getCurrentUser(),
     getDailyTarget(),
     getAgentsWithTargets(),
     getProducts(),
     getAgentsWithMonthlyTargets(selectedMonth),
     getAgentsWithOrekaExt(),
+    getAiExtractionFields(),
   ]);
   if (!currentUser) redirect("/login");
 
@@ -205,6 +207,16 @@ export default async function SettingsPage({
           ) : (
             <AgentOrekaExtForm agents={orekaAgents} />
           )}
+        </div>
+
+        {/* ─── AI Agent ─────────────────────── */}
+        <SectionLabel label="AI Agent" />
+
+        <div className="mb-5">
+          <AiAgentConfigCard
+            initialFields={aiFields}
+            notionConnected={!!process.env.NOTION_TOKEN}
+          />
         </div>
 
         {/* How it works */}
