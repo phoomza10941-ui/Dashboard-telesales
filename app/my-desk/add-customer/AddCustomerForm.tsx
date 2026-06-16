@@ -26,6 +26,12 @@ function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
+function tomorrowISO() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+}
+
 function isoToDMY(iso: string) {
   if (!iso) return "";
   const [y, m, d] = iso.split("-");
@@ -40,6 +46,7 @@ export default function AddCustomerForm({ agentName, products }: { agentName: st
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [showDupConfirm, setShowDupConfirm] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(tomorrowISO());
 
   // phone lookup state
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -119,6 +126,19 @@ export default function AddCustomerForm({ agentName, products }: { agentName: st
         const data = await res.json();
         throw new Error(data.error ?? "เกิดข้อผิดพลาด");
       }
+      // Auto-create appointment if status is "นัดโทร"
+      if (clampedForm.note === "นัดโทรพรุ่งนี้" && scheduleDate) {
+        await fetch("/api/appointments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerName: clampedForm.name,
+            customerPhone: clampedForm.phone,
+            appointmentDate: scheduleDate,
+          }),
+        });
+      }
+
       setStatus("success");
       setHistory([]); setHasToday(false);
       setForm({
@@ -127,6 +147,7 @@ export default function AddCustomerForm({ agentName, products }: { agentName: st
         hopefulPhoneClose: "", hopefulCrm: "", hopefulUpsell: "",
         note: "", remark: "",
       });
+      setScheduleDate(tomorrowISO());
       const supabase = createClient();
       const ch = supabase.channel("sales-update");
       await ch.subscribe();
@@ -378,6 +399,23 @@ export default function AddCustomerForm({ agentName, products }: { agentName: st
             );
           })}
         </div>
+
+        {/* Date picker — appears only when "นัดโทร" is selected */}
+        {form.note === "นัดโทรพรุ่งนี้" && (
+          <div className="mt-3 flex items-center gap-3 bg-[#7B5EA7]/8 border border-[#7B5EA7]/25 rounded-xl px-4 py-3">
+            <span className="text-[18px] leading-none shrink-0">📅</span>
+            <div className="flex-1">
+              <div className="text-[11px] font-semibold text-[#7B5EA7] mb-1.5">เลือกวันที่นัดโทร</div>
+              <input
+                type="date"
+                value={scheduleDate}
+                min={todayISO()}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                className="w-full bg-white border border-[#7B5EA7]/30 rounded-lg px-3 py-2 text-[13px] text-[#3D3D3D] focus:outline-none focus:border-[#7B5EA7] transition-colors"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Section: หมายเหตุ */}
