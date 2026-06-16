@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { formatTalkTime } from "@/lib/oreka-format";
 import type { StarredRecording } from "@/lib/db";
+import { CallCalendar } from "./CallCalendar";
 
 interface CallRecording {
   id: number;
@@ -36,7 +37,7 @@ function todayISOThai(): string {
 }
 
 // Renders a customer's call recordings with inline audio players.
-//  - Default (no `days`): single-day mode. Shows a date picker (default today Thai
+//  - Default (no `days`): single-day mode. Shows a custom month calendar (default today Thai
 //    UTC+7) and a "⭐ เฉพาะที่ติดดาว" filter. Used by customers-list.
 //  - With `days` (e.g. 7): rolling N-day window, newest→oldest, with a count and
 //    "◀ N วันก่อนหน้า" paging via weekOffset. Used by the add-customer cards.
@@ -196,29 +197,18 @@ export function RecordingsPlayer({
           {multiDay && recs && (
             <span className="text-[10px] text-[#58CEE8] font-semibold">โทร {recs.length} ครั้ง</span>
           )}
-          {/* Single-day extras: date picker + star filter */}
+          {/* Single-day extras: star filter (calendar is below) */}
           {!multiDay && (
-            <>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => {
-                  setDate(e.target.value);
-                  setStarredOnly(false);
-                }}
-                className="text-[10px] text-[#3D3D3D] border border-[#E8E8E8] rounded-lg px-2 py-0.5 bg-white focus:outline-none focus:border-[#87DE81] transition-colors"
-              />
-              <button
-                onClick={() => setStarredOnly((v) => !v)}
-                className={`text-[10px] font-medium px-2 py-0.5 rounded-lg border transition-colors ${
-                  starredOnly
-                    ? "bg-amber-50 text-amber-600 border-amber-300"
-                    : "text-[#8B8E8F] border-[#E8E8E8] hover:text-[#3D3D3D]"
-                }`}
-              >
-                ⭐ เฉพาะที่ติดดาว
-              </button>
-            </>
+            <button
+              onClick={() => setStarredOnly((v) => !v)}
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-lg border transition-colors ${
+                starredOnly
+                  ? "bg-amber-50 text-amber-600 border-amber-300"
+                  : "text-[#8B8E8F] border-[#E8E8E8] hover:text-[#3D3D3D]"
+              }`}
+            >
+              ⭐ เฉพาะที่ติดดาว
+            </button>
           )}
         </div>
         {multiDay && (
@@ -240,6 +230,20 @@ export function RecordingsPlayer({
           </div>
         )}
       </div>
+
+      {/* Single-day mode: inline month calendar */}
+      {!multiDay && !starredOnly && (
+        <div className="mb-2">
+          <CallCalendar
+            phone={phone}
+            selectedDate={date}
+            onSelectDate={(d) => {
+              setDate(d);
+              setStarredOnly(false);
+            }}
+          />
+        </div>
+      )}
 
       {/* Loading spinner */}
       {isLoadingView && (

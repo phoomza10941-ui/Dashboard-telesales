@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { thaiDateRangeUtc, toOrekaStamp } from "@/lib/oreka-format";
+import { getCurrentUser } from "@/lib/db";
 import { getOrekaToken, refreshOrekaToken } from "@/lib/oreka";
 import type { AccountId, OrekaRecording } from "@/lib/oreka";
+import { thaiMonthRangeUtc, thaiMonthKey, pad } from "@/lib/oreka-format";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,11 @@ function normalizePhone(phone: string): string {
   return phone;
 }
 
-async function fetchPage(
+// Module-level cache: "phone|month" -> { data, ts }
+const cache = new Map<string, { data: Record<string, { count: number; duration: number }>; ts: number }>();
+const CACHE_TTL_MS = 60_000;
+
+async function fetchPageForCallDays(
   pageNum: number,
   startUtc: string,
   endUtc: string,
@@ -44,107 +48,93 @@ async function fetchPage(
   return { recs, hasMore: recs.length >= PAGE_SIZE && !!data?.nextPageUri, token: t };
 }
 
-async function fetchRecordingsByPhone(
+async function fetchRecordingsForAccount(
   startUtc: string,
   endUtc: string,
   normalizedPhone: string,
   accountId: AccountId
 ): Promise<OrekaRecording[]> {
   let token = await getOrekaToken(accountId);
-  const matched: OrekaRecording[] = [];
+  const all: OrekaRecording[] = [];
   let page = 1;
 
-  while (page <= 20) {
-    const { recs, hasMore, token: newToken } = await fetchPage(page, startUtc, endUtc, accountId, token, normalizedPhone);
+  while (page <= 50) {
+    const { recs, hasMore, token: newToken } = await fetchPageForCallDays(page, startUtc, endUtc, accountId, token, normalizedPhone);
     token = newToken;
     for (const r of recs) {
-      // Safety net: server pre-filtered by remoteparty, but verify client-side too
       if (normalizePhone(r.remoteParty) === normalizedPhone) {
-        matched.push(r);
+        all.push(r);
       }
     }
     if (!hasMore) break;
     page++;
   }
 
-  return matched;
+  return all;
+}
+
+// Convert UTC timestamp to Thai date key "YYYY-MM-DD"
+function toThaiDateKey(utcTimestamp: string): string {
+  // timestamp is "YYYY-MM-DD HH:MM:SS" (UTC), add Z to parse as UTC
+  const d = new Date(utcTimestamp + "Z");
+  // Shift to Thai time (+7h)
+  const thaiMs = d.getTime() + 7 * 3600_000;
+  const thai = new Date(thaiMs);
+  return `${thai.getUTCFullYear()}-${pad(thai.getUTCMonth() + 1)}-${pad(thai.getUTCDate())}`;
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
   const phone = req.nextUrl.searchParams.get("phone");
-  const date = req.nextUrl.searchParams.get("date");
-  const daysParam = req.nextUrl.searchParams.get("days");
+  const monthParam = req.nextUrl.searchParams.get("month");
 
   if (!phone) return Response.json({ error: "Provide ?phone=..." }, { status: 400 });
   if (!BASE) return Response.json({ error: "Oreka not configured" }, { status: 503 });
 
+  // Validate/default month
+  const monthKey = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : thaiMonthKey();
   const normalizedPhone = normalizePhone(phone);
 
-  // Two modes:
-  //  - multi-day (when ?days= present): a rolling N-day window, paged back via
-  //    ?weekOffset=K. Sorted newest→oldest, includes callCount. Used by the
-  //    add-customer customer cards.
-  //  - single-day (default): one Thai day (?date=YYYY-MM-DD or today), oldest→newest.
-  //    Backward-compatible with the customers-list recordings player.
-  const days = daysParam ? Math.max(1, Math.min(31, parseInt(daysParam) || 0)) : 0;
-  const multiDay = days > 0;
-
-  let startUtc: string;
-  let endUtc: string;
-  let dateKey: string;
-  let weekOffset = 0;
-
-  if (multiDay) {
-    weekOffset = Math.max(0, parseInt(req.nextUrl.searchParams.get("weekOffset") ?? "0") || 0);
-    const now = Date.now();
-    const dayMs = 86_400_000;
-    const end = new Date(now - weekOffset * days * dayMs);
-    const start = new Date(now - (weekOffset + 1) * days * dayMs);
-    startUtc = toOrekaStamp(start);
-    endUtc = toOrekaStamp(end);
-    dateKey = "";
-  } else {
-    // Default to today (Thai time)
-    dateKey = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : (() => {
-      const thai = new Date(Date.now() + 7 * 3600_000);
-      const pad = (n: number) => String(n).padStart(2, "0");
-      return `${thai.getUTCFullYear()}-${pad(thai.getUTCMonth() + 1)}-${pad(thai.getUTCDate())}`;
-    })();
-    ({ startUtc, endUtc } = thaiDateRangeUtc(dateKey));
+  // Check cache
+  const cacheKey = `${normalizedPhone}|${monthKey}`;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return Response.json({ month: monthKey, days: cached.data });
   }
 
+  const { startUtc, endUtc } = thaiMonthRangeUtc(monthKey);
   const ACCOUNTS: AccountId[] = ["gosell", "hopeful"];
 
   try {
     const results = await Promise.allSettled(
-      ACCOUNTS.map((acct) => fetchRecordingsByPhone(startUtc, endUtc, normalizedPhone, acct))
+      ACCOUNTS.map((acct) => fetchRecordingsForAccount(startUtc, endUtc, normalizedPhone, acct))
     );
 
-    // Both Oreka accounts (gosell + hopeful) return the same shared recording pool,
-    // so the same recording id can come back from each. Dedupe by id to avoid showing
-    // every call twice.
+    // Dedupe by recording id across accounts
     const byId = new Map<number, OrekaRecording>();
     for (const r of results) {
       if (r.status !== "fulfilled") continue;
       for (const rec of r.value) byId.set(rec.id, rec);
     }
 
-    const recordings = [...byId.values()].sort((a, b) =>
-      multiDay
-        ? b.timestamp.localeCompare(a.timestamp)  // newest → oldest
-        : a.timestamp.localeCompare(b.timestamp)  // oldest → newest
-    );
+    // Bucket by Thai day
+    const days: Record<string, { count: number; duration: number }> = {};
+    for (const rec of byId.values()) {
+      const dayKey = toThaiDateKey(rec.timestamp);
+      // Only include days in the requested month
+      if (!dayKey.startsWith(monthKey)) continue;
+      const entry = days[dayKey] ?? { count: 0, duration: 0 };
+      entry.count += 1;
+      entry.duration += Number(rec.duration) || 0;
+      days[dayKey] = entry;
+    }
 
-    return Response.json({
-      recordings,
-      date: dateKey,
-      callCount: recordings.length,
-      ...(multiDay ? { weekOffset, days } : {}),
-    });
+    // Store in cache
+    cache.set(cacheKey, { data: days, ts: Date.now() });
+
+    return Response.json({ month: monthKey, days });
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : "failed" }, { status: 500 });
   }
