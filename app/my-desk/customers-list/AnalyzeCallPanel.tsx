@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useTransition, ReactNode } from "react";
+import { useState, useTransition, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 interface OrekaRecording {
@@ -33,47 +33,61 @@ const FIELD_META: { key: keyof ExtractedFields; label: string; wide?: boolean }[
   { key: "consulted_doc", label: "ปรึกษาหมอมั้ย", wide: true },
 ];
 
+// Calls under this duration (seconds) are considered likely empty
+const MIN_USEFUL_DURATION = 60;
+
 export default function AnalyzeCallPanel({
   agentId,
   customerId,
   orekaExtGosell,
   orekaExtHopeful,
+  initialRecordings,
   trigger,
 }: {
   agentId: string;
   customerId?: string;
   orekaExtGosell: string;
   orekaExtHopeful: string;
+  initialRecordings: OrekaRecording[];
   trigger: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"pick" | "loading" | "results">("pick");
-  const [recordings, setRecordings] = useState<OrekaRecording[]>([]);
-  const [loadingRec, setLoadingRec] = useState(false);
   const [selectedRec, setSelectedRec] = useState<OrekaRecording | null>(null);
   const [extracted, setExtracted] = useState<ExtractedFields>({});
   const [editedFields, setEditedFields] = useState<ExtractedFields>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [showShort, setShowShort] = useState(false);
   const [, startTransition] = useTransition();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!open) return;
+  function handleOpen() {
+    setOpen(true);
     setStep("pick");
     setSelectedRec(null);
     setExtracted({});
     setEditedFields({});
     setError("");
+    setSearch("");
+    setShowShort(false);
+  }
 
-    setLoadingRec(true);
-    const exts = [orekaExtGosell, orekaExtHopeful].filter(Boolean).join(",");
-    fetch(`/api/oreka/today-recordings?exts=${encodeURIComponent(exts)}`)
-      .then((r) => r.json())
-      .then((d) => setRecordings(d.recordings ?? []))
-      .catch(() => setRecordings([]))
-      .finally(() => setLoadingRec(false));
-  }, [open, orekaExtGosell, orekaExtHopeful]);
+  // Filter recordings: by search + by duration
+  const filtered = initialRecordings.filter((r) => {
+    if (!showShort && r.duration < MIN_USEFUL_DURATION) return false;
+    if (search) {
+      const q = search.replace(/[-\s]/g, "");
+      const phone = r.remoteParty.replace(/[-\s]/g, "");
+      return phone.includes(q);
+    }
+    return true;
+  });
+
+  const hiddenShortCount = !showShort
+    ? initialRecordings.filter((r) => r.duration < MIN_USEFUL_DURATION).length
+    : 0;
 
   async function handleAnalyze() {
     if (!selectedRec) return;
@@ -141,14 +155,14 @@ export default function AnalyzeCallPanel({
 
   return (
     <>
-      <span onClick={() => setOpen(true)} className="cursor-pointer">
+      <span onClick={handleOpen} className="cursor-pointer">
         {trigger}
       </span>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setOpen(false)} />
-          <div className="fixed right-0 top-0 h-full w-[400px] bg-white border-l border-[#E8E8E8] shadow-2xl z-50 flex flex-col">
+          <div className="fixed right-0 top-0 h-full w-[420px] bg-white border-l border-[#E8E8E8] shadow-2xl z-50 flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E8]">
               <div className="text-[13px] font-semibold text-[#3D3D3D]">🎙 วิเคราะห์สายโทร</div>
@@ -156,14 +170,7 @@ export default function AnalyzeCallPanel({
                 onClick={() => setOpen(false)}
                 className="w-6 h-6 rounded-full hover:bg-[#F7F7F7] flex items-center justify-center"
               >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -172,24 +179,49 @@ export default function AnalyzeCallPanel({
 
             <div className="flex-1 overflow-y-auto p-5">
               {step === "pick" && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="text-[11px] font-semibold text-[#8B8E8F] uppercase tracking-wide">
                     เลือกการโทรวันนี้
+                    <span className="ml-2 font-normal normal-case text-[#C0C0C0]">
+                      ({initialRecordings.length} สาย)
+                    </span>
                   </div>
-                  {loadingRec ? (
-                    <div className="text-[12px] text-[#C0C0C0] text-center py-8 animate-pulse">
-                      กำลังดึงรายการสาย...
+
+                  {/* Search bar */}
+                  {initialRecordings.length > 0 && (
+                    <div className="relative">
+                      <svg
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C0C0C0]"
+                        width="13" height="13" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2"
+                      >
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="ค้นหาเบอร์โทร..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 text-[12px] bg-[#F7F7F7] border border-[#E8E8E8] rounded-xl outline-none focus:border-[#87DE81] focus:bg-white transition-colors placeholder:text-[#C0C0C0]"
+                      />
                     </div>
-                  ) : recordings.length === 0 ? (
+                  )}
+
+                  {initialRecordings.length === 0 ? (
                     <div className="text-[12px] text-[#8B8E8F] text-center py-8">
                       ไม่พบการโทรวันนี้
                       <div className="text-[11px] text-[#C0C0C0] mt-1">
                         ตรวจสอบเบอร์ dtac ของคุณในโปรไฟล์
                       </div>
                     </div>
+                  ) : filtered.length === 0 && search ? (
+                    <div className="text-[12px] text-[#8B8E8F] text-center py-6">
+                      ไม่พบเบอร์ &ldquo;{search}&rdquo;
+                    </div>
                   ) : (
                     <div className="space-y-2">
-                      {recordings.map((rec) => (
+                      {filtered.map((rec) => (
                         <button
                           key={rec.id}
                           onClick={() => setSelectedRec(rec)}
@@ -204,13 +236,34 @@ export default function AnalyzeCallPanel({
                               {rec.direction === "IN" ? "📞 สายเข้า" : "📲 สายออก"} —{" "}
                               {formatTime(rec.timestamp)}
                             </span>
-                            <span className="text-[#8B8E8F]">{formatDuration(rec.duration)}</span>
+                            <span className={`font-medium ${rec.duration < MIN_USEFUL_DURATION ? "text-[#C0C0C0]" : "text-[#8B8E8F]"}`}>
+                              {formatDuration(rec.duration)}
+                            </span>
                           </div>
                           <div className="text-[11px] text-[#8B8E8F] mt-0.5">{rec.remoteParty}</div>
                         </button>
                       ))}
+
+                      {/* Show short calls toggle */}
+                      {hiddenShortCount > 0 && (
+                        <button
+                          onClick={() => setShowShort(true)}
+                          className="w-full text-center text-[11px] text-[#C0C0C0] hover:text-[#8B8E8F] py-2 transition-colors"
+                        >
+                          + แสดงสายสั้น {hiddenShortCount} สาย (น้อยกว่า 1 นาที — อาจไม่มีข้อมูล)
+                        </button>
+                      )}
+                      {showShort && (
+                        <button
+                          onClick={() => setShowShort(false)}
+                          className="w-full text-center text-[11px] text-[#C0C0C0] hover:text-[#8B8E8F] py-2 transition-colors"
+                        >
+                          ซ่อนสายสั้น
+                        </button>
+                      )}
                     </div>
                   )}
+
                   {error && <p className="text-[11px] text-red-500">{error}</p>}
                 </div>
               )}
@@ -237,9 +290,7 @@ export default function AnalyzeCallPanel({
                         <div
                           key={key}
                           className={`rounded-xl p-3 ${
-                            found
-                              ? "bg-[#F7F7F7]"
-                              : "bg-[#fffbf0] border border-[#f0c040]"
+                            found ? "bg-[#F7F7F7]" : "bg-[#fffbf0] border border-[#f0c040]"
                           } ${wide ? "col-span-2" : ""}`}
                         >
                           <div className="text-[10px] text-[#8B8E8F] mb-1">{label}</div>

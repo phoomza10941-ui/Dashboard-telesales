@@ -1,4 +1,5 @@
 import { getCurrentUser, getCustomers, Customer } from "@/lib/db";
+import { getTodayRecordingsForExts } from "@/lib/oreka";
 import { redirect } from "next/navigation";
 import AnalyzeCallPanel from "./AnalyzeCallPanel";
 
@@ -6,11 +7,16 @@ export default async function CustomersListPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const customers = await getCustomers(user.id);
-
   // getCurrentUser() already returns orekaExtGosell / orekaExtHopeful as typed fields
   const orekaExtGosell = user.orekaExtGosell ?? "";
   const orekaExtHopeful = user.orekaExtHopeful ?? "";
+
+  // Prefetch recordings + customers in parallel so panel opens instantly
+  const exts = [orekaExtGosell, orekaExtHopeful].filter(Boolean);
+  const [customers, recordings] = await Promise.all([
+    getCustomers(user.id),
+    exts.length > 0 ? getTodayRecordingsForExts(exts).catch(() => []) : Promise.resolve([]),
+  ]);
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -31,6 +37,7 @@ export default async function CustomersListPage() {
               agentId={user.id}
               orekaExtGosell={orekaExtGosell}
               orekaExtHopeful={orekaExtHopeful}
+              initialRecordings={recordings}
               trigger={
                 <button className="flex items-center gap-2 bg-[#58CEE8] text-white text-[13px] font-medium px-4 py-2.5 rounded-lg hover:bg-[#3DB8D4] transition-colors">
                   🎙 วิเคราะห์สายแรก
@@ -48,6 +55,7 @@ export default async function CustomersListPage() {
               agentId={user.id}
               orekaExtGosell={orekaExtGosell}
               orekaExtHopeful={orekaExtHopeful}
+              initialRecordings={recordings}
             />
           ))}
         </div>
@@ -61,11 +69,13 @@ function CustomerRow({
   agentId,
   orekaExtGosell,
   orekaExtHopeful,
+  initialRecordings,
 }: {
   customer: Customer;
   agentId: string;
   orekaExtGosell: string;
   orekaExtHopeful: string;
+  initialRecordings: Awaited<ReturnType<typeof getTodayRecordingsForExts>>;
 }) {
   const displayName =
     [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "—";
@@ -100,6 +110,7 @@ function CustomerRow({
           customerId={customer.id}
           orekaExtGosell={orekaExtGosell}
           orekaExtHopeful={orekaExtHopeful}
+          initialRecordings={initialRecordings}
           trigger={
             <button className="text-[11px] px-3 py-1.5 border border-[#58CEE8] text-[#58CEE8] rounded-lg hover:bg-[#f0fbff] transition-colors">
               🎙 วิเคราะห์สาย
