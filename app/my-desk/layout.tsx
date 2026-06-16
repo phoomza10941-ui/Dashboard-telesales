@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/db";
 import SideNav from "./components/SideNav";
 import StickyKpiBar from "./components/StickyKpiBar";
 import RealtimeRefresh from "@/app/components/RealtimeRefresh";
+import PageTransition from "./components/PageTransition";
 
 export default async function MyDeskLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -23,7 +24,7 @@ export default async function MyDeskLayout({ children }: { children: React.React
         <StickyKpiBar userId={userId} />
         <main className="flex-1 overflow-y-auto bg-[#F7F7F7] p-6">
           <RealtimeRefresh />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
     </div>
