@@ -28,9 +28,11 @@ export async function proxy(request: NextRequest) {
 
   const isMyDesk = pathname.startsWith("/my-desk");
   const isSupervisor = pathname.startsWith("/supervisor");
+  const isAdmin = pathname.startsWith("/admin");
+  const isWarRoom = pathname.startsWith("/war-room");
 
   // Not logged in — send to /login
-  if (!user && (isMyDesk || isSupervisor)) {
+  if (!user && (isMyDesk || isSupervisor || isAdmin || isWarRoom)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -45,5 +47,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/my-desk/:path*", "/supervisor/:path*", "/login"],
+  matcher: ["/my-desk/:path*", "/supervisor/:path*", "/admin/:path*", "/war-room/:path*", "/login"],
 };

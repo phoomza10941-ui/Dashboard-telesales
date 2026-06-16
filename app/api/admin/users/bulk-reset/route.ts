@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
+import { getCurrentUser } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
+  const caller = await getCurrentUser();
+  if (!caller || caller.role !== "supervisor")
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { password } = await req.json();
   if (!password || password.length < 6)
     return NextResponse.json({ error: "Password ต้องมีอย่างน้อย 6 ตัวอักษร" }, { status: 400 });

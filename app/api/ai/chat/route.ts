@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
+  const caller = await getCurrentUser();
+  if (!caller)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { messages, system } = await req.json();
 
   const kimiRes = await fetch("https://api.kimi.com/coding/v1/chat/completions", {

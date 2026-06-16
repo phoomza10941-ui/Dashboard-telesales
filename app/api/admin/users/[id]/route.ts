@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
+import { getCurrentUser } from "@/lib/db";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const caller = await getCurrentUser();
+  if (!caller || caller.role !== "supervisor")
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { id } = await params;
   const body = await req.json();
   const { action, value } = body as { action: string; value?: string };

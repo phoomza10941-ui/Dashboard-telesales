@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
+import { getCurrentUser } from "@/lib/db";
 
 export async function GET() {
+  const caller = await getCurrentUser();
+  if (!caller || caller.role !== "supervisor")
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { data: profiles, error } = await adminClient
     .from("profiles")
     .select("id, nickname, full_name, role, team, agent_code, created_at")
