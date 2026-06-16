@@ -95,6 +95,10 @@ export function RecordingsPlayer({
   const [date, setDate] = useState<string>(todayISOThai);
   const [starredOnly, setStarredOnly] = useState(false);
 
+  // ── pagination ────────────────────────────────────────────────────────────
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 4;
+
   // ── star state (both modes) ───────────────────────────────────────────────
   const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
   const [starredRecs, setStarredRecs] = useState<StarredRecording[]>([]);
@@ -126,6 +130,9 @@ export function RecordingsPlayer({
       .catch(() => setRecs([]))
       .finally(() => setLoading(false));
   }, [phone, hasOrekaExt, multiDay, days, weekOffset, date, starredOnly]);
+
+  // Reset to page 0 whenever the displayed set changes
+  useEffect(() => { setPage(0); }, [date, starredOnly, weekOffset]);
 
   // ── star toggle ───────────────────────────────────────────────────────────
   const toggleStar = useCallback(
@@ -208,6 +215,11 @@ export function RecordingsPlayer({
     }));
   }
 
+  // Sort newest → oldest
+  rows.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+  const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
   const windowLabel = multiDay
     ? weekOffset === 0
       ? `${days} วันล่าสุด`
@@ -288,7 +300,7 @@ export function RecordingsPlayer({
           )}
 
           {/* Recordings column */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
             {isLoadingView && (
               <div className="flex items-center gap-2 text-[11px] text-[#8B8E8F] pt-1">
                 <svg className="animate-spin w-3 h-3 text-[#58CEE8]" viewBox="0 0 24 24" fill="none">
@@ -303,9 +315,30 @@ export function RecordingsPlayer({
               </p>
             )}
             {!isLoadingView && rows.length > 0 && (
-              <div className="space-y-2">
-                {rows.map((row) => <RecordingRow key={row.id} row={row} isStarred={starredIds.has(row.id)} onToggleStar={toggleStar} />)}
-              </div>
+              <>
+                <div className="space-y-2">
+                  {pageRows.map((row) => <RecordingRow key={row.id} row={row} isStarred={starredIds.has(row.id)} onToggleStar={toggleStar} />)}
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      className="text-[10px] text-[#8B8E8F] hover:text-[#3D3D3D] border border-[#E8E8E8] rounded-lg px-2 py-0.5 transition-colors disabled:opacity-30 disabled:cursor-default"
+                    >
+                      ◀ ก่อนหน้า
+                    </button>
+                    <span className="text-[9px] text-[#C0C0C0]">{page + 1} / {totalPages}</span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                      disabled={page >= totalPages - 1}
+                      className="text-[10px] text-[#8B8E8F] hover:text-[#3D3D3D] border border-[#E8E8E8] rounded-lg px-2 py-0.5 transition-colors disabled:opacity-30 disabled:cursor-default"
+                    >
+                      ถัดไป ▶
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -326,9 +359,30 @@ export function RecordingsPlayer({
             <p className="text-[11px] text-[#C0C0C0]">ไม่มีบันทึกเสียงในช่วงนี้</p>
           )}
           {!isLoadingView && rows.length > 0 && (
-            <div className="space-y-2">
-              {rows.map((row) => <RecordingRow key={row.id} row={row} isStarred={starredIds.has(row.id)} onToggleStar={toggleStar} />)}
-            </div>
+            <>
+              <div className="space-y-2">
+                {pageRows.map((row) => <RecordingRow key={row.id} row={row} isStarred={starredIds.has(row.id)} onToggleStar={toggleStar} />)}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="text-[10px] text-[#8B8E8F] hover:text-[#3D3D3D] border border-[#E8E8E8] rounded-lg px-2 py-0.5 transition-colors disabled:opacity-30 disabled:cursor-default"
+                  >
+                    ◀ ก่อนหน้า
+                  </button>
+                  <span className="text-[9px] text-[#C0C0C0]">{page + 1} / {totalPages}</span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                    className="text-[10px] text-[#8B8E8F] hover:text-[#3D3D3D] border border-[#E8E8E8] rounded-lg px-2 py-0.5 transition-colors disabled:opacity-30 disabled:cursor-default"
+                  >
+                    ถัดไป ▶
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
