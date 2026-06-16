@@ -3,6 +3,7 @@ import { getTodayRecordingsForExts } from "@/lib/oreka";
 import { redirect } from "next/navigation";
 import AnalyzeCallPanel from "./AnalyzeCallPanel";
 import CustomerList from "./CustomerList";
+import AddCustomerPanel from "./AddCustomerPanel";
 
 export default async function CustomersListPage() {
   const user = await getCurrentUser();
@@ -19,9 +20,12 @@ export default async function CustomersListPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-[18px] font-semibold text-[#3D3D3D]">รายชื่อลูกค้า</h1>
-        <p className="text-[13px] text-[#8B8E8F] mt-1">ข้อมูลลูกค้าที่ดึงจากสายโทรด้วย AI</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[18px] font-semibold text-[#3D3D3D]">รายชื่อลูกค้า</h1>
+          <p className="text-[13px] text-[#8B8E8F] mt-1">ข้อมูลลูกค้าที่ดึงจากสายโทรด้วย AI</p>
+        </div>
+        <AddCustomerPanel agentId={user.id} />
       </div>
 
       {customers.length === 0 ? (
