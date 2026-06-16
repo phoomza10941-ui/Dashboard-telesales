@@ -141,6 +141,7 @@ export default function SideNav({
 }: SideNavProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(avatarUrl);
   const [nicknameVal, setNicknameVal] = useState(nickname);
@@ -157,6 +158,10 @@ export default function SideNav({
   const [extError, setExtError] = useState("");
   const [extOptions, setExtOptions] = useState<{ gosell: { ext: string; name: string }[]; hopeful: { ext: string; name: string }[] } | null>(null);
   const [extLoading, setExtLoading] = useState(false);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
 
   useEffect(() => {
     if (!profileOpen || extOptions !== null) return;
@@ -430,22 +435,29 @@ export default function SideNav({
       <nav className="flex-1 py-3 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isPending = pendingHref === item.href && !isActive;
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => { if (!isActive) setPendingHref(item.href); }}
               className={`relative flex items-center gap-3 px-5 py-2.5 text-[13px] transition-colors group ${isActive
                 ? "text-[#3D3D3D] bg-[#87DE81]/8 font-medium"
+                : isPending
+                ? "text-[#3D3D3D] bg-[#F7F7F7]"
                 : "text-[#8B8E8F] hover:text-[#3D3D3D] hover:bg-[#F7F7F7]"
                 }`}
             >
-              {isActive && (
-                <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full bg-[#87DE81]" />
+              {(isActive || isPending) && (
+                <span className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${isPending ? "bg-[#87DE81]/40 animate-pulse" : "bg-[#87DE81]"}`} />
               )}
-              <span className={isActive ? "text-[#87DE81]" : "text-[#8B8E8F] group-hover:text-[#3D3D3D]"}>
+              <span className={isActive ? "text-[#87DE81]" : isPending ? "text-[#87DE81]/60" : "text-[#8B8E8F] group-hover:text-[#3D3D3D]"}>
                 {item.icon}
               </span>
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {isPending && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#87DE81] animate-pulse shrink-0" />
+              )}
             </Link>
           );
         })}
