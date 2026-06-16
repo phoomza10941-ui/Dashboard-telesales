@@ -1278,12 +1278,15 @@ export async function getSalesContacts(
     .neq("phone", "");
   if (error || !data) return [];
 
+  const norm = (p: string) => p.replace(/\D/g, "").slice(-9);
   const seen = new Set<string>();
   const result: { phone: string; name: string }[] = [];
   for (const row of data) {
     const phone = (row.phone as string)?.trim();
-    if (!phone || seen.has(phone) || existingPhones.has(phone)) continue;
-    seen.add(phone);
+    if (!phone) continue;
+    const n = norm(phone);
+    if (!n || seen.has(n) || existingPhones.has(n)) continue;
+    seen.add(n);
     result.push({ phone, name: (row.customer_name as string) ?? "" });
   }
   return result;

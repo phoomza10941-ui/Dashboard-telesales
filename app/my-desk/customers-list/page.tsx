@@ -18,8 +18,13 @@ export default async function CustomersListPage() {
     exts.length > 0 ? getTodayRecordingsForExts(exts).catch(() => []) : Promise.resolve([]),
   ]);
 
-  // Merge sales contacts that don't already have a customer record
-  const existingPhones = new Set(customersFromDb.map((c) => c.phone ?? "").filter(Boolean));
+  // Merge sales contacts that don't already have a customer record.
+  // Normalize phones (strip non-digits, last 9 digits) so different formats
+  // ("0812345678" vs "081-234-5678" vs "+66812345678") all match correctly.
+  const normPhone = (p: string) => p.replace(/\D/g, "").slice(-9);
+  const existingPhones = new Set(
+    customersFromDb.map((c) => normPhone(c.phone ?? "")).filter(Boolean)
+  );
   const salesContacts = await getSalesContacts(user.id, existingPhones);
 
   const now = new Date().toISOString();

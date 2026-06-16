@@ -55,6 +55,8 @@ export default function AnalyzeCallPanel({
   initialRecordings: OrekaRecording[];
   trigger: ReactNode;
 }) {
+  const todayISO = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10);
+
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"pick" | "loading" | "results" | "error">("pick");
   const [selectedRec, setSelectedRec] = useState<OrekaRecording | null>(null);
@@ -66,6 +68,9 @@ export default function AnalyzeCallPanel({
   const [showShort, setShowShort] = useState(false);
   const [loadingPct, setLoadingPct] = useState(0);
   const [loadingLabel, setLoadingLabel] = useState("");
+  const [pickDate, setPickDate] = useState(todayISO);
+  const [dateRecordings, setDateRecordings] = useState<OrekaRecording[] | null>(null);
+  const [recLoading, setRecLoading] = useState(false);
   const [, startTransition] = useTransition();
   const router = useRouter();
 
@@ -79,10 +84,42 @@ export default function AnalyzeCallPanel({
     // Pre-fill search with customer phone so matching calls show immediately
     setSearch(prefillPhone ? prefillPhone.replace(/[-\s+]/g, "").slice(-9) : "");
     setShowShort(false);
+    setPickDate(todayISO);
+    setDateRecordings(null);
   }
 
+  async function handleDateChange(newDate: string) {
+    setPickDate(newDate);
+    setSelectedRec(null);
+    if (newDate === todayISO) {
+      setDateRecordings(null);
+      return;
+    }
+    const extParts = [orekaExtGosell, orekaExtHopeful].filter(Boolean);
+    if (extParts.length === 0) {
+      setDateRecordings([]);
+      return;
+    }
+    setRecLoading(true);
+    try {
+      const res = await fetch(
+        `/api/oreka/recordings-for-exts?exts=${encodeURIComponent(extParts.join(","))}&date=${newDate}`
+      );
+      if (!res.ok) { setDateRecordings([]); return; }
+      const data = await res.json() as { recordings: OrekaRecording[] };
+      setDateRecordings(data.recordings ?? []);
+    } catch {
+      setDateRecordings([]);
+    } finally {
+      setRecLoading(false);
+    }
+  }
+
+  // Active recording list: today uses server-provided initialRecordings; past dates use fetched list
+  const activeRecordings: OrekaRecording[] = pickDate === todayISO ? initialRecordings : (dateRecordings ?? []);
+
   // Filter recordings: by search + by duration
-  const filtered = initialRecordings.filter((r) => {
+  const filtered = activeRecordings.filter((r) => {
     if (!showShort && r.duration < MIN_USEFUL_DURATION) return false;
     if (search) {
       const q = search.replace(/[-\s]/g, "");
@@ -93,7 +130,7 @@ export default function AnalyzeCallPanel({
   });
 
   const hiddenShortCount = !showShort
-    ? initialRecordings.filter((r) => r.duration < MIN_USEFUL_DURATION).length
+    ? activeRecordings.filter((r) => r.duration < MIN_USEFUL_DURATION).length
     : 0;
 
   async function handleAnalyze() {
@@ -103,8 +140,11 @@ export default function AnalyzeCallPanel({
     setLoadingPct(0);
     setLoadingLabel("⬇️ ดาวน์โหลดเสียง...");
     try {
-      const account =
-        orekaExtGosell && selectedRec.localParty === orekaExtGosell ? "gosell" : "hopeful";
+      const account: "gosell" | "hopeful" =
+        orekaExtGosell && selectedRec.localParty === orekaExtGosell ? "gosell"
+        : orekaExtHopeful && selectedRec.localParty === orekaExtHopeful ? "hopeful"
+        : orekaExtGosell ? "gosell"
+        : "hopeful";
       const res = await fetch("/api/customer/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -222,14 +262,23 @@ export default function AnalyzeCallPanel({
               {step === "pick" && (
                 <div className="space-y-3">
                   <div className="text-[11px] font-semibold text-[#8B8E8F] uppercase tracking-wide">
-                    เลือกการโทรวันนี้
+                    เลือกการโทร
                     <span className="ml-2 font-normal normal-case text-[#C0C0C0]">
-                      ({initialRecordings.length} สาย)
+                      ({activeRecordings.length} สาย)
                     </span>
                   </div>
 
+                  {/* Date picker */}
+                  <input
+                    type="date"
+                    value={pickDate}
+                    max={todayISO}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-full bg-[#F7F7F7] border border-[#E8E8E8] rounded-lg px-3 py-2.5 text-[13px] text-[#3D3D3D] focus:outline-none focus:border-[#87DE81] focus:bg-white transition-colors"
+                  />
+
                   {/* Search bar */}
-                  {initialRecordings.length > 0 && (
+                  {!recLoading && activeRecordings.length > 0 && (
                     <div className="relative">
                       <svg
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C0C0C0]"
@@ -249,9 +298,13 @@ export default function AnalyzeCallPanel({
                     </div>
                   )}
 
-                  {initialRecordings.length === 0 ? (
+                  {recLoading ? (
                     <div className="text-[12px] text-[#8B8E8F] text-center py-8">
-                      ไม่พบการโทรวันนี้
+                      กำลังโหลด...
+                    </div>
+                  ) : activeRecordings.length === 0 ? (
+                    <div className="text-[12px] text-[#8B8E8F] text-center py-8">
+                      {pickDate === todayISO ? "ไม่พบการโทรวันนี้" : "ไม่พบการโทรในวันที่เลือก"}
                       <div className="text-[11px] text-[#C0C0C0] mt-1">
                         ตรวจสอบเบอร์ dtac ของคุณในโปรไฟล์
                       </div>

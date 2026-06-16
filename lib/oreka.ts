@@ -361,11 +361,14 @@ export interface TodayRecording {
   remoteParty: string;
 }
 
-export async function getTodayRecordingsForExts(exts: string[]): Promise<TodayRecording[]> {
+// Private shared implementation: fetches + normalizes recordings for a UTC range, filtered by exts.
+async function fetchRecordingsForExtsInRange(
+  exts: string[],
+  startUtc: string,
+  endUtc: string
+): Promise<TodayRecording[]> {
   if (ACCOUNTS.length === 0 || exts.length === 0) return [];
   const extSet = new Set(exts);
-  const dateKey = thaiTodayKey();
-  const { startUtc, endUtc } = thaiDateRangeUtc(dateKey);
 
   const results = await Promise.allSettled(
     ACCOUNTS.map((acct) => fetchRecordingsRange(startUtc, endUtc, acct))
@@ -392,6 +395,29 @@ export async function getTodayRecordingsForExts(exts: string[]): Promise<TodayRe
 
   // Sort newest first
   return all.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+export async function getTodayRecordingsForExts(exts: string[]): Promise<TodayRecording[]> {
+  try {
+    const dateKey = thaiTodayKey();
+    const { startUtc, endUtc } = thaiDateRangeUtc(dateKey);
+    return await fetchRecordingsForExtsInRange(exts, startUtc, endUtc);
+  } catch (e) {
+    console.error("[oreka] getTodayRecordingsForExts failed:", e);
+    return [];
+  }
+}
+
+// Fetch recordings for specific agent ext numbers on an arbitrary Thai calendar date (YYYY-MM-DD).
+// Same shape and normalization as getTodayRecordingsForExts. Never throws — returns [] on error.
+export async function getRecordingsForExtsOnDate(exts: string[], date: string): Promise<TodayRecording[]> {
+  try {
+    const { startUtc, endUtc } = thaiDateRangeUtc(date);
+    return await fetchRecordingsForExtsInRange(exts, startUtc, endUtc);
+  } catch (e) {
+    console.error("[oreka] getRecordingsForExtsOnDate failed:", e);
+    return [];
+  }
 }
 
 // Fetch aggregated talk time for an entire month (YYYY-MM Thai time). Graceful — never throws.

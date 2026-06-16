@@ -90,14 +90,39 @@ export default function CustomerList({
         continue;
       }
       try {
-        const account = orekaExtGosell && rec.localParty === orekaExtGosell ? "gosell" : "hopeful";
+        const account: "gosell" | "hopeful" =
+          orekaExtGosell && rec.localParty === orekaExtGosell ? "gosell"
+          : orekaExtHopeful && rec.localParty === orekaExtHopeful ? "hopeful"
+          : orekaExtGosell ? "gosell"
+          : "hopeful";
         const analyzeRes = await fetch("/api/customer/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orekaRecordingId: rec.id, account }),
         });
         if (!analyzeRes.ok) throw new Error("analyze failed");
-        const { fields } = await analyzeRes.json();
+        if (!analyzeRes.body) throw new Error("no response body");
+        const fields = await (async () => {
+          const reader = analyzeRes.body!.getReader();
+          const decoder = new TextDecoder();
+          let buf = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() ?? "";
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              const event = JSON.parse(line) as {
+                type: string; fields?: Record<string, string>; message?: string;
+              };
+              if (event.type === "done") return event.fields ?? {};
+              if (event.type === "error") throw new Error(event.message ?? "analyze error");
+            }
+          }
+          throw new Error("stream ended without done event");
+        })();
         const customerId = c.id.startsWith("__sales__") ? undefined : c.id;
         const upsertRes = await fetch("/api/customer/upsert", {
           method: "POST",
