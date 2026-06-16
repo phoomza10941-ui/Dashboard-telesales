@@ -189,29 +189,17 @@ export function RecordingsPlayer({
   return (
     <div className="px-4 py-3 border-t border-[#F7F7F7] bg-[#FAFAFA]">
       {/* Header row */}
-      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="flex items-center gap-2">
           <span className="text-[10px] font-semibold text-[#8B8E8F] uppercase tracking-wide">
             {windowLabel}
           </span>
           {multiDay && recs && (
             <span className="text-[10px] text-[#58CEE8] font-semibold">โทร {recs.length} ครั้ง</span>
           )}
-          {/* Single-day extras: star filter (calendar is below) */}
-          {!multiDay && (
-            <button
-              onClick={() => setStarredOnly((v) => !v)}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-lg border transition-colors ${
-                starredOnly
-                  ? "bg-amber-50 text-amber-600 border-amber-300"
-                  : "text-[#8B8E8F] border-[#E8E8E8] hover:text-[#3D3D3D]"
-              }`}
-            >
-              ⭐ เฉพาะที่ติดดาว
-            </button>
-          )}
         </div>
-        {multiDay && (
+        {/* Right side: paging (multi-day) or star filter (single-day) */}
+        {multiDay ? (
           <div className="flex items-center gap-1">
             <button
               onClick={() => setWeekOffset((w) => w + 1)}
@@ -228,6 +216,27 @@ export function RecordingsPlayer({
               </button>
             )}
           </div>
+        ) : (
+          <button
+            onClick={() => setStarredOnly((v) => !v)}
+            title={starredOnly ? "ดูทั้งหมด" : "เฉพาะที่ติดดาว"}
+            className={`shrink-0 p-1 rounded-lg transition-colors ${
+              starredOnly ? "text-amber-500 hover:bg-amber-50" : "text-[#C0C0C0] hover:text-amber-400 hover:bg-amber-50"
+            }`}
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill={starredOnly ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </button>
         )}
       </div>
 

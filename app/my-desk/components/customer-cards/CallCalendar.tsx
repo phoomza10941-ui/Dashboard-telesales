@@ -86,7 +86,7 @@ export function CallCalendar({ phone, selectedDate, onSelectDate }: CallCalendar
   const isLoading = loadingMonth === visibleMonth;
 
   return (
-    <div className="rounded-xl border border-[#E8E8E8] bg-white p-2 select-none" style={{ minWidth: 196 }}>
+    <div className="rounded-xl border border-[#E8E8E8] bg-white p-2 select-none w-full max-w-[216px]">
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-1.5 px-0.5">
         <button
