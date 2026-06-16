@@ -142,7 +142,7 @@ export default function CustomersListClient({
           <div>
             <h1 className="text-[18px] font-semibold text-[#3D3D3D]">รายชื่อลูกค้า</h1>
             <p className="text-[12px] text-[#8B8E8F] mt-0.5">
-              {mainTab === "registered" ? "ลูกค้าที่ชำระเงินแล้ว / ปิดการขายแล้ว" : "เบอร์จาก Oreka ที่ยังไม่ได้บันทึก"}
+              {mainTab === "registered" ? "ลูกค้าทั้งหมดของคุณ ทุกสถานะ" : "เบอร์จาก Oreka ที่ยังไม่ได้บันทึก"}
             </p>
           </div>
           {mainTab === "registered" && (
@@ -201,7 +201,7 @@ export default function CustomersListClient({
           <>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white border border-[#E8E8E8] rounded-xl px-5 py-4">
-                <div className="text-[11px] text-[#8B8E8F] mb-1">ยอดปิดการขาย{view === "gosell" ? " (GoSell)" : view === "hopeful" ? " (Hopeful)" : "รวม"}</div>
+                <div className="text-[11px] text-[#8B8E8F] mb-1">ยอดรวม{view === "gosell" ? " (GoSell)" : view === "hopeful" ? " (Hopeful)" : ""}</div>
                 <div className={`text-[22px] font-bold ${isHopeful ? "text-[#0E8FA8]" : "text-[#3D9B3A]"}`}>฿{totalSales.toLocaleString()}</div>
               </div>
               <div className="bg-white border border-[#E8E8E8] rounded-xl px-5 py-4">
@@ -213,8 +213,8 @@ export default function CustomersListClient({
             {filtered.length === 0 ? (
               <div className="bg-white border border-[#E8E8E8] rounded-xl p-12 text-center">
                 <div className="text-4xl mb-3">🏆</div>
-                <p className="text-[14px] font-medium text-[#3D3D3D]">ยังไม่มีลูกค้าที่ปิดการขาย</p>
-                <p className="text-[12px] text-[#8B8E8F] mt-1">เมื่ออัปเดตสถานะเป็น &ldquo;โอนแล้ว&rdquo; รายการจะย้ายมาที่นี่</p>
+                <p className="text-[14px] font-medium text-[#3D3D3D]">ยังไม่มีรายชื่อลูกค้า</p>
+                <p className="text-[12px] text-[#8B8E8F] mt-1">เพิ่มลูกค้าใหม่เพื่อให้รายการปรากฏที่นี่</p>
               </div>
             ) : (
               <div className="space-y-3">
