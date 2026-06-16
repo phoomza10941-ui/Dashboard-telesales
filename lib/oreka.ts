@@ -349,6 +349,51 @@ export async function getTalkTimeByDateSafe(dateKey: string): Promise<{ data: Ag
   }
 }
 
+// Fetch today's recordings for specific agent ext numbers (e.g. for AnalyzeCallPanel).
+// Searches across all configured accounts and filters by the provided localParty numbers.
+// Returns recordings sorted newest-first. Never throws — returns [] on error.
+export interface TodayRecording {
+  id: string;
+  timestamp: string;
+  duration: number;
+  direction: "IN" | "OUT";
+  localParty: string;
+  remoteParty: string;
+}
+
+export async function getTodayRecordingsForExts(exts: string[]): Promise<TodayRecording[]> {
+  if (ACCOUNTS.length === 0 || exts.length === 0) return [];
+  const extSet = new Set(exts);
+  const dateKey = thaiTodayKey();
+  const { startUtc, endUtc } = thaiDateRangeUtc(dateKey);
+
+  const results = await Promise.allSettled(
+    ACCOUNTS.map((acct) => fetchRecordingsRange(startUtc, endUtc, acct))
+  );
+
+  const all: TodayRecording[] = [];
+  const seenIds = new Set<number>();
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    for (const rec of r.value) {
+      if (!extSet.has(rec.localParty)) continue;
+      if (seenIds.has(rec.id)) continue;
+      seenIds.add(rec.id);
+      all.push({
+        id: String(rec.id),
+        timestamp: rec.timestamp,
+        duration: Number(rec.duration) || 0,
+        direction: rec.direction === "IN" ? "IN" : "OUT",
+        localParty: rec.localParty,
+        remoteParty: rec.remoteParty,
+      });
+    }
+  }
+
+  // Sort newest first
+  return all.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
 // Fetch aggregated talk time for an entire month (YYYY-MM Thai time). Graceful — never throws.
 export async function getTalkTimeByMonthSafe(monthKey: string): Promise<{ data: AgentTalkTime[]; error: string | null }> {
   try {

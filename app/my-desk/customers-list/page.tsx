@@ -1,18 +1,6 @@
 import { getCurrentUser, getCustomers, Customer } from "@/lib/db";
 import { redirect } from "next/navigation";
-
-// TEMP STUB — will be replaced in Task 8 with a real client component
-function AnalyzeCallPanel({
-  trigger,
-}: {
-  agentId: string;
-  customerId?: string;
-  orekaExtGosell: string;
-  orekaExtHopeful: string;
-  trigger: React.ReactNode;
-}) {
-  return <>{trigger}</>;
-}
+import AnalyzeCallPanel from "./AnalyzeCallPanel";
 
 export default async function CustomersListPage() {
   const user = await getCurrentUser();
