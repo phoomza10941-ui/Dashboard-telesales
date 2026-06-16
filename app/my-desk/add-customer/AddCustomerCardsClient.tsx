@@ -38,9 +38,11 @@ function HistoryRow({
   const router = useRouter();
   const [note, setNote] = useState(row.note);
   const [saving, setSaving] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [apptDate, setApptDate] = useState("");
   const [apptSaving, setApptSaving] = useState(false);
   const [apptSaved, setApptSaved] = useState(false);
+  const [apptError, setApptError] = useState<string | null>(null);
 
   const amt = rowViewTotal(row, view);
   const isScheduled = note === "นัดโทรพรุ่งนี้";
@@ -48,15 +50,22 @@ function HistoryRow({
 
   async function changeStatus(newNote: string) {
     if (!row.id) return;
+    const prevNote = note;
     setNote(newNote);
     setSaving(true);
+    setStatusError(null);
     try {
-      await fetch("/api/sales/update-note", {
+      const res = await fetch("/api/sales/update-note", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: row.id, note: newNote }),
       });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
       router.refresh();
+    } catch (e) {
+      setNote(prevNote);
+      setStatusError(e instanceof Error ? e.message : "บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
     } finally {
       setSaving(false);
     }
@@ -65,8 +74,9 @@ function HistoryRow({
   async function saveAppointment() {
     if (!apptDate) return;
     setApptSaving(true);
+    setApptError(null);
     try {
-      await fetch("/api/appointments", {
+      const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,7 +86,11 @@ function HistoryRow({
           preSuggestion: row.product || "",
         }),
       });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "บันทึกนัดหมายไม่สำเร็จ ลองใหม่อีกครั้ง");
       setApptSaved(true);
+    } catch (e) {
+      setApptError(e instanceof Error ? e.message : "บันทึกนัดหมายไม่สำเร็จ ลองใหม่อีกครั้ง");
     } finally {
       setApptSaving(false);
     }
@@ -137,6 +151,9 @@ function HistoryRow({
           แก้ไข
         </button>
       </div>
+      {statusError && (
+        <p className="ml-7 text-[10px] text-[#FF6B6B]">{statusError}</p>
+      )}
 
       {/* Calendar picker shown when status is "นัดโทรพรุ่งนี้" */}
       {isScheduled && (
@@ -150,7 +167,7 @@ function HistoryRow({
           <input
             type="date"
             value={apptDate}
-            onChange={(e) => { setApptDate(e.target.value); setApptSaved(false); }}
+            onChange={(e) => { setApptDate(e.target.value); setApptSaved(false); setApptError(null); }}
             className="text-[11px] border border-[#7B5EA7]/30 rounded-lg px-2 py-1 bg-[#7B5EA7]/5 focus:outline-none focus:border-[#7B5EA7] text-[#7B5EA7] transition-colors"
           />
           {apptDate && !apptSaved && (
@@ -164,6 +181,9 @@ function HistoryRow({
           )}
           {apptSaved && (
             <span className="text-[10px] text-[#7B5EA7] font-medium">✓ นัดหมายแล้ว</span>
+          )}
+          {apptError && (
+            <span className="text-[10px] text-[#FF6B6B]">{apptError}</span>
           )}
         </div>
       )}

@@ -15,21 +15,30 @@ export default function UpdateNotePanel({ saleId, currentNote, presets }: Props)
   const [note, setNote] = useState(currentNote);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function save() {
     setSaving(true);
-    await fetch("/api/sales/update-note", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: saleId, note }),
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      setOpen(false);
-      router.refresh();
-    }, 800);
+    setError(null);
+    try {
+      const res = await fetch("/api/sales/update-note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: saleId, note }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        setOpen(false);
+        router.refresh();
+      }, 800);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!open) {
@@ -68,6 +77,9 @@ export default function UpdateNotePanel({ saleId, currentNote, presets }: Props)
         placeholder="หรือพิมพ์หมายเหตุเอง..."
         className="w-full bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-[12px] text-[#3D3D3D] placeholder:text-[#C0C0C0] focus:outline-none focus:border-[#87DE81] resize-none transition-colors"
       />
+      {error && (
+        <p className="text-[11px] text-[#FF6B6B]">{error}</p>
+      )}
       <div className="flex gap-2">
         <button
           onClick={save}
