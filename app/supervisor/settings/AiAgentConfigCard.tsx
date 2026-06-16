@@ -124,13 +124,13 @@ export default function AiAgentConfigCard({
                 role="switch"
                 aria-checked={fields[key]}
                 onClick={() => toggle(key)}
-                className={`relative w-10 h-5 rounded-full transition-colors ${
-                  fields[key] ? "bg-[#87DE81]" : "bg-[#E8E8E8]"
+                className={`relative inline-flex shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                  fields[key] ? "bg-[#87DE81]" : "bg-[#D1D5DB]"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    fields[key] ? "translate-x-5" : "translate-x-0.5"
+                  className={`pointer-events-none absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-md transition-transform duration-200 ${
+                    fields[key] ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
