@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition, ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { VoiceReference } from "@/app/my-desk/components/customer-cards/VoiceReference";
 
 interface OrekaRecording {
   id: string;
@@ -133,6 +134,12 @@ export default function AnalyzeCallPanel({
     ? activeRecordings.filter((r) => r.duration < MIN_USEFUL_DURATION).length
     : 0;
 
+  function pickAccount(localParty: string): "gosell" | "hopeful" {
+    if (orekaExtGosell && localParty === orekaExtGosell) return "gosell";
+    if (orekaExtHopeful && localParty === orekaExtHopeful) return "hopeful";
+    return orekaExtGosell ? "gosell" : "hopeful";
+  }
+
   async function handleAnalyze() {
     if (!selectedRec) return;
     setStep("loading");
@@ -140,11 +147,7 @@ export default function AnalyzeCallPanel({
     setLoadingPct(0);
     setLoadingLabel("⬇️ ดาวน์โหลดเสียง...");
     try {
-      const account: "gosell" | "hopeful" =
-        orekaExtGosell && selectedRec.localParty === orekaExtGosell ? "gosell"
-        : orekaExtHopeful && selectedRec.localParty === orekaExtHopeful ? "hopeful"
-        : orekaExtGosell ? "gosell"
-        : "hopeful";
+      const account = pickAccount(selectedRec.localParty);
       const res = await fetch("/api/customer/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -433,6 +436,9 @@ export default function AnalyzeCallPanel({
                       );
                     })}
                   </div>
+                  {selectedRec && (
+                    <VoiceReference recordingId={selectedRec.id} account={pickAccount(selectedRec.localParty)} />
+                  )}
                   {error && <p className="text-[11px] text-red-500">{error}</p>}
                 </div>
               )}

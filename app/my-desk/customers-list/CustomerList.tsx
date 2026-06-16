@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import AnalyzeCallPanel from "./AnalyzeCallPanel";
 import { CallSummarySection } from "@/app/my-desk/components/customer-cards/CallSummarySection";
 import { CallCalendar } from "@/app/my-desk/components/customer-cards/CallCalendar";
+import { VoiceReference } from "@/app/my-desk/components/customer-cards/VoiceReference";
 import type { Customer } from "@/lib/db";
 
 interface OrekaRecording {
@@ -403,6 +404,12 @@ function CustomerCard({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {c.orekaRecId && (
+            <div className="px-5 pb-1">
+              <VoiceReference recordingId={c.orekaRecId} />
             </div>
           )}
 

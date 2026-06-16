@@ -19,20 +19,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const audioUrl = `${BASE}/orktrack/rest/mediastream/${id}`;
 
-  async function fetchAudio(token: string) {
-    const headers: Record<string, string> = { Authorization: token };
+  async function tryAccount(acct: AccountId) {
+    const headers: Record<string, string> = { Authorization: await getOrekaToken(acct) };
     const range = req.headers.get("range");
     if (range) headers["Range"] = range;
-    return fetch(audioUrl, { headers });
+    let upstream = await fetch(audioUrl, { headers });
+    // Re-login once on 401/403
+    if (upstream.status === 401 || upstream.status === 403) {
+      headers["Authorization"] = await refreshOrekaToken(acct);
+      upstream = await fetch(audioUrl, { headers });
+    }
+    return upstream;
   }
 
-  let token = await getOrekaToken(account);
-  let upstream = await fetchAudio(token);
+  const alt: AccountId = account === "gosell" ? "hopeful" : "gosell";
+  let upstream = await tryAccount(account);
 
-  // Re-login once on 401/403
-  if (upstream.status === 401 || upstream.status === 403) {
-    token = await refreshOrekaToken(account);
-    upstream = await fetchAudio(token);
+  if (!upstream.ok && upstream.status !== 206) {
+    upstream = await tryAccount(alt);
   }
 
   if (!upstream.ok && upstream.status !== 206) {
