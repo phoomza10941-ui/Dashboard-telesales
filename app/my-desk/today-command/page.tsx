@@ -29,6 +29,49 @@ export default async function TodayCommandPage() {
         </div>
       </div>
 
+      {/* AI Next Best Action — moved to top for maximum visibility */}
+      <div className="bg-gradient-to-r from-[#87DE81]/10 to-[#022EE8]/5 border border-[#87DE81]/30 rounded-xl p-5">
+        <div className="flex items-start gap-4">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#87DE81] to-[#022EE8] flex items-center justify-center shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <h3 className="text-[13px] font-semibold text-[#3D3D3D]">AI Next Best Action</h3>
+            </div>
+            {gap > 0 ? (
+              <p className="text-[13px] text-[#8B8E8F] leading-relaxed">
+                ตอนนี้คุณทำยอดได้{" "}
+                <span className="text-[#3D3D3D] font-semibold">{pct}%</span> ของเป้า เหลืออีก{" "}
+                <span className="text-[#3D3D3D] font-semibold">฿{gap.toLocaleString()}</span>
+                {pendingRows.length > 0 && (
+                  <> — มี Pending Payment <span className="text-[#FF6B6B] font-medium">{pendingRows.length} เคส</span> ควรปิดก่อน</>
+                )}
+                {followUpRows.length > 0 && (
+                  <> และ Follow-up อีก <span className="text-[#022EE8] font-medium">{followUpRows.length} เคส</span></>
+                )}
+                {todayAppointments.length > 0 && (
+                  <> — มีนัดหมายวันนี้ <span className="text-[#0E8FA8] font-medium">{todayAppointments.length} นัด</span></>
+                )}
+              </p>
+            ) : (
+              <p className="text-[13px] text-[#3D9B3A] font-medium">ถึงเป้าแล้ว! ยอดเกินเป้า ฿{Math.abs(gap).toLocaleString()}</p>
+            )}
+            <div className="flex gap-2 mt-3">
+              {pendingRows.length > 0 && (
+                <ActionChip label="ปิด Pending" href="/my-desk/pending-payment" primary />
+              )}
+              {followUpRows.length > 0 && (
+                <ActionChip label="ตาม Follow-up" href="/my-desk/follow-up" />
+              )}
+              <ActionChip label="ดูยอดขาย" href="/my-desk/my-performance" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-5">
         {/* Today's Sales */}
         <Card title="ยอดขายวันนี้" badge={`${todayRows.length} รายการ`} badgeColor="green" href="/my-desk/customers-list">
@@ -127,48 +170,6 @@ export default async function TodayCommandPage() {
         <AppointmentCards appointments={todayAppointments} />
       </Card>
 
-      {/* AI Next Best Action */}
-      <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
-        <div className="flex items-start gap-4">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#87DE81] to-[#022EE8] flex items-center justify-center shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1.5">
-              <h3 className="text-[13px] font-semibold text-[#3D3D3D]">AI Next Best Action</h3>
-            </div>
-            {gap > 0 ? (
-              <p className="text-[13px] text-[#8B8E8F] leading-relaxed">
-                ตอนนี้คุณทำยอดได้{" "}
-                <span className="text-[#3D3D3D] font-semibold">{pct}%</span> ของเป้า เหลืออีก{" "}
-                <span className="text-[#3D3D3D] font-semibold">฿{gap.toLocaleString()}</span>
-                {pendingRows.length > 0 && (
-                  <> — มี Pending Payment <span className="text-[#FF6B6B] font-medium">{pendingRows.length} เคส</span> ควรปิดก่อน</>
-                )}
-                {followUpRows.length > 0 && (
-                  <> และ Follow-up อีก <span className="text-[#022EE8] font-medium">{followUpRows.length} เคส</span></>
-                )}
-                {todayAppointments.length > 0 && (
-                  <> — มีนัดหมายวันนี้ <span className="text-[#0E8FA8] font-medium">{todayAppointments.length} นัด</span></>
-                )}
-              </p>
-            ) : (
-              <p className="text-[13px] text-[#3D9B3A] font-medium">🎉 ถึงเป้าแล้ว! ยอดเกินเป้า ฿{Math.abs(gap).toLocaleString()}</p>
-            )}
-            <div className="flex gap-2 mt-3">
-              {pendingRows.length > 0 && (
-                <ActionChip label="ปิด Pending" href="/my-desk/pending-payment" primary />
-              )}
-              {followUpRows.length > 0 && (
-                <ActionChip label="ตาม Follow-up" href="/my-desk/follow-up" />
-              )}
-              <ActionChip label="ดูยอดขาย" href="/my-desk/my-performance" />
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

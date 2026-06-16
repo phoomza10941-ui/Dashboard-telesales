@@ -8,6 +8,15 @@ import AgentOrekaExtForm from "./AgentOrekaExtForm";
 import ProductsForm from "./ProductsForm";
 import { Suspense } from "react";
 
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-3 mt-2">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#C0C0C0]">{label}</span>
+      <div className="flex-1 h-px bg-[#E8E8E8]" />
+    </div>
+  );
+}
+
 function currentThaiMonthKey() {
   const now = new Date(Date.now() + 7 * 3_600_000);
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -42,10 +51,14 @@ export default async function SettingsPage({
           </p>
         </div>
 
-        {/* Change password card */}
+        {/* ─── บัญชีผู้ใช้ ─────────────────────── */}
+        <SectionLabel label="บัญชีผู้ใช้" />
         <div className="mb-5">
           <ChangePasswordForm username={currentUser.username} />
         </div>
+
+        {/* ─── เป้าหมาย ─────────────────────── */}
+        <SectionLabel label="เป้าหมาย" />
 
         {/* Team target card */}
         <div className="bg-white rounded-2xl border border-[#E8E8E8] p-6 mb-5">
@@ -146,6 +159,9 @@ export default async function SettingsPage({
           </Suspense>
         </div>
 
+        {/* ─── สินค้า ─────────────────────── */}
+        <SectionLabel label="สินค้า" />
+
         {/* Products card */}
         <div className="bg-white rounded-2xl border border-[#E8E8E8] p-6 mb-5">
           <div className="flex items-start gap-4 mb-5">
@@ -165,6 +181,9 @@ export default async function SettingsPage({
           </div>
           <ProductsForm products={products} />
         </div>
+
+        {/* ─── การเชื่อมต่อ ─────────────────────── */}
+        <SectionLabel label="การเชื่อมต่อ" />
 
         {/* Oreka Talk Time mapping card */}
         <div className="bg-white rounded-2xl border border-[#E8E8E8] p-6 mb-5">

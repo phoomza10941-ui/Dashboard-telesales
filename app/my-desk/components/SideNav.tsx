@@ -4,123 +4,165 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useTransition, useEffect } from "react";
 import { updateNickname, updateAvatarUrl, saveMyOrekaExt } from "@/app/actions/profile";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  comingSoon?: boolean;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+  collapsible?: boolean;
+}
+
+const navGroups: NavGroup[] = [
   {
-    href: "/my-desk/today-command",
-    label: "สรุปวันนี้",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-      </svg>
-    ),
+    label: "TODAY",
+    items: [
+      {
+        href: "/my-desk/today-command",
+        label: "สรุปวันนี้",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+        ),
+      },
+    ],
   },
   {
-    href: "/my-desk/customers-list",
-    label: "รายชื่อลูกค้า",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <polyline points="16 11 18 13 22 9" />
-      </svg>
-    ),
+    label: "MY CASES",
+    items: [
+      {
+        href: "/my-desk/priority-queue",
+        label: "คิวสำคัญ",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+        ),
+      },
+      {
+        href: "/my-desk/pending-payment",
+        label: "รอโอนเงิน",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+            <line x1="1" y1="10" x2="23" y2="10" />
+          </svg>
+        ),
+      },
+      {
+        href: "/my-desk/follow-up",
+        label: "Follow-up",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+          </svg>
+        ),
+      },
+      {
+        href: "/my-desk/canceled",
+        label: "ยกเลิก",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        ),
+      },
+    ],
   },
   {
-    href: "/my-desk/add-customer",
-    label: "เพิ่มลูกค้า",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-      </svg>
-    ),
+    label: "CUSTOMERS",
+    items: [
+      {
+        href: "/my-desk/customers-list",
+        label: "รายชื่อลูกค้า",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <polyline points="16 11 18 13 22 9" />
+          </svg>
+        ),
+      },
+      {
+        href: "/my-desk/add-customer",
+        label: "เพิ่มลูกค้า",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        ),
+      },
+      {
+        href: "/my-desk/appointments",
+        label: "นัดหมาย",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        ),
+      },
+    ],
   },
   {
-    href: "/my-desk/appointments",
-    label: "นัดหมาย",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-    ),
+    label: "PERFORMANCE",
+    items: [
+      {
+        href: "/my-desk/my-performance",
+        label: "ผลงานของฉัน",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+        ),
+      },
+    ],
   },
   {
-    href: "/my-desk/priority-queue",
-    label: "คิวสำคัญ",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-        <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-      </svg>
-    ),
-  },
-  {
-    href: "/my-desk/pending-payment",
-    label: "รอโอนเงิน",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-        <line x1="1" y1="10" x2="23" y2="10" />
-      </svg>
-    ),
-  },
-  {
-    href: "/my-desk/follow-up",
-    label: "Follow-up",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-      </svg>
-    ),
-  },
-  {
-    href: "/my-desk/canceled",
-    label: "ยกเลิก",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
-      </svg>
-    ),
-  },
-  {
-    href: "/my-desk/lead-inbox",
-    label: "Lead ที่รับมา",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-        <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-      </svg>
-    ),
-  },
-  {
-    href: "/my-desk/script-helper",
-    label: "Script ช่วยขาย",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-      </svg>
-    ),
-  },
-  {
-    href: "/my-desk/my-performance",
-    label: "ผลงานของฉัน",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-      </svg>
-    ),
-  },
-  {
-    href: "/my-desk/coaching",
-    label: "Coaching",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
+    label: "MORE",
+    collapsible: true,
+    items: [
+      {
+        href: "/my-desk/lead-inbox",
+        label: "Lead ที่รับมา",
+        comingSoon: true,
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+            <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+          </svg>
+        ),
+      },
+      {
+        href: "/my-desk/script-helper",
+        label: "Script ช่วยขาย",
+        comingSoon: true,
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+          </svg>
+        ),
+      },
+      {
+        href: "/my-desk/coaching",
+        label: "Coaching",
+        comingSoon: true,
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        ),
+      },
+    ],
   },
 ];
 
@@ -143,6 +185,7 @@ export default function SideNav({
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(avatarUrl);
   const [nicknameVal, setNicknameVal] = useState(nickname);
   const [uploading, setUploading] = useState(false);
@@ -150,7 +193,6 @@ export default function SideNav({
   const [, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Phone number (Oreka) state
   const [gosellExt, setGosellExt] = useState(orekaExtGosell);
   const [hopefulExt, setHopefulExt] = useState(orekaExtHopeful);
   const [extSaving, setExtSaving] = useState(false);
@@ -172,6 +214,14 @@ export default function SideNav({
       .catch(() => setExtOptions({ gosell: [], hopeful: [] }))
       .finally(() => setExtLoading(false));
   }, [profileOpen, extOptions]);
+
+  // Auto-open "More" if current page is in that group
+  useEffect(() => {
+    const moreHrefs = navGroups.find(g => g.collapsible)?.items.map(i => i.href) ?? [];
+    if (moreHrefs.some(h => pathname === h || pathname.startsWith(h + "/"))) {
+      setMoreOpen(true);
+    }
+  }, [pathname]);
 
   async function handleSaveExt() {
     setExtSaving(true);
@@ -198,22 +248,17 @@ export default function SideNav({
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
     setUploading(true);
-
     const fd = new FormData();
     fd.append("file", file);
-
     try {
       const res = await fetch("/api/profile/avatar", { method: "POST", body: fd });
       const data = await res.json();
       if (data.url) {
         setPreviewUrl(data.url);
-        startTransition(() => {
-          updateAvatarUrl(data.url);
-        });
+        startTransition(() => { updateAvatarUrl(data.url); });
       }
     } finally {
       setUploading(false);
@@ -238,9 +283,9 @@ export default function SideNav({
   }
 
   return (
-    <aside className="w-[220px] shrink-0 flex flex-col border-r border-[#E8E8E8] bg-white h-full">
+    <aside className="relative w-[220px] shrink-0 flex flex-col border-r border-[#E8E8E8] bg-white h-full">
       {/* Logo area */}
-      <div className="px-5 py-5 border-b border-[#E8E8E8]">
+      <div className="px-5 py-5 border-b border-[#E8E8E8] shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-[#87DE81] flex items-center justify-center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
@@ -254,19 +299,15 @@ export default function SideNav({
         </div>
       </div>
 
-      {/* Agent info — clickable to open profile panel */}
+      {/* Agent info — clickable to open profile overlay */}
       <button
         onClick={() => setProfileOpen((v) => !v)}
-        className="px-5 py-3.5 border-b border-[#E8E8E8] text-left hover:bg-[#F7F7F7] transition-colors group w-full"
+        className="px-5 py-3.5 border-b border-[#E8E8E8] text-left hover:bg-[#F7F7F7] transition-colors group w-full shrink-0"
       >
         <div className="flex items-center gap-2.5">
           <div className="relative shrink-0">
             {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt={fullName}
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              <img src={previewUrl} alt={fullName} className="w-8 h-8 rounded-full object-cover" />
             ) : (
               <div className="w-8 h-8 rounded-full bg-[#022EE8]/20 flex items-center justify-center text-[#022EE8] text-xs font-bold">
                 {initials}
@@ -284,187 +325,237 @@ export default function SideNav({
             <div className="text-[10px] text-[#8B8E8F] truncate">{agentCode}{team ? ` · ${team}` : ""}</div>
           </div>
           <svg
-            className={`shrink-0 text-[#8B8E8F] transition-transform ${profileOpen ? "rotate-180" : ""}`}
+            className={`shrink-0 text-[#8B8E8F] transition-transform ${profileOpen ? "rotate-90" : ""}`}
             width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           >
-            <polyline points="6 9 12 15 18 9" />
+            <polyline points="9 18 15 12 9 6" />
           </svg>
         </div>
       </button>
 
-      {/* Profile panel */}
+      {/* Profile overlay panel — slides out to the right, nav items don't shift */}
       {profileOpen && (
-        <div className="border-b border-[#E8E8E8] bg-[#F7F7F7] px-5 py-4 space-y-3">
-          {/* Avatar upload */}
-          <div className="flex flex-col items-center gap-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="relative group"
-            >
-              {previewUrl ? (
-                <img
-                  src={previewUrl}
-                  alt={fullName}
-                  className="w-14 h-14 rounded-full object-cover ring-2 ring-[#E8E8E8]"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-[#022EE8]/20 flex items-center justify-center text-[#022EE8] text-lg font-bold ring-2 ring-[#E8E8E8]">
-                  {initials}
-                </div>
-              )}
-              <span className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                {uploading ? (
-                  <svg className="animate-spin text-white" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" strokeOpacity=".25" />
-                    <path d="M12 2a10 10 0 0 1 10 10" />
-                  </svg>
-                ) : (
-                  <svg className="opacity-0 group-hover:opacity-100 transition-opacity text-white" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                )}
-              </span>
-            </button>
-            <span className="text-[10px] text-[#8B8E8F]">คลิกเพื่อเปลี่ยนรูป</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </div>
-
-          {/* Nickname field */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-[#8B8E8F] font-medium uppercase tracking-wide">ชื่อที่แสดง</label>
-            <input
-              type="text"
-              value={nicknameVal}
-              onChange={(e) => setNicknameVal(e.target.value)}
-              className="w-full bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-[12px] text-[#3D3D3D] placeholder:text-[#C0C0C0] focus:outline-none focus:border-[#87DE81] transition-colors"
-              placeholder="ชื่อเล่น"
-            />
-          </div>
-
-          <button
-            onClick={handleSaveNickname}
-            disabled={saving || !nicknameVal.trim()}
-            className="w-full bg-[#87DE81] hover:bg-[#76cc70] disabled:opacity-50 text-[#3D3D3D] text-[12px] font-medium py-2 rounded-lg transition-colors"
-          >
-            {saving ? "กำลังบันทึก…" : "บันทึกชื่อ"}
-          </button>
-
-          {/* Oreka ext */}
-          <div className="border-t border-[#E8E8E8] pt-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <svg className="w-3 h-3 text-[#8B8E8F]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.72a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-              <span className="text-[10px] text-[#8B8E8F] font-medium uppercase tracking-wide">เบอร์ dtac ของฉัน</span>
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setProfileOpen(false)}
+          />
+          {/* Panel */}
+          <div className="absolute left-full top-0 w-[280px] bg-white border border-[#E8E8E8] shadow-xl rounded-r-xl z-50 max-h-screen overflow-y-auto">
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E8]">
+              <span className="text-[12px] font-semibold text-[#3D3D3D]">โปรไฟล์ของฉัน</span>
+              <button
+                onClick={() => setProfileOpen(false)}
+                className="w-6 h-6 rounded-full hover:bg-[#F7F7F7] flex items-center justify-center transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
 
-            {extLoading ? (
-              <p className="text-[10px] text-[#C0C0C0] text-center py-2 animate-pulse">กำลังดึงเบอร์จาก Oreka…</p>
-            ) : (
-              <div className="space-y-2">
-                <div>
-                  <label className="text-[9px] text-amber-600 font-semibold uppercase tracking-wide mb-0.5 block">Gosell</label>
-                  <select
-                    value={gosellExt}
-                    onChange={e => setGosellExt(e.target.value)}
-                    className="w-full bg-white border border-[#E8E8E8] rounded-lg px-2 py-1.5 text-[11px] text-[#3D3D3D] focus:outline-none focus:border-[#87DE81] transition-colors"
-                  >
-                    <option value="">— ไม่มี / ยังไม่ได้เลือก —</option>
-                    {(extOptions?.gosell ?? []).map(o => (
-                      <option key={o.ext} value={o.ext}>{o.ext}{o.name && o.name !== o.ext ? ` (${o.name})` : ""}</option>
-                    ))}
-                    {gosellExt && !(extOptions?.gosell ?? []).find(o => o.ext === gosellExt) && (
-                      <option value={gosellExt}>{gosellExt} (ปัจจุบัน)</option>
+            <div className="px-5 py-4 space-y-4">
+              {/* Avatar upload */}
+              <div className="flex flex-col items-center gap-2">
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="relative group">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt={fullName} className="w-16 h-16 rounded-full object-cover ring-2 ring-[#E8E8E8]" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#022EE8]/20 flex items-center justify-center text-[#022EE8] text-xl font-bold ring-2 ring-[#E8E8E8]">
+                      {initials}
+                    </div>
+                  )}
+                  <span className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                    {uploading ? (
+                      <svg className="animate-spin text-white" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" strokeOpacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" />
+                      </svg>
+                    ) : (
+                      <svg className="opacity-0 group-hover:opacity-100 transition-opacity text-white" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
                     )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[9px] text-purple-600 font-semibold uppercase tracking-wide mb-0.5 block">Hopeful</label>
-                  <select
-                    value={hopefulExt}
-                    onChange={e => setHopefulExt(e.target.value)}
-                    className="w-full bg-white border border-[#E8E8E8] rounded-lg px-2 py-1.5 text-[11px] text-[#3D3D3D] focus:outline-none focus:border-[#87DE81] transition-colors"
-                  >
-                    <option value="">— ไม่มี / ยังไม่ได้เลือก —</option>
-                    {(extOptions?.hopeful ?? []).map(o => (
-                      <option key={o.ext} value={o.ext}>{o.ext}{o.name && o.name !== o.ext ? ` (${o.name})` : ""}</option>
-                    ))}
-                    {hopefulExt && !(extOptions?.hopeful ?? []).find(o => o.ext === hopefulExt) && (
-                      <option value={hopefulExt}>{hopefulExt} (ปัจจุบัน)</option>
-                    )}
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleSaveExt}
-                  disabled={extSaving}
-                  className="w-full bg-[#58CEE8] hover:bg-[#3DB8D4] disabled:opacity-50 text-white text-[11px] font-medium py-1.5 rounded-lg transition-colors"
-                >
-                  {extSaving ? "กำลังบันทึก…" : extSaved ? "✓ บันทึกแล้ว" : "บันทึกเบอร์"}
+                  </span>
                 </button>
-                {extError && (
-                  <p className="text-[10px] text-red-500 text-center">{extError}</p>
+                <span className="text-[10px] text-[#8B8E8F]">คลิกเพื่อเปลี่ยนรูป</span>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              </div>
+
+              {/* Nickname field */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-[#8B8E8F] font-medium uppercase tracking-wide">ชื่อที่แสดง</label>
+                <input
+                  type="text"
+                  value={nicknameVal}
+                  onChange={(e) => setNicknameVal(e.target.value)}
+                  className="w-full bg-[#F7F7F7] border border-[#E8E8E8] rounded-lg px-3 py-2 text-[13px] text-[#3D3D3D] placeholder:text-[#C0C0C0] focus:outline-none focus:border-[#87DE81] focus:bg-white transition-colors"
+                  placeholder="ชื่อเล่น"
+                />
+              </div>
+
+              <button
+                onClick={handleSaveNickname}
+                disabled={saving || !nicknameVal.trim()}
+                className="w-full bg-[#87DE81] hover:bg-[#76cc70] disabled:opacity-50 text-[#3D3D3D] text-[13px] font-medium py-2 rounded-lg transition-colors"
+              >
+                {saving ? "กำลังบันทึก…" : "บันทึกชื่อ"}
+              </button>
+
+              {/* Oreka ext */}
+              <div className="border-t border-[#E8E8E8] pt-4">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <svg className="w-3.5 h-3.5 text-[#8B8E8F]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.72a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                  <span className="text-[10px] text-[#8B8E8F] font-medium uppercase tracking-wide">เบอร์ dtac ของฉัน</span>
+                </div>
+
+                {extLoading ? (
+                  <p className="text-[11px] text-[#C0C0C0] text-center py-3 animate-pulse">กำลังดึงเบอร์จาก Oreka…</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    <div>
+                      <label className="text-[9px] text-amber-600 font-semibold uppercase tracking-wide mb-1 block">Gosell</label>
+                      <select
+                        value={gosellExt}
+                        onChange={e => setGosellExt(e.target.value)}
+                        className="w-full bg-[#F7F7F7] border border-[#E8E8E8] rounded-lg px-2.5 py-2 text-[12px] text-[#3D3D3D] focus:outline-none focus:border-[#87DE81] transition-colors"
+                      >
+                        <option value="">— ไม่มี / ยังไม่ได้เลือก —</option>
+                        {(extOptions?.gosell ?? []).map(o => (
+                          <option key={o.ext} value={o.ext}>{o.ext}{o.name && o.name !== o.ext ? ` (${o.name})` : ""}</option>
+                        ))}
+                        {gosellExt && !(extOptions?.gosell ?? []).find(o => o.ext === gosellExt) && (
+                          <option value={gosellExt}>{gosellExt} (ปัจจุบัน)</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] text-purple-600 font-semibold uppercase tracking-wide mb-1 block">Hopeful</label>
+                      <select
+                        value={hopefulExt}
+                        onChange={e => setHopefulExt(e.target.value)}
+                        className="w-full bg-[#F7F7F7] border border-[#E8E8E8] rounded-lg px-2.5 py-2 text-[12px] text-[#3D3D3D] focus:outline-none focus:border-[#87DE81] transition-colors"
+                      >
+                        <option value="">— ไม่มี / ยังไม่ได้เลือก —</option>
+                        {(extOptions?.hopeful ?? []).map(o => (
+                          <option key={o.ext} value={o.ext}>{o.ext}{o.name && o.name !== o.ext ? ` (${o.name})` : ""}</option>
+                        ))}
+                        {hopefulExt && !(extOptions?.hopeful ?? []).find(o => o.ext === hopefulExt) && (
+                          <option value={hopefulExt}>{hopefulExt} (ปัจจุบัน)</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleSaveExt}
+                      disabled={extSaving}
+                      className="w-full bg-[#58CEE8] hover:bg-[#3DB8D4] disabled:opacity-50 text-white text-[12px] font-medium py-2 rounded-lg transition-colors"
+                    >
+                      {extSaving ? "กำลังบันทึก…" : extSaved ? "✓ บันทึกแล้ว" : "บันทึกเบอร์"}
+                    </button>
+                    {extError && <p className="text-[10px] text-red-500 text-center">{extError}</p>}
+                  </div>
                 )}
               </div>
-            )}
+
+              {/* Link to full profile page */}
+              <Link
+                href="/my-desk/profile"
+                className="w-full flex items-center justify-center gap-1.5 border border-[#E8E8E8] bg-[#F7F7F7] hover:bg-[#E8E8E8] text-[12px] text-[#8B8E8F] hover:text-[#3D3D3D] py-2 rounded-lg transition-colors"
+                onClick={() => setProfileOpen(false)}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                เปลี่ยน Password
+              </Link>
+            </div>
           </div>
-          {/* Link to full profile page */}
-          <Link
-            href="/my-desk/profile"
-            className="w-full flex items-center justify-center gap-1.5 border border-[#E8E8E8] bg-white hover:bg-[#F7F7F7] text-[11px] text-[#8B8E8F] hover:text-[#3D3D3D] py-2 rounded-lg transition-colors"
-            onClick={() => setProfileOpen(false)}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            เปลี่ยน Password
-          </Link>
-        </div>
+        </>
       )}
 
-      {/* Navigation */}
-      <nav className="flex-1 py-3 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          const isPending = pendingHref === item.href && !isActive;
+      {/* Navigation with grouped sections */}
+      <nav className="flex-1 py-2 overflow-y-auto">
+        {navGroups.map((group) => {
+          const isCollapsible = group.collapsible;
+          const isExpanded = !isCollapsible || moreOpen;
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => { if (!isActive) setPendingHref(item.href); }}
-              className={`relative flex items-center gap-3 px-5 py-2.5 text-[13px] transition-colors group ${isActive
-                ? "text-[#3D3D3D] bg-[#87DE81]/8 font-medium"
-                : isPending
-                ? "text-[#3D3D3D] bg-[#F7F7F7]"
-                : "text-[#8B8E8F] hover:text-[#3D3D3D] hover:bg-[#F7F7F7]"
-                }`}
-            >
-              {(isActive || isPending) && (
-                <span className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${isPending ? "bg-[#87DE81]/40 animate-pulse" : "bg-[#87DE81]"}`} />
+            <div key={group.label}>
+              {/* Group label row */}
+              {isCollapsible ? (
+                <button
+                  onClick={() => setMoreOpen(v => !v)}
+                  className="w-full flex items-center gap-1.5 px-4 pt-3 pb-1.5 text-left group cursor-pointer"
+                >
+                  <span className="text-[9px] uppercase tracking-widest text-[#C0C0C0] group-hover:text-[#8B8E8F] transition-colors">
+                    {group.label}
+                  </span>
+                  <svg
+                    className={`w-2.5 h-2.5 text-[#C0C0C0] group-hover:text-[#8B8E8F] transition-all ${moreOpen ? "rotate-90" : ""}`}
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="px-4 pt-3 pb-1.5">
+                  <span className="text-[9px] uppercase tracking-widest text-[#C0C0C0]">{group.label}</span>
+                </div>
               )}
-              <span className={isActive ? "text-[#87DE81]" : isPending ? "text-[#87DE81]/60" : "text-[#8B8E8F] group-hover:text-[#3D3D3D]"}>
-                {item.icon}
-              </span>
-              <span className="flex-1">{item.label}</span>
-              {isPending && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#87DE81] animate-pulse shrink-0" />
-              )}
-            </Link>
+
+              {/* Group items */}
+              {isExpanded && group.items.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                const isPending = pendingHref === item.href && !isActive;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => { if (!isActive) setPendingHref(item.href); }}
+                    className={`relative flex items-center gap-3 px-5 py-2.5 text-[13px] transition-colors group ${
+                      isActive
+                        ? "text-[#3D3D3D] bg-[#87DE81]/8 font-medium"
+                        : isPending
+                        ? "text-[#3D3D3D] bg-[#F7F7F7]"
+                        : item.comingSoon
+                        ? "text-[#C0C0C0] hover:text-[#8B8E8F] hover:bg-[#F7F7F7]"
+                        : "text-[#8B8E8F] hover:text-[#3D3D3D] hover:bg-[#F7F7F7]"
+                    }`}
+                  >
+                    {(isActive || isPending) && (
+                      <span className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${isPending ? "bg-[#87DE81]/40 animate-pulse" : "bg-[#87DE81]"}`} />
+                    )}
+                    <span className={
+                      isActive ? "text-[#87DE81]" :
+                      isPending ? "text-[#87DE81]/60" :
+                      item.comingSoon ? "text-[#C0C0C0] group-hover:text-[#8B8E8F]" :
+                      "text-[#8B8E8F] group-hover:text-[#3D3D3D]"
+                    }>
+                      {item.icon}
+                    </span>
+                    <span className="flex-1">{item.label}</span>
+                    {item.comingSoon && (
+                      <span className="text-[9px] bg-[#F7F7F7] text-[#C0C0C0] px-1.5 py-0.5 rounded-full border border-[#E8E8E8] shrink-0">Soon</span>
+                    )}
+                    {isPending && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#87DE81] animate-pulse shrink-0" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
 
       {/* Status indicator + logout */}
-      <div className="px-5 py-4 border-t border-[#E8E8E8] space-y-3">
+      <div className="px-5 py-4 border-t border-[#E8E8E8] space-y-3 shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#87DE81] animate-pulse" />
           <span className="text-[11px] text-[#8B8E8F]">ออนไลน์</span>
