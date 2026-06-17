@@ -474,8 +474,13 @@ function cleanExtractedFields(raw: Record<string, unknown>): ExtractedCustomerFi
   const out: ExtractedCustomerFields = {};
   const nameKeys = new Set(["first_name", "last_name", "nickname"]);
   for (const key of Object.keys(FIELD_LABELS)) {
-    const v = raw[key];
-    if (typeof v !== "string") continue;
+    const rawV = raw[key];
+    // The model usually returns a comma-separated string, but sometimes returns
+    // an array (e.g. medications/diseases) — coerce so values aren't dropped.
+    let v: string;
+    if (typeof rawV === "string") v = rawV;
+    else if (Array.isArray(rawV)) v = rawV.filter((x) => typeof x === "string" && x.trim()).join(", ");
+    else continue;
     const t = v.trim();
     if (!t || t === "-" || t === "ไม่มี" || t === "ไม่ระบุ") continue;
     if (nameKeys.has(key) && NAME_NON_VALUES.has(t)) continue;

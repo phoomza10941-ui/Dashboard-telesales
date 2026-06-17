@@ -65,6 +65,14 @@ function extractRichText(block: Record<string, unknown>): string {
     return `\n=== ${parts} ===`;
   }
 
+  // Each product lives in its own sub-page; without this the official product
+  // names (sub-page titles) never reach the AI, so name normalization fails.
+  // Databases (Product/Pricing/Brand) at least surface their title here.
+  if (type === "child_page" || type === "child_database") {
+    const title = (content.title as string) ?? "";
+    return title ? `\n=== ${title} ===` : "";
+  }
+
   if (type === "divider") return "";
   if (type === "table_of_contents") return "";
 
