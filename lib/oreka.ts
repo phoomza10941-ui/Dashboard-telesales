@@ -118,10 +118,42 @@ async function fetchOnePage(
   return { recs, hasMore: recs.length >= PAGE_SIZE && !!data?.nextPageUri, newToken: t };
 }
 
+// Oreka intermittently answers with HTTP 5xx under concurrent load (and always
+// 500s for page numbers beyond the available data). Retry transient server/
+// network errors a few times so a hiccup on page 1 doesn't drop the whole
+// account's recordings. Non-transient errors (4xx) are not retried.
+async function fetchOnePageWithRetry(
+  pageNum: number, startUtc: string, endUtc: string, acct: Account, token: string, attempts = 3
+): Promise<{ recs: OrekaRecording[]; hasMore: boolean; newToken: string }> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetchOnePage(pageNum, startUtc, endUtc, acct, token);
+    } catch (e) {
+      lastErr = e;
+      const msg = e instanceof Error ? e.message : String(e);
+      const transient = /HTTP 5\d\d/.test(msg) || /fetch failed|ECONN|ETIMEDOUT|network|socket/i.test(msg);
+      if (!transient || i === attempts - 1) break;
+      await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 // Async generator: yields batches of pages in parallel (PARALLEL_PAGES at a time)
 async function* yieldRecordingPages(startUtc: string, endUtc: string, acct: Account): AsyncGenerator<OrekaRecording[]> {
   let token = await getToken(acct);
-  let nextPage = 1;
+
+  // Fetch page 1 alone first. Most day-range queries fit in a single page, so
+  // this avoids speculatively requesting non-existent pages 2..N (which Oreka
+  // answers with HTTP 500) in the common case, and ensures a transient failure
+  // on page 1 is retried rather than silently dropping the account's data.
+  const first = await fetchOnePageWithRetry(1, startUtc, endUtc, acct, token);
+  token = first.newToken;
+  yield first.recs;
+  if (!first.hasMore) return;
+
+  let nextPage = 2;
   let done = false;
 
   while (!done && nextPage <= MAX_PAGES) {
@@ -134,7 +166,7 @@ async function* yieldRecordingPages(startUtc: string, endUtc: string, acct: Acco
 
     // Fetch all pages in the batch simultaneously
     const results = await Promise.all(
-      batch.map((p) => fetchOnePage(p, startUtc, endUtc, acct, token).catch((e) => {
+      batch.map((p) => fetchOnePageWithRetry(p, startUtc, endUtc, acct, token).catch((e) => {
         console.error(`[oreka] page ${p} failed:`, e);
         return null;
       }))
