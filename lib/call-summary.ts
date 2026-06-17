@@ -420,20 +420,25 @@ export async function extractCustomerInfo(
   if (activeFields.length === 0) return {};
 
   const systemPrompt = [
-    "คุณเป็น AI ที่ช่วยดึงข้อมูลลูกค้าจากบทสนทนาสายโทรศัพท์ภาษาไทย",
+    "คุณเป็น AI ที่ช่วยดึงข้อมูลสุขภาพของลูกค้าจากบทสนทนาการขายทางโทรศัพท์ (ภาษาไทย เป็นภาษาพูด ถอดจากเสียงจึงอาจสะกดเพี้ยน)",
     productKnowledge
-      ? `\nข้อมูลสินค้า (context เพิ่มเติม):\n${productKnowledge}`
+      ? `\nข้อมูลสินค้า (ใช้เพื่อสะกดชื่อผลิตภัณฑ์ให้ถูกเท่านั้น ห้ามใช้เดาโรคของลูกค้า):\n${productKnowledge}`
       : "",
-    "\nดึงเฉพาะข้อมูลที่พูดถึงในสายเท่านั้น ถ้าไม่มีการพูดถึง field ใด ให้ละ field นั้นออก",
-    "\nส่งกลับเป็น JSON object ที่มี key เป็น field name ด้านล่าง:",
+    "\nอ่านบทสนทนาทั้งหมดตั้งแต่ต้นจนจบ แล้วดึงข้อมูลของ \"ลูกค้า/ผู้ที่จะทานผลิตภัณฑ์\" เท่านั้น ลงใน field ด้านล่าง:",
     activeFields.join("\n"),
-    "\nกฎ:",
-    "- first_name/last_name/nickname: ตรงตามที่พูด",
-    "- diseases: คั่นด้วยคอมมา",
-    "- medications: ชื่อยา คั่นด้วยคอมมา",
-    "- consulted_doc: คำตอบสั้น รวมความถี่ถ้ามี (เช่น 'ใช่ — ทุก 3 เดือน')",
-    "- patient_type: 'ตัวเอง' หรือ 'คนในครอบครัว — [ความสัมพันธ์]'",
-    "- symptoms: อธิบายสั้น ๆ",
+    "\nหลักการสำคัญ:",
+    "- ดึงสิ่งที่ลูกค้าพูดถึงตัวเอง ทั้งทางตรงและทางอ้อม เช่น ลูกค้าพูดว่า \"ความดันไม่สูงเท่าไหร่\" = มีภาวะความดัน, \"ช่วงนี้เวียนหัว\" = อาการเวียนหัว",
+    "- ตีความตามบริบทของภาษาพูดแม้คำจะสะกดเพี้ยนจากการถอดเสียง",
+    "- อย่าดึงข้อมูลจากบทเกริ่นนำ/ชื่อแผนก/ชื่อบริษัท/ชื่อผลิตภัณฑ์ที่ \"พนักงานขาย\" พูด (เช่น \"ติดต่อจากส่วนดูแลไขมันในเลือด\" ไม่ได้แปลว่าลูกค้าเป็นไขมันในเลือดสูง) และอย่าเดาโรคจากชื่อยา",
+    "- อย่าดึงผลิตภัณฑ์ที่ลูกค้าปฏิเสธหรือไม่ได้ทานมาใส่ medications",
+    "- ถ้า field ใดไม่มีข้อมูลจริง ให้ตัด field นั้นทิ้งจาก JSON ห้ามใส่ค่าว่าง",
+    "\nรูปแบบแต่ละ field:",
+    "- first_name/last_name/nickname: ชื่อจริงของลูกค้าตามที่ได้ยิน ห้ามใช้คำสรรพนาม/คำเรียก เช่น พี่ น้า ป้า ลุง คุณ ลูกค้า เป็นชื่อ",
+    "- diseases: โรค/ภาวะที่ลูกค้าเป็น เช่น เบาหวาน ความดัน ไขมันในเลือดสูง เก๊าท์ โรคไต โรคหัวใจ ข้อเข่าเสื่อม — คั่นด้วยคอมมา",
+    "- symptoms: อาการที่ลูกค้ารู้สึกตอนนี้ (ไม่ใช่ชื่อโรค และไม่ใช่คำว่า \"ดีขึ้น\") คั่นด้วยคอมมา",
+    "- medications: ชื่อยา/อาหารเสริมที่ลูกค้ากำลังทานอยู่จริง คั่นด้วยคอมมา",
+    "- consulted_doc: คำตอบสั้น รวมความถี่ถ้ามี (เช่น 'เคย — ทุก 3 เดือน')",
+    "- patient_type: 'ตัวเอง' หรือ 'คนในครอบครัว — [ความสัมพันธ์]' (อย่าสับสนกับคนสั่งของหรือคนส่งของ)",
   ]
     .filter(Boolean)
     .join("\n");
@@ -449,8 +454,31 @@ export async function extractCustomerInfo(
   }, { timeout: 45000, maxRetries: 1 });
 
   try {
-    return JSON.parse(response.choices[0].message.content ?? "{}") as ExtractedCustomerFields;
+    const parsed = JSON.parse(response.choices[0].message.content ?? "{}") as Record<string, unknown>;
+    return cleanExtractedFields(parsed);
   } catch {
     return {};
   }
+}
+
+// Pronoun/title words that the model sometimes returns as a "name" — never real names.
+const NAME_NON_VALUES = new Set([
+  "พี่", "น้อง", "น้า", "ป้า", "ลุง", "อา", "คุณ", "ลูกค้า", "แม่", "พ่อ", "ยาย", "ตา",
+]);
+
+// Post-process the model output: keep only known fields with a real (non-empty) value,
+// and drop name fields that are just pronouns/titles. The UI treats a missing field as
+// "ไม่ได้พูดถึงในสาย", so dropping empty strings here keeps that signal accurate.
+function cleanExtractedFields(raw: Record<string, unknown>): ExtractedCustomerFields {
+  const out: ExtractedCustomerFields = {};
+  const nameKeys = new Set(["first_name", "last_name", "nickname"]);
+  for (const key of Object.keys(FIELD_LABELS)) {
+    const v = raw[key];
+    if (typeof v !== "string") continue;
+    const t = v.trim();
+    if (!t || t === "-" || t === "ไม่มี" || t === "ไม่ระบุ") continue;
+    if (nameKeys.has(key) && NAME_NON_VALUES.has(t)) continue;
+    out[key as keyof ExtractedCustomerFields] = t;
+  }
+  return out;
 }
