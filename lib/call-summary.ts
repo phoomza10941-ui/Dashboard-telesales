@@ -430,7 +430,7 @@ export async function extractCustomerInfo(
     "ในการสนทนามีผู้พูดสองฝ่ายเสมอ: \"พนักงานขาย\" (ฝ่ายโทรออก/รับสาย เพื่อขายสินค้า) และ \"ลูกค้า\" (ฝ่ายซื้อ/ผู้รับสาย)",
     "แยกผู้พูดจากบริบท: พนักงานขายมักแนะนำสินค้า ถามคำถาม อธิบายโปรโมชั่น ลูกค้ามักตอบคำถามและเล่าอาการ",
     productKnowledge
-      ? `\nข้อมูลสินค้า (ใช้เพื่อสะกดชื่อผลิตภัณฑ์ให้ถูกเท่านั้น ห้ามใช้เดาโรคหรืออาการของลูกค้า):\n${productKnowledge}`
+      ? `\nข้อมูลอ้างอิง (ใช้เพื่อ: ①สะกดชื่อผลิตภัณฑ์ให้ถูก ②เทียบสะกดชื่อ/ชื่อเล่นลูกค้าที่อาจถอดเสียงเพี้ยน — ห้ามใช้เดาโรคหรืออาการ):\n${productKnowledge}`
       : "",
     "\nอ่านบทสนทนาทั้งหมดตั้งแต่ต้นจนจบ แล้วดึงข้อมูลของ \"ลูกค้า/ผู้ที่จะทานผลิตภัณฑ์\" เท่านั้น ลงในแต่ละ field ตามกฎด้านล่าง:",
     activeFieldLines.join("\n"),
@@ -447,7 +447,7 @@ export async function extractCustomerInfo(
     .join("\n");
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: systemPrompt },
