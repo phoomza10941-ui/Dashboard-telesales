@@ -21,6 +21,7 @@ export default function AiExtractionRulesCard({
     return t;
   });
   const [extra, setExtra] = useState(initialRules.extraRules ?? "");
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -110,38 +111,57 @@ export default function AiExtractionRulesCard({
         </div>
       </div>
 
-      {/* Per-field rules */}
-      <div className="space-y-4">
+      {/* Per-field rules — accordion: open one at a time so it's easy to type */}
+      <div className="space-y-2">
+        <div className="text-[11px] text-[#8B8E8F]">แตะที่ฟิลด์เพื่อเปิดแก้กฎ (เปิดทีละอัน)</div>
         {EXTRACTION_FIELDS.map(({ key, label }) => {
           const isCustom = (texts[key] ?? "").trim() !== DEFAULT_FIELD_RULES[key].trim();
-          const rows = key === "symptoms" ? 5 : 2;
+          const isOpen = openKey === key;
+          const rows = key === "symptoms" ? 6 : 3;
           return (
-            <div key={key}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[12px] font-medium text-[#3D3D3D]">
+            <div key={key} className="border border-[#E8E8E8] rounded-xl overflow-hidden">
+              <button
+                onClick={() => setOpenKey(isOpen ? null : key)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${
+                  isOpen ? "bg-[#FAFAFA]" : "hover:bg-[#FAFAFA]"
+                }`}
+              >
+                <span className="text-[12px] font-medium text-[#3D3D3D] flex items-center gap-1.5">
                   {label}
-                  <span className="ml-1.5 text-[10px] text-[#C0C0C0] font-normal">({key})</span>
+                  <span className="text-[10px] text-[#C0C0C0] font-normal">({key})</span>
                   {isCustom && (
-                    <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded-full bg-[#fff8ed] text-[#d08700]">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#fff8ed] text-[#d08700]">
                       แก้ไขแล้ว
                     </span>
                   )}
                 </span>
-                {isCustom && (
-                  <button
-                    onClick={() => resetField(key)}
-                    className="text-[10px] text-[#58CEE8] hover:underline"
-                  >
-                    คืนค่าเริ่มต้น
-                  </button>
-                )}
-              </div>
-              <textarea
-                value={texts[key] ?? ""}
-                onChange={(e) => setField(key, e.target.value)}
-                rows={rows}
-                className={ta}
-              />
+                <svg
+                  width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="#C0C0C0" strokeWidth="2"
+                  className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {isOpen && (
+                <div className="px-3 pb-3 pt-2 border-t border-[#F0F0F0]">
+                  <textarea
+                    value={texts[key] ?? ""}
+                    onChange={(e) => setField(key, e.target.value)}
+                    rows={rows}
+                    autoFocus
+                    className={ta}
+                  />
+                  {isCustom && (
+                    <button
+                      onClick={() => resetField(key)}
+                      className="mt-1.5 text-[10px] text-[#58CEE8] hover:underline"
+                    >
+                      ↺ คืนค่าเริ่มต้น
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
