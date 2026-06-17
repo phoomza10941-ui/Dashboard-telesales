@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getAiExtractionFields, getCoachingPromptOverride, getExtractionRules } from "@/lib/db";
-import { getProductKnowledge } from "@/lib/notion";
 import BotConfigClient from "./BotConfigClient";
 import AiExtractionRulesCard from "@/app/supervisor/settings/AiExtractionRulesCard";
 
@@ -10,10 +9,11 @@ export default async function BotConfigPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [fields, coachingOverride, notionPreview, extractionRules] = await Promise.all([
+  // Note: product knowledge (slow Notion fetch) is NOT loaded here — the page
+  // would block on it. BotConfigClient lazy-loads the preview on demand.
+  const [fields, coachingOverride, extractionRules] = await Promise.all([
     getAiExtractionFields(),
     getCoachingPromptOverride(),
-    getProductKnowledge(),
     getExtractionRules(),
   ]);
 
@@ -30,7 +30,7 @@ export default async function BotConfigPage() {
         initialFields={fields}
         initialCoachingOverride={coachingOverride}
         notionConnected={!!process.env.NOTION_TOKEN}
-        initialNotionPreview={notionPreview ?? ""}
+        initialNotionPreview=""
       />
 
       <AiExtractionRulesCard initialRules={extractionRules} />

@@ -43,6 +43,26 @@ export default function BotConfigClient({
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
   const [showNotion, setShowNotion] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Lazy-load the preview only when the supervisor opens it (the Notion fetch is
+  // slow, so we keep it off the page's initial render).
+  async function handleToggleNotion() {
+    const next = !showNotion;
+    setShowNotion(next);
+    if (next && !notionPreview && !previewLoading) {
+      setPreviewLoading(true);
+      try {
+        const res = await fetch("/api/supervisor/product-knowledge");
+        const d = await res.json();
+        setNotionPreview(d.preview ?? "");
+      } catch {
+        /* leave empty on failure */
+      } finally {
+        setPreviewLoading(false);
+      }
+    }
+  }
 
   // Test panel
   const [testTranscript, setTestTranscript] = useState("");
@@ -138,26 +158,39 @@ export default function BotConfigClient({
         </div>
         {syncMsg && <p className="text-[11px] text-[#87DE81]">{syncMsg}</p>}
 
-        {notionPreview && (
+        {notionConnected && (
           <div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowNotion((v) => !v)}
+                onClick={handleToggleNotion}
                 className="text-[11px] text-[#58CEE8] hover:underline"
               >
                 {showNotion ? "ซ่อน" : "ดูตัวอย่างที่ AI เห็น"}
               </button>
-              <span className="text-[10px] text-[#C0C0C0]">
-                AI เห็น {notionPreview.length.toLocaleString()} ตัวอักษร
-              </span>
+              {notionPreview && (
+                <span className="text-[10px] text-[#C0C0C0]">
+                  AI เห็น {notionPreview.length.toLocaleString()} ตัวอักษร
+                </span>
+              )}
             </div>
             {showNotion && (
-              <pre className="mt-2 text-[10px] text-[#8B8E8F] bg-[#F7F7F7] rounded-xl p-3 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
-                {notionPreview}
-                {notionPreview.length >= 40000
-                  ? "\n\n…(ตัดที่เพดาน ~40,000 ตัวอักษร เพื่อความเร็วในการวิเคราะห์)"
-                  : ""}
-              </pre>
+              previewLoading ? (
+                <div className="mt-2 text-[11px] text-[#C0C0C0] flex items-center gap-2">
+                  <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  กำลังโหลดข้อมูลที่ AI เห็น...
+                </div>
+              ) : notionPreview ? (
+                <pre className="mt-2 text-[10px] text-[#8B8E8F] bg-[#F7F7F7] rounded-xl p-3 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+                  {notionPreview}
+                  {notionPreview.length >= 40000
+                    ? "\n\n…(ตัดที่เพดาน ~40,000 ตัวอักษร เพื่อความเร็วในการวิเคราะห์)"
+                    : ""}
+                </pre>
+              ) : (
+                <div className="mt-2 text-[11px] text-[#C0C0C0]">โหลดข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง</div>
+              )
             )}
           </div>
         )}
