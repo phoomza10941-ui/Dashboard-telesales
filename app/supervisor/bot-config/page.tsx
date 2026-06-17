@@ -1,18 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { getAiExtractionFields, getCoachingPromptOverride } from "@/lib/db";
+import { getAiExtractionFields, getCoachingPromptOverride, getExtractionRules } from "@/lib/db";
 import { getProductKnowledge } from "@/lib/notion";
 import BotConfigClient from "./BotConfigClient";
+import AiExtractionRulesCard from "@/app/supervisor/settings/AiExtractionRulesCard";
 
 export default async function BotConfigPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [fields, coachingOverride, notionPreview] = await Promise.all([
+  const [fields, coachingOverride, notionPreview, extractionRules] = await Promise.all([
     getAiExtractionFields(),
     getCoachingPromptOverride(),
     getProductKnowledge(),
+    getExtractionRules(),
   ]);
 
   return (
@@ -28,8 +30,10 @@ export default async function BotConfigPage() {
         initialFields={fields}
         initialCoachingOverride={coachingOverride}
         notionConnected={!!process.env.NOTION_TOKEN}
-        initialNotionPreview={notionPreview ? notionPreview.slice(0, 600) : ""}
+        initialNotionPreview={notionPreview ?? ""}
       />
+
+      <AiExtractionRulesCard initialRules={extractionRules} />
     </div>
   );
 }

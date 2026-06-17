@@ -8,6 +8,7 @@ import { alaw as alawCodec, mulaw as mulawCodec } from "alawmulaw";
 import { getProductKnowledge } from "./notion";
 import { getCoachingPromptOverride } from "./db";
 import { isLikelyHallucination } from "./transcript-quality";
+import { FIELD_LABELS, DEFAULT_FIELD_RULES, type ExtractionRules, type ExtractionFieldKey } from "./extraction-config";
 
 const BASE = process.env.OREKA_BASE_URL ?? "";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -397,48 +398,46 @@ export interface ExtractedCustomerFields {
   patient_type?: string;
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  first_name: "ชื่อ",
-  last_name: "นามสกุล",
-  nickname: "ชื่อเล่น",
-  diseases: "โรคเป็นอยู่",
-  symptoms: "อาการตอนนี้",
-  medications: "ยาที่กำลังทานอยู่",
-  consulted_doc: "ปรึกษาหมอมั้ย",
-  patient_type: "คนที่ทาน",
-};
-
 export async function extractCustomerInfo(
   transcript: string,
   enabledFields: Record<string, boolean>,
-  productKnowledge: string
+  productKnowledge: string,
+  rules?: ExtractionRules,
 ): Promise<ExtractedCustomerFields> {
-  const activeFields = Object.entries(enabledFields)
+  const fieldRules = rules?.fieldRules ?? {};
+  const extraRules = (rules?.extraRules ?? "").trim();
+
+  // One line per enabled field: its label + the supervisor's custom rule (or the
+  // default). Per-field rules are configurable from Supervisor → Settings.
+  const activeFieldLines = Object.entries(enabledFields)
     .filter(([, v]) => v)
-    .map(([k]) => `- ${FIELD_LABELS[k] ?? k} (field: ${k})`);
+    .map(([k]) => {
+      const key = k as ExtractionFieldKey;
+      const rule = (fieldRules[key] ?? DEFAULT_FIELD_RULES[key] ?? "").trim();
+      const label = FIELD_LABELS[k] ?? k;
+      // Indent any extra rule lines so they read as part of this field.
+      const ruleBlock = rule ? `: ${rule.replace(/\n/g, "\n    ")}` : "";
+      return `- ${label} (field: ${k})${ruleBlock}`;
+    });
 
-  if (activeFields.length === 0) return {};
+  if (activeFieldLines.length === 0) return {};
 
+  // Base structural rules are NOT editable — they keep the JSON output valid and
+  // guard against well-known extraction mistakes regardless of custom rules.
   const systemPrompt = [
     "คุณเป็น AI ที่ช่วยดึงข้อมูลสุขภาพของลูกค้าจากบทสนทนาการขายทางโทรศัพท์ (ภาษาไทย เป็นภาษาพูด ถอดจากเสียงจึงอาจสะกดเพี้ยน)",
     productKnowledge
       ? `\nข้อมูลสินค้า (ใช้เพื่อสะกดชื่อผลิตภัณฑ์ให้ถูกเท่านั้น ห้ามใช้เดาโรคของลูกค้า):\n${productKnowledge}`
       : "",
-    "\nอ่านบทสนทนาทั้งหมดตั้งแต่ต้นจนจบ แล้วดึงข้อมูลของ \"ลูกค้า/ผู้ที่จะทานผลิตภัณฑ์\" เท่านั้น ลงใน field ด้านล่าง:",
-    activeFields.join("\n"),
-    "\nหลักการสำคัญ:",
-    "- ดึงสิ่งที่ลูกค้าพูดถึงตัวเอง ทั้งทางตรงและทางอ้อม เช่น ลูกค้าพูดว่า \"ความดันไม่สูงเท่าไหร่\" = มีภาวะความดัน, \"ช่วงนี้เวียนหัว\" = อาการเวียนหัว",
+    "\nอ่านบทสนทนาทั้งหมดตั้งแต่ต้นจนจบ แล้วดึงข้อมูลของ \"ลูกค้า/ผู้ที่จะทานผลิตภัณฑ์\" เท่านั้น ลงในแต่ละ field ตามกฎด้านล่าง:",
+    activeFieldLines.join("\n"),
+    "\nหลักการสำคัญ (ใช้กับทุก field):",
+    "- ดึงสิ่งที่ลูกค้าพูดถึงตัวเอง ทั้งทางตรงและทางอ้อม เช่น \"ความดันไม่สูงเท่าไหร่\" = มีภาวะความดัน",
     "- ตีความตามบริบทของภาษาพูดแม้คำจะสะกดเพี้ยนจากการถอดเสียง",
-    "- อย่าดึงข้อมูลจากบทเกริ่นนำ/ชื่อแผนก/ชื่อบริษัท/ชื่อผลิตภัณฑ์ที่ \"พนักงานขาย\" พูด (เช่น \"ติดต่อจากส่วนดูแลไขมันในเลือด\" ไม่ได้แปลว่าลูกค้าเป็นไขมันในเลือดสูง) และอย่าเดาโรคจากชื่อยา",
-    "- อย่าดึงผลิตภัณฑ์ที่ลูกค้าปฏิเสธหรือไม่ได้ทานมาใส่ medications",
+    "- อย่าดึงข้อมูลจากบทเกริ่นนำ/ชื่อแผนก/ชื่อบริษัท/ชื่อผลิตภัณฑ์ที่ \"พนักงานขาย\" พูด และอย่าเดาโรคจากชื่อยา",
     "- ถ้า field ใดไม่มีข้อมูลจริง ให้ตัด field นั้นทิ้งจาก JSON ห้ามใส่ค่าว่าง",
-    "\nรูปแบบแต่ละ field:",
-    "- first_name/last_name/nickname: ชื่อจริงของลูกค้าตามที่ได้ยิน ห้ามใช้คำสรรพนาม/คำเรียก เช่น พี่ น้า ป้า ลุง คุณ ลูกค้า เป็นชื่อ",
-    "- diseases: โรค/ภาวะที่ลูกค้าเป็น เช่น เบาหวาน ความดัน ไขมันในเลือดสูง เก๊าท์ โรคไต โรคหัวใจ ข้อเข่าเสื่อม — คั่นด้วยคอมมา",
-    "- symptoms: อาการที่ลูกค้ารู้สึกตอนนี้ (ไม่ใช่ชื่อโรค และไม่ใช่คำว่า \"ดีขึ้น\") คั่นด้วยคอมมา",
-    "- medications: ชื่อยา/อาหารเสริมที่ลูกค้ากำลังทานอยู่จริง คั่นด้วยคอมมา",
-    "- consulted_doc: คำตอบสั้น รวมความถี่ถ้ามี (เช่น 'เคย — ทุก 3 เดือน')",
-    "- patient_type: 'ตัวเอง' หรือ 'คนในครอบครัว — [ความสัมพันธ์]' (อย่าสับสนกับคนสั่งของหรือคนส่งของ)",
+    extraRules ? `\nกฎเพิ่มเติมจาก Supervisor (ใช้กับทุก field):\n${extraRules}` : "",
+    "\nส่งกลับเป็น JSON object เท่านั้น โดยใช้ field name ภาษาอังกฤษ (เช่น first_name, diseases) เป็น key",
   ]
     .filter(Boolean)
     .join("\n");
@@ -464,6 +463,8 @@ export async function extractCustomerInfo(
 // Pronoun/title words that the model sometimes returns as a "name" — never real names.
 const NAME_NON_VALUES = new Set([
   "พี่", "น้อง", "น้า", "ป้า", "ลุง", "อา", "คุณ", "ลูกค้า", "แม่", "พ่อ", "ยาย", "ตา",
+  // Thai self-reference pronouns the model sometimes mistakes for a name
+  "หนู", "ผม", "ดิฉัน", "ฉัน", "เรา", "กระผม", "ข้าพเจ้า",
 ]);
 
 // Post-process the model output: keep only known fields with a real (non-empty) value,

@@ -26,7 +26,7 @@ export async function GET() {
     fields,
     coachingOverride,
     notionConnected: !!process.env.NOTION_TOKEN,
-    notionPreview: notionPreview ? notionPreview.slice(0, 600) : "",
+    notionPreview: notionPreview ?? "",
   });
 }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   if (body.forceSync) {
     clearProductKnowledgeCache();
     const preview = await getProductKnowledge();
-    return NextResponse.json({ ok: true, notionPreview: preview.slice(0, 600) });
+    return NextResponse.json({ ok: true, notionPreview: preview });
   }
 
   const ops: Promise<void>[] = [];

@@ -140,15 +140,23 @@ export default function BotConfigClient({
 
         {notionPreview && (
           <div>
-            <button
-              onClick={() => setShowNotion((v) => !v)}
-              className="text-[11px] text-[#58CEE8] hover:underline"
-            >
-              {showNotion ? "ซ่อน" : "ดูตัวอย่างที่ AI เห็น"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowNotion((v) => !v)}
+                className="text-[11px] text-[#58CEE8] hover:underline"
+              >
+                {showNotion ? "ซ่อน" : "ดูตัวอย่างที่ AI เห็น"}
+              </button>
+              <span className="text-[10px] text-[#C0C0C0]">
+                AI เห็น {notionPreview.length.toLocaleString()} ตัวอักษร
+              </span>
+            </div>
             {showNotion && (
-              <pre className="mt-2 text-[10px] text-[#8B8E8F] bg-[#F7F7F7] rounded-xl p-3 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-                {notionPreview}{notionPreview.length >= 600 ? "\n…(ตัดสั้น)" : ""}
+              <pre className="mt-2 text-[10px] text-[#8B8E8F] bg-[#F7F7F7] rounded-xl p-3 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+                {notionPreview}
+                {notionPreview.length >= 40000
+                  ? "\n\n…(ตัดที่เพดาน ~40,000 ตัวอักษร เพื่อความเร็วในการวิเคราะห์)"
+                  : ""}
               </pre>
             )}
           </div>

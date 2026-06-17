@@ -7,9 +7,9 @@ const CACHE_TTL_MS = 30 * 60 * 1000;
 // took ~200s. We cap total time, depth, and size, fetch siblings' children in
 // parallel, and return whatever we gathered (partial is fine — this is only
 // optional product-name context for the extractor).
-const FETCH_BUDGET_MS = 7000; // total wall-clock budget for the whole fetch
-const MAX_CHARS = 24000;      // stop once we've gathered enough context
-const MAX_DEPTH = 3;          // don't recurse into deeply nested blocks
+const FETCH_BUDGET_MS = 8000; // total wall-clock budget for the whole fetch
+const MAX_CHARS = 40000;      // stop once we've gathered enough context
+const MAX_DEPTH = 4;          // recurse this deep into nested blocks
 
 let cache: { text: string; expiresAt: number } | null = null;
 

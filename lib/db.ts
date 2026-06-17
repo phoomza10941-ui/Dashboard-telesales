@@ -3,6 +3,7 @@ import { adminClient } from "./supabase/admin";
 import { createClient } from "./supabase/server";
 export { parseNoteStatus, parseNoteObjection, saleTotal, rowStatus, rowObjection, type NoteStatus } from "./note-utils";
 import { parseNoteStatus, parseNoteObjection, rowStatus, rowObjection, type NoteStatus } from "./note-utils";
+import { EMPTY_EXTRACTION_RULES, type ExtractionRules } from "./extraction-config";
 
 export interface SaleRow {
   id?: string;
@@ -1427,5 +1428,34 @@ export async function setCoachingPromptOverride(text: string): Promise<void> {
   const { error } = await adminClient
     .from("team_config")
     .upsert({ key: "coaching_prompt_override", value: text }, { onConflict: "key" });
+  if (error) throw new Error(error.message);
+}
+
+// ─── AI extraction rules (supervisor-editable per-field + global rules) ────────
+
+export async function getExtractionRules(): Promise<ExtractionRules> {
+  const { data } = await adminClient
+    .from("team_config")
+    .select("value")
+    .eq("key", "ai_extraction_rules")
+    .single();
+  const v = data?.value as Partial<ExtractionRules> | undefined;
+  if (!v) return EMPTY_EXTRACTION_RULES;
+  return {
+    fieldRules: v.fieldRules ?? {},
+    extraRules: typeof v.extraRules === "string" ? v.extraRules : "",
+  };
+}
+
+export async function setExtractionRules(rules: ExtractionRules): Promise<void> {
+  // Drop blank field overrides so they fall back to defaults.
+  const fieldRules: Record<string, string> = {};
+  for (const [k, val] of Object.entries(rules.fieldRules ?? {})) {
+    if (typeof val === "string" && val.trim()) fieldRules[k] = val.trim();
+  }
+  const clean: ExtractionRules = { fieldRules, extraRules: (rules.extraRules ?? "").trim() };
+  const { error } = await adminClient
+    .from("team_config")
+    .upsert({ key: "ai_extraction_rules", value: clean }, { onConflict: "key" });
   if (error) throw new Error(error.message);
 }

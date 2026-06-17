@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { transcribeAudio, downloadAudio, extractCustomerInfo } from "@/lib/call-summary";
-import { getAiExtractionFields } from "@/lib/db";
+import { getAiExtractionFields, getExtractionRules } from "@/lib/db";
 import { getProductKnowledge } from "@/lib/notion";
 import type { AccountId } from "@/lib/oreka";
 
@@ -68,15 +68,17 @@ export async function POST(req: NextRequest) {
 
         send({ type: "progress", pct: 70, label: "🧠 วิเคราะห์ด้วย AI..." });
         console.log("[customer/analyze] fetching AI context (fields + product knowledge)...");
-        const [enabledFields, productKnowledge] = await Promise.all([
+        const [enabledFields, productKnowledge, extractionRules] = await Promise.all([
           getAiExtractionFields(),
           getProductKnowledge(),
+          getExtractionRules(),
         ]);
         console.log(`[customer/analyze] AI context ready (fields=${Object.keys(enabledFields).length}, pk=${productKnowledge.length} chars); extracting...`);
         const fields = await extractCustomerInfo(
           transcript,
           enabledFields as unknown as Record<string, boolean>,
           productKnowledge,
+          extractionRules,
         );
         console.log("[customer/analyze] extraction complete:", Object.keys(fields));
 
