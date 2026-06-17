@@ -24,6 +24,7 @@ export default function AiExtractionRulesCard({
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const [testTranscript, setTestTranscript] = useState("");
   const [testing, setTesting] = useState(false);
@@ -52,6 +53,7 @@ export default function AiExtractionRulesCard({
 
   async function handleSave() {
     setSaving(true);
+    setSaveError("");
     try {
       const res = await fetch("/api/supervisor/extraction-rules", {
         method: "POST",
@@ -61,7 +63,12 @@ export default function AiExtractionRulesCard({
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error ?? `บันทึกไม่สำเร็จ (${res.status})`);
       }
+    } catch {
+      setSaveError("บันทึกไม่สำเร็จ — ตรวจสอบการเชื่อมต่อ");
     } finally {
       setSaving(false);
     }
@@ -189,6 +196,7 @@ export default function AiExtractionRulesCard({
       >
         {saving ? "กำลังบันทึก..." : saved ? "✓ บันทึกแล้ว" : "บันทึกกฎ"}
       </button>
+      {saveError && <p className="text-[11px] text-red-500 mt-1.5">{saveError}</p>}
 
       {/* Live test */}
       <div className="border-t border-[#E8E8E8] pt-5">
