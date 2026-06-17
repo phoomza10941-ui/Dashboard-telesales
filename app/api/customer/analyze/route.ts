@@ -5,6 +5,10 @@ import { getAiExtractionFields } from "@/lib/db";
 import { getProductKnowledge } from "@/lib/notion";
 import type { AccountId } from "@/lib/oreka";
 
+// Audio download + Whisper transcription of a long call can take well over a
+// minute; give the function room so Vercel doesn't kill it mid-transcription.
+export const maxDuration = 300;
+
 /** Map internal error messages to actionable Thai for the agent. */
 function friendlyErrorMessage(raw: string): string {
   const lower = raw.toLowerCase();
