@@ -29,7 +29,7 @@ export default async function BotConfigPage() {
       <BotConfigClient
         initialFields={fields}
         initialCoachingOverride={coachingOverride}
-        notionConnected={!!process.env.NOTION_TOKEN}
+        notionConnected={true}
         initialNotionPreview=""
       />
 

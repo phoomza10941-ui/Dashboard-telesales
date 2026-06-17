@@ -5,7 +5,7 @@ import { getOrekaToken, refreshOrekaToken } from "./oreka";
 import type { AccountId } from "./oreka";
 import { toOrekaStamp } from "./oreka-format";
 import { alaw as alawCodec, mulaw as mulawCodec } from "alawmulaw";
-import { getProductKnowledge } from "./notion";
+import { getProductKnowledge } from "./knowledge";
 import { getCoachingPromptOverride } from "./db";
 import { isLikelyHallucination } from "./transcript-quality";
 import { FIELD_LABELS, DEFAULT_FIELD_RULES, type ExtractionRules, type ExtractionFieldKey } from "./extraction-config";

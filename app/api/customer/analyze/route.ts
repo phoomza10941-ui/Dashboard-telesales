@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { transcribeAudio, downloadAudio, extractCustomerInfo } from "@/lib/call-summary";
 import { getAiExtractionFields, getExtractionRules } from "@/lib/db";
-import { getProductKnowledge } from "@/lib/notion";
+import { getProductKnowledge } from "@/lib/knowledge";
 import type { AccountId } from "@/lib/oreka";
 
 // Audio download + Whisper transcription of a long call can take well over a

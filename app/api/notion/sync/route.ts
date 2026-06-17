@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { clearProductKnowledgeCache } from "@/lib/notion";
+import { clearProductKnowledgeCache } from "@/lib/knowledge";
 
 export async function POST() {
   const supabase = await createClient();

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getProductKnowledge } from "@/lib/notion";
+import { getProductKnowledge } from "@/lib/knowledge";
 
 // Lazy preview of the product knowledge the AI sees. Kept off the bot-config
 // page's server render so the page loads instantly; fetched only when the

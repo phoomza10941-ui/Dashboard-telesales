@@ -4,7 +4,7 @@ import {
   getAiExtractionFields, setAiExtractionFields, AiExtractionFields,
   getCoachingPromptOverride, setCoachingPromptOverride,
 } from "@/lib/db";
-import { getProductKnowledge, clearProductKnowledgeCache } from "@/lib/notion";
+import { getProductKnowledge, clearProductKnowledgeCache } from "@/lib/knowledge";
 
 async function requireAuth() {
   const supabase = await createClient();

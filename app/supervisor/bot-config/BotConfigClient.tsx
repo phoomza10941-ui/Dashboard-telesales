@@ -134,8 +134,8 @@ export default function BotConfigClient({
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-[#f0f8ff] flex items-center justify-center text-[16px]">📖</div>
           <div>
-            <div className="text-[13px] font-semibold text-[#3D3D3D]">Product Knowledge — Notion</div>
-            <div className="text-[11px] text-[#8B8E8F]">AI จะใช้ข้อมูลนี้ในทุก call summary และ extraction</div>
+            <div className="text-[13px] font-semibold text-[#3D3D3D]">Product Knowledge — ไฟล์ Markdown</div>
+            <div className="text-[11px] text-[#8B8E8F]">AI อ่านจากไฟล์ใน content/product-knowledge/ (แก้ใน Obsidian) — ใช้ทุก call summary และ extraction</div>
           </div>
         </div>
 
@@ -143,7 +143,7 @@ export default function BotConfigClient({
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${notionConnected ? "bg-[#87DE81]" : "bg-red-400"}`} />
             <span className="text-[12px] text-[#3D3D3D]">
-              {notionConnected ? "เชื่อมต่อ Notion แล้ว" : "ไม่ได้เชื่อมต่อ — ตั้งค่า NOTION_TOKEN ใน .env.local"}
+              อ่านจากไฟล์ Markdown (content/product-knowledge/)
             </span>
           </div>
           {notionConnected && (
@@ -152,7 +152,7 @@ export default function BotConfigClient({
               disabled={syncing}
               className="text-[11px] text-[#58CEE8] hover:underline disabled:opacity-50"
             >
-              {syncing ? "กำลังซิงค์..." : "Force Sync"}
+              {syncing ? "กำลังรีโหลด..." : "รีโหลดไฟล์"}
             </button>
           )}
         </div>
