@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import AnalyzeCallPanel from "./AnalyzeCallPanel";
 import { CallSummarySection } from "@/app/my-desk/components/customer-cards/CallSummarySection";
 import { CallCalendar } from "@/app/my-desk/components/customer-cards/CallCalendar";
+import { CallDayRecordings } from "@/app/my-desk/components/customer-cards/CallDayRecordings";
 import { VoiceReference } from "@/app/my-desk/components/customer-cards/VoiceReference";
 import type { Customer } from "@/lib/db";
 
@@ -413,17 +414,20 @@ function CustomerCard({
             </div>
           )}
 
-          {/* Call calendar */}
+          {/* Call calendar + day recordings */}
           {c.phone && (
             <div className="px-5 pt-2 pb-1">
               <div className="text-[10px] font-semibold text-[#8B8E8F] uppercase tracking-wide mb-2">
                 ประวัติการโทร
               </div>
-              <CallCalendar
-                phone={c.phone}
-                selectedDate={selectedDate}
-                onSelectDate={setSelectedDate}
-              />
+              <div className="flex gap-3 items-start">
+                <CallCalendar
+                  phone={c.phone}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
+                <CallDayRecordings phone={c.phone} selectedDate={selectedDate} />
+              </div>
             </div>
           )}
 
