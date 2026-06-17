@@ -3,7 +3,7 @@ import { adminClient } from "./supabase/admin";
 import { createClient } from "./supabase/server";
 export { parseNoteStatus, parseNoteObjection, saleTotal, rowStatus, rowObjection, type NoteStatus } from "./note-utils";
 import { parseNoteStatus, parseNoteObjection, rowStatus, rowObjection, type NoteStatus } from "./note-utils";
-import { EMPTY_EXTRACTION_RULES, type ExtractionRules } from "./extraction-config";
+import { EMPTY_EXTRACTION_RULES, type ExtractionRules, type ExtractionFieldKey } from "./extraction-config";
 
 export interface SaleRow {
   id?: string;
@@ -1439,10 +1439,17 @@ export async function getExtractionRules(): Promise<ExtractionRules> {
     .select("value")
     .eq("key", "ai_extraction_rules")
     .single();
-  const v = data?.value as Partial<ExtractionRules> | undefined;
+  const raw = data?.value;
+  // team_config.value may be TEXT (JSON string) or JSONB (already parsed).
+  let v: Partial<ExtractionRules> | undefined;
+  if (typeof raw === "string") {
+    try { v = JSON.parse(raw) as Partial<ExtractionRules>; } catch { v = undefined; }
+  } else if (raw && typeof raw === "object") {
+    v = raw as Partial<ExtractionRules>;
+  }
   if (!v) return EMPTY_EXTRACTION_RULES;
   return {
-    fieldRules: v.fieldRules ?? {},
+    fieldRules: (v.fieldRules as Partial<Record<ExtractionFieldKey, string>>) ?? {},
     extraRules: typeof v.extraRules === "string" ? v.extraRules : "",
   };
 }
@@ -1454,8 +1461,10 @@ export async function setExtractionRules(rules: ExtractionRules): Promise<void> 
     if (typeof val === "string" && val.trim()) fieldRules[k] = val.trim();
   }
   const clean: ExtractionRules = { fieldRules, extraRules: (rules.extraRules ?? "").trim() };
+  // Serialize to JSON string so this works regardless of whether team_config.value
+  // is a TEXT or JSONB column.
   const { error } = await adminClient
     .from("team_config")
-    .upsert({ key: "ai_extraction_rules", value: clean }, { onConflict: "key" });
+    .upsert({ key: "ai_extraction_rules", value: JSON.stringify(clean) }, { onConflict: "key" });
   if (error) throw new Error(error.message);
 }
