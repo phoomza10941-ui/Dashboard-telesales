@@ -29,8 +29,14 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy on Railway
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This app is deployed on [Railway](https://railway.app). It builds with Nixpacks
+(`npm ci && npm run build`) and runs the Node server with `npm run start`, which
+binds to the `PORT` Railway injects. Build/deploy config lives in `railway.json`;
+the Node version is pinned via `engines` in `package.json` / `.nvmrc`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set the required environment variables (Supabase, OpenAI, Oreka, etc.) in the
+Railway service. Note: `NEXT_PUBLIC_*` vars are inlined at build time and must be
+present when the build runs. See `docs/plans/2026-06-17-railway-migration-plan.md`
+for the full migration runbook.
