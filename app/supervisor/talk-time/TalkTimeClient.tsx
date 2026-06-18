@@ -14,6 +14,7 @@ interface Recording {
 }
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { sarabunRegularB64, sarabunBoldB64 } from "@/lib/fonts/sarabun-b64";
 
 type Tab = "overall" | AccountId;
 type ViewMode = "day" | "month";
@@ -354,24 +355,13 @@ export default function TalkTimeClient({
   const countFor = (t: Tab) => (t === "overall" ? agents : agents.filter(a => eacc(a) === t)).filter(a => !closed.has(ckey(a))).length;
   const periodLabel = mode === "day" ? (isToday ? "วันนี้" : displayDate(dateKey)) : (isCurrentMonth ? "เดือนนี้" : displayMonth(monthKey));
 
-  async function exportPDF() {
+  function exportPDF() {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-    // Load Sarabun font (covers Thai + Latin) so Thai names render correctly
-    async function loadFont(path: string): Promise<string> {
-      const buf = await (await fetch(path)).arrayBuffer();
-      const uint8 = new Uint8Array(buf);
-      let binary = "";
-      for (let i = 0; i < uint8.byteLength; i++) binary += String.fromCharCode(uint8[i]);
-      return btoa(binary);
-    }
-    const [regularB64, boldB64] = await Promise.all([
-      loadFont("/fonts/Sarabun-Regular.ttf"),
-      loadFont("/fonts/Sarabun-Bold.ttf"),
-    ]);
-    doc.addFileToVFS("Sarabun-Regular.ttf", regularB64);
+    // Embed Sarabun (covers Thai + Latin) — bundled as base64 so it works in all envs
+    doc.addFileToVFS("Sarabun-Regular.ttf", sarabunRegularB64);
     doc.addFont("Sarabun-Regular.ttf", "Sarabun", "normal");
-    doc.addFileToVFS("Sarabun-Bold.ttf", boldB64);
+    doc.addFileToVFS("Sarabun-Bold.ttf", sarabunBoldB64);
     doc.addFont("Sarabun-Bold.ttf", "Sarabun", "bold");
     doc.setFont("Sarabun", "normal");
 
