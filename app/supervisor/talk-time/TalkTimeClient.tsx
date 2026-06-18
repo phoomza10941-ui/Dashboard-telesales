@@ -354,18 +354,35 @@ export default function TalkTimeClient({
   const countFor = (t: Tab) => (t === "overall" ? agents : agents.filter(a => eacc(a) === t)).filter(a => !closed.has(ckey(a))).length;
   const periodLabel = mode === "day" ? (isToday ? "วันนี้" : displayDate(dateKey)) : (isCurrentMonth ? "เดือนนี้" : displayMonth(monthKey));
 
-  function exportPDF() {
+  async function exportPDF() {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-    // English-only period label (Thai chars break the default jsPDF font)
-    const periodEn = mode === "day"
-      ? (isToday ? "Today" : dateKey)
-      : (isCurrentMonth ? "This Month" : monthKey);
+    // Load Sarabun font (covers Thai + Latin) so Thai names render correctly
+    async function loadFont(path: string): Promise<string> {
+      const buf = await (await fetch(path)).arrayBuffer();
+      const uint8 = new Uint8Array(buf);
+      let binary = "";
+      for (let i = 0; i < uint8.byteLength; i++) binary += String.fromCharCode(uint8[i]);
+      return btoa(binary);
+    }
+    const [regularB64, boldB64] = await Promise.all([
+      loadFont("/fonts/Sarabun-Regular.ttf"),
+      loadFont("/fonts/Sarabun-Bold.ttf"),
+    ]);
+    doc.addFileToVFS("Sarabun-Regular.ttf", regularB64);
+    doc.addFont("Sarabun-Regular.ttf", "Sarabun", "normal");
+    doc.addFileToVFS("Sarabun-Bold.ttf", boldB64);
+    doc.addFont("Sarabun-Bold.ttf", "Sarabun", "bold");
+    doc.setFont("Sarabun", "normal");
+
+    const periodLabel = mode === "day"
+      ? (isToday ? "วันนี้" : dateKey)
+      : (isCurrentMonth ? "เดือนนี้" : monthKey);
     const tabEn = tab === "overall" ? "" : ` (${tab})`;
 
     doc.setFontSize(14);
     doc.setTextColor(61, 61, 61);
-    doc.text(`Talk Time Report - ${periodEn}${tabEn}`, 14, 16);
+    doc.text(`Talk Time Report - ${periodLabel}${tabEn}`, 14, 16);
 
     doc.setFontSize(9);
     doc.setTextColor(139, 142, 143);
@@ -392,9 +409,9 @@ export default function TalkTimeClient({
 
     autoTable(doc, {
       startY: 28,
-      head: [["#", "Agent", "Team", "Extension (Local Party)", "Talk Time", "Calls", "In", "Out", "Avg/Call"]],
+      head: [["#", "ชื่อ Agent", "ทีม", "Extension (Local Party)", "Talk Time", "สาย", "In", "Out", "เฉลี่ย/สาย"]],
       body: rows,
-      styles: { fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 9, cellPadding: 3, font: "Sarabun" },
       headStyles: { fillColor: [135, 222, 129], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [247, 247, 247] },
       columnStyles: {
