@@ -34,6 +34,11 @@ for key in "${KEYS[@]}"; do
   line=$(grep -E "^${key}=" "$ENV_FILE" | head -1 || true)
   [ -z "$line" ] && { echo "skip (not in $ENV_FILE): $key"; continue; }
   val=${line#*=}
+  # Strip a trailing CR and one layer of surrounding quotes — dotenv does this at
+  # runtime, so the raw line value must be unwrapped before sending to Railway,
+  # else passwords/keys are stored WITH the quotes and auth fails (HTTP 401).
+  val=${val%$'\r'}
+  case "$val" in \"*\") val=${val#\"}; val=${val%\"};; \'*\') val=${val#\'}; val=${val%\'};; esac
   args+=(--set "${key}=${val}")
   echo "queued: $key"
 done
