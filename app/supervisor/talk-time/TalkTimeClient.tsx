@@ -365,19 +365,19 @@ export default function TalkTimeClient({
     doc.addFont("Sarabun-Bold.ttf", "Sarabun", "bold");
     doc.setFont("Sarabun", "normal");
 
-    const periodLabel = mode === "day"
-      ? (isToday ? "วันนี้" : dateKey)
-      : (isCurrentMonth ? "เดือนนี้" : monthKey);
-    const tabEn = tab === "overall" ? "" : ` (${tab})`;
+    const pdfPeriod = mode === "day"
+      ? (isToday ? "วันนี้" : displayDate(dateKey))
+      : (isCurrentMonth ? "เดือนนี้" : displayMonth(monthKey));
+    const tabSuffix = tab === "overall" ? "" : ` (${tab})`;
 
     doc.setFontSize(14);
     doc.setTextColor(61, 61, 61);
-    doc.text(`Talk Time Report - ${periodLabel}${tabEn}`, 14, 16);
+    doc.text(`รายงาน Talk Time — ${pdfPeriod}${tabSuffix}`, 14, 16);
 
     doc.setFontSize(9);
     doc.setTextColor(139, 142, 143);
     doc.text(
-      `Total: ${formatTalkTime(teamSeconds)}  |  Calls: ${teamCalls.toLocaleString()}  |  Agents: ${activeAgents}/${visible.length}  |  Avg/Call: ${formatTalkTime(avgPerCall)}`,
+      `รวม: ${formatTalkTime(teamSeconds)}  |  สาย: ${teamCalls.toLocaleString()}  |  เอเจนต์: ${activeAgents}/${visible.length}  |  เฉลี่ย/สาย: ${formatTalkTime(avgPerCall)}`,
       14, 23
     );
 
@@ -399,7 +399,7 @@ export default function TalkTimeClient({
 
     autoTable(doc, {
       startY: 28,
-      head: [["#", "ชื่อ Agent", "ทีม", "Extension (Local Party)", "Talk Time", "สาย", "In", "Out", "เฉลี่ย/สาย"]],
+      head: [["#", "ชื่อเอเจนต์", "ทีม", "เบอร์ต่อ (Local Party)", "Talk Time", "สาย", "สายเข้า", "สายออก", "เฉลี่ย/สาย"]],
       body: rows,
       styles: { fontSize: 9, cellPadding: 3, font: "Sarabun" },
       headStyles: { fillColor: [135, 222, 129], textColor: 255, fontStyle: "bold" },
